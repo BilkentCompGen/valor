@@ -40,7 +40,7 @@ public class InferClones {
 			else {
 				chr	= "chr" + Integer.toString(cnt);
 			}
-			System.out.println("chrom:\t" + chr);
+			// System.out.println("chrom:\t" + chr);
 			windows = new ArrayList<Interval>();
 			regions = new ArrayList<Interval>();
 			reads = new ArrayList<Interval>();

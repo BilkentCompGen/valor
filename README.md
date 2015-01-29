@@ -24,7 +24,7 @@ First you should set the variables.
 
 Set the variables in the src/Config.java file. These are needed by the Java executables.
 
-1. set the read information
+-- Set the read information
 
 parameter: READ_DIST (length of each read)
 
@@ -32,7 +32,7 @@ parameter: READ_SIZE (max length of a normal segment)
 
 
 
-2.Set the physical statistics of clones. Changing these variables adaptively can improve the performance.
+-- Set the physical statistics of clones. Changing these variables adaptively can improve the performance.
 
 parameter: NORMAL_SIZE (minimum size of an expected clone)
 
@@ -46,7 +46,7 @@ parameter: DOWN_CRITERIA (minimum accepted clone size)
 
 
 
-3. Set the iversion information. It is suggested to run the algorithm on narrowed ranges of inversion length.
+-- Set the iversion information. It is suggested to run the algorithm on narrowed ranges of inversion length.
 
 parameter: MIN_INVERSION_SIZE (minimum size of an inversion, should be at least 2*NORMAL_SIZE)
 
@@ -60,7 +60,7 @@ parameter: LIMIT (limit used for updating the read support, suggested to be the 
 
 
 
-4. Set the graph properties. Refer to:
+-- Set the graph properties. Refer to:
 
 Brunato, Mauro, Holger H. Hoos, and Roberto Battiti. "On effectively finding maximal quasi-cliques in graphs." Learning and Intelligent Optimization. Springer Berlin Heidelberg, 2008. 41-55.
 
@@ -70,7 +70,7 @@ parameter: GAMMA
 
 
 
-5. Set variables for the inferring clones.
+-- Set variables for the inferring clones.
 
 WINDOW (minimum window size to search for, increasing this parameter will result in faster execution)
 
@@ -90,7 +90,7 @@ Edit the run.sh file:
 
 
 
-1. The path to bam files
+-- The path to bam files
 
 parameter: bamfile (the directory path of the pooled bam files containing the mapped reads)
 
@@ -104,7 +104,7 @@ NOTE: bamfiles should be sorted by read name. (samtools sort -n) for bamtobed to
 
 
 
-2. The paired end distance
+-- The paired end distance
 
 parameter: MAXREAD (maximum length of a normal segment)
 
@@ -114,7 +114,7 @@ You should set the max and min to (mean + 3*std) and (mean - 3*std).
 
 
 
-3. The output directory
+-- The output directory
 
 parameter: outputDir (output/working directory)
 
@@ -126,7 +126,7 @@ Also it makes directories Clusters and Pools which the final inversion clusters 
 
 
 
-4. The threshold to filter out the inferred clones by coverage
+-- The threshold to filter out the inferred clones by coverage
 
 cparameter: overageThreshold (the coverage threshold for inferred clones by reads)
 
@@ -155,9 +155,6 @@ The output clusters will be in the output directory.
 
 
 NOTE: In the bam file or bed files, it is expected to see the chromosome label as: chr# for example chr1, chr2, ..., chrX, chrY. Make sure the reference is the same of change the run.sh code.
-
-
-
 
 
 

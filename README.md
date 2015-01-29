@@ -154,7 +154,7 @@ The output clusters will be in the output directory.
 
 
 
-NOTE: In the bam file or bed files, it is expected to see the chromosome label as: chr# for example chr1, chr2, ..., chrX, chrY. Make sure the reference is the same of change the run.sh code.
+NOTE: In the bam file or bed files, it is expected to see the chromosome label as: chr# for example chr1, chr2, ..., chrX, chrY. Make sure the reference is the same or change the run.sh code.
 
 
 

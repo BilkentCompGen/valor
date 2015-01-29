@@ -72,11 +72,11 @@ parameter: GAMMA
 
 -- Set variables for the inferring clones.
 
-WINDOW (minimum window size to search for, increasing this parameter will result in faster execution)
+parameter: WINDOW (minimum window size to search for, increasing this parameter will result in faster execution)
 
-COVERAGE (minimum coverage of a window by segments (normal mapped read pairs))
+parameter: COVERAGE (minimum coverage of a window by segments (normal mapped read pairs))
 
-EXTENSION (extension for each window, after finding the windows, the algorithm will try to extend the window to any read available in EXTENSION distance of both sides)
+parameter: EXTENSION (extension for each window, after finding the windows, the algorithm will try to extend the window to any read available in EXTENSION distance of both sides)
 
 
 

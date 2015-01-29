@@ -128,7 +128,7 @@ Also it makes directories Clusters and Pools which the final inversion clusters 
 
 -- The threshold to filter out the inferred clones by coverage
 
-cparameter: overageThreshold (the coverage threshold for inferred clones by reads)
+parameter: coverageThreshold (the coverage threshold for inferred clones by reads)
 
 This step is optional. It is shown that many inferred clones are not reliables are are due to extension of discrete reads on duplicated areas. The default is 40%. But it is better to get the coverage for all inferred clones and plot the correlation between the size and coverage and come up with a meaningful number for your case.
 

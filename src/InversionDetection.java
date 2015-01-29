@@ -390,7 +390,7 @@ public class InversionDetection {
 		// sort clusters by support
 		Collections.sort(clusters, new Comparator<InversionCluster>() {
 			@Override public int compare(InversionCluster clu1, InversionCluster clu2) {
-			    return (clu2.minusMinusSupport * clu2.plusPlusSupport - clu1.minusMinusSupport * clu1.plusPlusSupport);
+			    return ((clu2.minusMinusSupport * clu2.plusPlusSupport)/clu2.size() - (clu1.minusMinusSupport * clu1.plusPlusSupport)))/clu1.size();
 			}
 		});
 		for (int i = 0; i < clusters.size(); i++)

@@ -23,10 +23,10 @@ public class SplitClone extends PairedDNAInterval {
 			this.left.end < that.left.end &&				
 			this.right.start < that.right.start &&
 			this.right.end < that.right.end &&
-			that.left.distance(this.left) > Config.OVERLAP &&	// > overlap to ensure its not a deletion
-			that.right.distance(this.right) > Config.OVERLAP &&
-			that.left.distance(this.left) < Config.GAP &&		// not too far away
-			that.right.distance(this.right) < Config.GAP);
+			that.left.distance(this.left) > Config.INV_OVERLAP &&	// > overlap to ensure its not a deletion
+			that.right.distance(this.right) > Config.INV_OVERLAP &&
+			that.left.distance(this.left) < Config.INV_GAP &&		// not too far away
+			that.right.distance(this.right) < Config.INV_GAP);
 	}
 	@Override
 	public String toString()

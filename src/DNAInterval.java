@@ -25,15 +25,15 @@ public class DNAInterval {
 	{
 		DNAInterval that = interval;
 		return (this.chromosome.equals(that.chromosome) &&
-				((that.start >= this.start - Config.READ_SIZE && that.start <= this.end + Config.READ_SIZE) || 
-				(that.end >= this.start - Config.READ_SIZE && that.end <= this.end + Config.READ_SIZE)));
+				((that.start >= this.start - Config.FRAG_SIZE && that.start <= this.end + Config.FRAG_SIZE) || 
+				(that.end >= this.start - Config.FRAG_SIZE && that.end <= this.end + Config.FRAG_SIZE)));
 	}
 	public boolean overlaps (DNAInterval interval, final int limit)
 	{
 		DNAInterval that = interval;
 		return (this.chromosome.equals(that.chromosome) &&
-				((that.start >= this.start - limit - Config.READ_SIZE && that.start <= this.end + limit + Config.READ_SIZE) || 
-				(that.end >= this.start - limit - Config.READ_SIZE && that.end <= this.end + limit + Config.READ_SIZE)));
+				((that.start >= this.start - limit - Config.FRAG_SIZE && that.start <= this.end + limit + Config.FRAG_SIZE) || 
+				(that.end >= this.start - limit - Config.FRAG_SIZE && that.end <= this.end + limit + Config.FRAG_SIZE)));
 	}
 
 	/*

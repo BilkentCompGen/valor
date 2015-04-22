@@ -1,7 +1,7 @@
-import java.util.ArrayList;
+
 import java.util.Collections;
 import java.util.Comparator;
-
+import java.util.ArrayList;
 /**
  * @author zee
  *
@@ -141,6 +141,12 @@ public class InversionDetection {
 		System.out.println("Calculating inversion support for each cluster...");
 		updateClusterSupport(clusterList, plusPlusReads, minusMinusReads);
 		System.out.println("Number of Clusters: " + clusterList.size());
+		Collections.sort(clusterList, new Comparator<InversionCluster>() {
+                        @Override public int compare(InversionCluster clu1, InversionCluster clu2) {
+                                return clu1.breakPoint.left.start - clu2.breakPoint.left.start;
+                        }
+                });
+
 		allClusterList.add(clusterList);
 		System.out.println();
 		Inversions = null;
@@ -219,7 +225,6 @@ public class InversionDetection {
 		int max, newSplitClones;
 		Cluster clu;
 		clusterList = new ArrayList<Cluster>();
-
 		// sort the splirClones according to support in decreasing order
 		Collections.sort(splitClones, new Comparator<SplitClone>() {
 			@Override public int compare(SplitClone sc1, SplitClone sc2) {
@@ -376,46 +381,43 @@ public class InversionDetection {
 			//clu.setDelCount(deletions);
 		}
 	}
-	/*
-	 * 
-	 */
 	public static void updateClusterSupport(ArrayList<InversionCluster> clusters, 
-											   ArrayList<PairedDNAInterval> plusPlus, 
-											   ArrayList<PairedDNAInterval> minusMinus) throws Exception
+			   ArrayList<PairedDNAInterval> plusPlus, 
+			   ArrayList<PairedDNAInterval> minusMinus) throws Exception
 	{
 		for (InversionCluster clu : clusters)
 		{
-			clu.setReadSupport(plusPlus, minusMinus, Config.LIMIT*4);
+			clu.setReadSupport(plusPlus, minusMinus, Config.FRAG_SIZE*4) ;
 		}
 		// sort clusters by support
 		Collections.sort(clusters, new Comparator<InversionCluster>() {
 			@Override public int compare(InversionCluster clu1, InversionCluster clu2) {
-			    return ((clu2.minusMinusSupport * clu2.plusPlusSupport)/((double) clu2.CLIQUE_SIZE) - (clu1.minusMinusSupport * clu1.plusPlusSupport)/((double) clu1.CLIQUE_SIZE)) > 0 ? 1 : -1;
+				return (clu2.minusMinusSupport * clu2.plusPlusSupport - clu1.minusMinusSupport * clu1.plusPlusSupport);
 			}
 		});
 		for (int i = 0; i < clusters.size(); i++)
 		{
 			for (int j = i+1; j < clusters.size(); j++)
 			{
-				if ((clusters.get(i).breakPoint.left.overlaps(clusters.get(j).breakPoint.left, Config.GAP) || 
-					clusters.get(i).breakPoint.right.overlaps(clusters.get(j).breakPoint.right, Config.GAP) ))
-					// the sizes are almost the same
-					//(Math.abs((clusters.get(i).breakPoint.right.end - clusters.get(i).breakPoint.left.start) - (clusters.get(j).breakPoint.right.end - clusters.get(j).breakPoint.left.start)) < Config.GAP))
+				if ((clusters.get(i).breakPoint.left.overlaps(clusters.get(j).breakPoint.left, Config.INV_GAP) || 
+					 clusters.get(i).breakPoint.right.overlaps(clusters.get(j).breakPoint.right, Config.INV_GAP) ))
+				// the sizes are almost the same
+				//(Math.abs((clusters.get(i).breakPoint.right.end - clusters.get(i).breakPoint.left.start) - (clusters.get(j).breakPoint.right.end - clusters.get(j).breakPoint.left.start)) < Config.GAP)
 				{
 					clusters.remove(j);
 					j--;
 				}
 			}
 		}
-
+               
 	}
 	public static ArrayList<InversionCluster> findClusters(ArrayList<Inversion> inversions) throws Exception
 	{
 		InversionClique Q;
 		ArrayList<InversionCluster> clusterList = new ArrayList<InversionCluster>();
 		InversionCluster clu;
-		InversionGraph graph = new InversionGraph(Config.LAMBDA, 
-													Config.GAMMA,
+		InversionGraph graph = new InversionGraph(Config.QCLIQUE_LAMBDA, 
+													Config.QCLIQUE_GAMMA,
 													3 + inversions.size() / 1000);
 		graph.initializeGraph(inversions);
 		System.out.println("Find cliques and clusters...");
@@ -453,3 +455,4 @@ public class InversionDetection {
 		return clusterList;
 	}
 }
+

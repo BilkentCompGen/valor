@@ -24,39 +24,44 @@ First you should set the variables.
 
 Set the variables in the src/Config.java file. These are needed by the Java executables.
 
+* You should set the READ_LENGTH, FRAG_SIZE, CLONE_MEAN, and CLONE_STD_DEV from the data.
+
+* INV_MAX_SIZE and INV_MIN_SIZE are user specific.
+
+* The rest will be set automatically.
+
+
+
 -- Set the read information
 
-parameter: READ_DIST (length of each read)
+parameter: READ_LENGTH (length of each read)
 
-parameter: READ_SIZE (max length of a normal segment)
+parameter: FRAG_SIZE (max length of a normal segment)
 
 
 
 -- Set the physical statistics of clones. Changing these variables adaptively can improve the performance.
 
-parameter: NORMAL_SIZE (minimum size of an expected clone)
 
-parameter: MEAN (expected average of clone size: 150K for BAC and 40K for FOSMID)
+parameter: CLONE_MEAN (expected average of clone size: 150K for BAC and 40K for FOSMID)
 
-parameter: STD_DEV (expected standard deviation of the clones)
+parameter: CLONE_STD_DEV (expected standard deviation of the clones)
 
-parameter: UP_CRITERIA (maximum accepted clone size)
+parameter: CLONE_MAX (maximum accepted clone size)
 
-parameter: DOWN_CRITERIA (minimum accepted clone size)
-
+parameter: CLONE_MIN (minimum accepted clone size)
 
 
--- Set the iversion information. It is suggested to run the algorithm on narrowed ranges of inversion length.
 
-parameter: MIN_INVERSION_SIZE (minimum size of an inversion, should be at least 2*NORMAL_SIZE)
+-- Set the inversion information. It is suggested to run the algorithm on narrowed ranges of inversion length.
 
-parameter: MAX_INVERSION_SIZE = (maximum size of an inversion)
+parameter: INV_MIN_SIZE (minimum size of an inversion, should be at least 2*NORMAL_SIZE)
 
-parameter: GAP (allowed gap between split clones)
+parameter: INV_MAX_SIZE = (maximum size of an inversion)
 
-parameter: OVERLAP (overlap between split clones)
+parameter: INV_GAP (allowed gap between split clones)
 
-parameter: LIMIT (limit used for updating the read support, suggested to be the same as extension wing or max segment size) 
+parameter: INV_OVERLAP (overlap between split clones)
 
 
 
@@ -64,17 +69,17 @@ parameter: LIMIT (limit used for updating the read support, suggested to be the 
 
 Brunato, Mauro, Holger H. Hoos, and Roberto Battiti. "On effectively finding maximal quasi-cliques in graphs." Learning and Intelligent Optimization. Springer Berlin Heidelberg, 2008. 41-55.
 
-parameter: LAMBDA 
+parameter: QCLIQUE_LAMBDA 
 
-parameter: GAMMA 
+parameter: QCLIQUE_GAMMA 
 
 
 
 -- Set variables for the inferring clones.
 
-parameter: WINDOW (minimum window size to search for, increasing this parameter will result in faster execution)
+parameter: WINDOW_SIZE(minimum window size to search for, increasing this parameter will result in faster execution)
 
-parameter: COVERAGE (minimum coverage of a window by segments (normal mapped read pairs))
+parameter: MIN_COVERAGE (minimum coverage of a window by segments (normal mapped read pairs))
 
 parameter: EXTENSION (extension for each window, after finding the windows, the algorithm will try to extend the window to any read available in EXTENSION distance of both sides)
 
@@ -106,9 +111,9 @@ NOTE: bamfiles should be sorted by read name. (samtools sort -n) for bamtobed to
 
 -- The paired end distance
 
-parameter: MAXREAD (maximum length of a normal segment)
+parameter: FRAG_MAX (maximum length of a normal segment)
 
-parameter: MINREAD (the minimum length of a normal segment)
+parameter: FRAG_MIN (the minimum length of a normal segment)
 
 You should set the max and min to (mean + 3*std) and (mean - 3*std).
 
@@ -150,7 +155,7 @@ The output clusters will be in the output directory.
 
 2. After getting the inferred clones, it is advised to filter out the clones with lower than average coverage. Use coverageBed. However if you wish to skip this part you can comment it out.
 
-3. After the execution and getting the inversions, check for overlaps with known gaps and duplications and remove the ones overlapping too much. Use bedtools intersect -f 0.40
+3. After the execution and getting the inversions, check for overlaps with known gaps and remove the ones overlapping too much. Use bedtools intersect -r -f 0.01
 
 
 

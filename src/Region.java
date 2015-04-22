@@ -26,21 +26,20 @@ public class Region extends DNAInterval {
 	public boolean canBePaired(Region r2)
 	{
 		Region r1 = this;
-			
 		return 
 			// if they come from the same chromosome
 			(r1.chromosome.equals(r2.chromosome)) &&
 			// if they come from the same pool
 			(r1.pool == r2.pool) &&
 			// they should be smaller than normal
-			(r1.size <= Config.NORMAL_SIZE) &&
-			(r2.size <= Config.NORMAL_SIZE) &&
+			//(r1.size <= Config.CLONE_SIZE) &&
+			//(r2.size <= Config.CLONE_SIZE) &&
 			// if the size is OK (|A|+|B| is normal)
-			(r1.size + r2.size >= Config.LOW_CRITERIA) &&
-			(r1.size + r2.size <= Config.UP_CRITERIA) &&
+			(r1.size + r2.size >= Config.CLONE_MIN) &&
+			(r1.size + r2.size <= Config.CLONE_MAX) &&
 			// and the distance is between the desired inversion size
-			(r2.start - r1.end >= Config.MIN_INVERSION_SIZE) &&
-			(r2.start - r1.end <= Config.MAX_INVERSION_SIZE);
+			(r2.start - r1.end >= Config.INV_MIN_SIZE) &&
+			(r2.start - r1.end <= Config.INV_MAX_SIZE);
 	}
 	/*
 	 * (non-Javadoc)

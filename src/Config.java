@@ -27,12 +27,12 @@ public class Config {
     {
 
         System.out.println("WINDOW_SIZE : " + WINDOW_SIZE);
-	System.out.println("MIN_COVERAGE : " + MIN_COVERAGE);
-	System.out.println("EXTENSION : " + EXTENSION);
+		System.out.println("MIN_COVERAGE : " + MIN_COVERAGE);
+		System.out.println("EXTENSION : " + EXTENSION);
 
 
         System.out.println("**************** RUN  DETAILS ********************");
-	System.out.println("READ_LENGTH : " + READ_LENGTH);
+		System.out.println("READ_LENGTH : " + READ_LENGTH);
         System.out.println("FRAG_SIZE : " + FRAG_SIZE);
 
         //System.out.println("CLONE_SIZE : " + CLONE_SIZE);
@@ -47,7 +47,7 @@ public class Config {
         System.out.println("INV_OVERLAP : " + INV_OVERLAP);
 
         System.out.println("QCLIQUE_LAMBDA : " + QCLIQUE_LAMBDA);
-	System.out.println("QCLIQUE_GAMMA : " + QCLIQUE_GAMMA);
+		System.out.println("QCLIQUE_GAMMA : " + QCLIQUE_GAMMA);
 
 
         System.out.println("*************************************************");  

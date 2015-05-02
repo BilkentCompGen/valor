@@ -42,14 +42,9 @@ parameter: FRAG_SIZE (max length of a normal segment)
 
 -- Set the physical statistics of clones. Changing these variables adaptively can improve the performance.
 
-
 parameter: CLONE_MEAN (expected average of clone size: 150K for BAC and 40K for FOSMID)
 
 parameter: CLONE_STD_DEV (expected standard deviation of the clones)
-
-parameter: CLONE_MAX (maximum accepted clone size)
-
-parameter: CLONE_MIN (minimum accepted clone size)
 
 
 
@@ -59,29 +54,6 @@ parameter: INV_MIN_SIZE (minimum size of an inversion, should be at least 2*NORM
 
 parameter: INV_MAX_SIZE = (maximum size of an inversion)
 
-parameter: INV_GAP (allowed gap between split clones)
-
-parameter: INV_OVERLAP (overlap between split clones)
-
-
-
--- Set the graph properties. Refer to:
-
-Brunato, Mauro, Holger H. Hoos, and Roberto Battiti. "On effectively finding maximal quasi-cliques in graphs." Learning and Intelligent Optimization. Springer Berlin Heidelberg, 2008. 41-55.
-
-parameter: QCLIQUE_LAMBDA 
-
-parameter: QCLIQUE_GAMMA 
-
-
-
--- Set variables for the inferring clones.
-
-parameter: WINDOW_SIZE(minimum window size to search for, increasing this parameter will result in faster execution)
-
-parameter: MIN_COVERAGE (minimum coverage of a window by segments (normal mapped read pairs))
-
-parameter: EXTENSION (extension for each window, after finding the windows, the algorithm will try to extend the window to any read available in EXTENSION distance of both sides)
 
 
 
@@ -127,7 +99,7 @@ The program will output the results here. It will make a temp folder for tempora
 
 The inferred clones will be output as allRegions.tsv here along with the +/+ and -/- mapping reads.
 
-Also it makes directories Clusters and Pools which the final inversion clusters and the splitclones will be output.
+Also it makes directories Clusters and Pools which the final inversion clusters and the split clones will be output.
 
 
 
@@ -135,7 +107,7 @@ Also it makes directories Clusters and Pools which the final inversion clusters 
 
 parameter: coverageThreshold (the coverage threshold for inferred clones by reads)
 
-This step is optional. It is shown that many inferred clones are not reliables are are due to extension of discrete reads on duplicated areas. The default is 40%. But it is better to get the coverage for all inferred clones and plot the correlation between the size and coverage and come up with a meaningful number for your case.
+This step is optional. It is shown that many inferred clones are not reliable are are due to extension of discrete reads on duplicated areas. The default is 40%. But it is better to get the coverage for all inferred clones and plot the correlation between the size and coverage and come up with a meaningful number for your case.
 
 
 

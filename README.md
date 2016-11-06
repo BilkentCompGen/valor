@@ -1,6 +1,6 @@
 ********************************************************************************************
 
-                dipSeq : Discovering large Inversion in Pooled clone SEQuences
+                dips : Discover inversions using pooled sequencing
 
 ********************************************************************************************
 

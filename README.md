@@ -1,14 +1,14 @@
 ********************************************************************************************
 
-                dips : Discover inversions using pooled sequencing
+                VALOR : Discover inversions using long range information
 
 ********************************************************************************************
 
-This algorithm is designed for discovering large inversions in pooled clones data. The input is a set of bamfiles of mapped paired end reads. 
+This algorithm is designed for discovering large inversions using long range information such as pooled clone sequencing and 10X linked reads. The input is a set of BAM files of mapped paired end reads. 
 
-NOTE: In the bam file or bed files, it is expected to see the chromosome label as: chr# for example chr1, chr2, ..., chrX, chrY. Make sure the reference is the same or change the run.sh code.
+NOTE: In the BAM or bed files, it is expected to see the chromosome label as: chr# for example chr1, chr2, ..., chrX, chrY. Make sure the reference is the same or change the run.sh code.
 
-NOTE: bamfiles should be sorted by read name. (samtools sort -n) for bamtobed to work correctly.
+NOTE: BAM files should be sorted by read name. (samtools sort -n) for bamtobed to work correctly.
 
 NOTE: The algorithm does not rely on the reference. So hg18, hg19 or other are accepted. ONLY the chromosome name should be as : chr#
 

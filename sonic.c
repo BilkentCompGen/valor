@@ -5,7 +5,7 @@
 #include "sonic.h"
 
 
-int make_sonic(parameters *params)
+int make_sonic(char *ref_genome, char *gaps, char *reps, char *dups, char *sonic)
 {
   FILE *ref_file;
   FILE *gaps_file;
@@ -19,6 +19,7 @@ int make_sonic(parameters *params)
   char chromosome[MAX_LENGTH];
   int chrom_name_length;
   int start, end;
+
 
   /* 
      RepeatMasker out file entries
@@ -40,12 +41,12 @@ int make_sonic(parameters *params)
   int repeat_id;
   
   
-  ref_file = safe_fopen(params->ref_genome, "r");
-  gaps_file = safe_fopen(params->gaps, "r");
-  reps_file = safe_fopen(params->reps, "r");
-  dups_file = safe_fopen(params->dups, "r");
+  ref_file = sonic_fopen(ref_genome, "r");
+  gaps_file = sonic_fopen(gaps, "r");
+  reps_file = sonic_fopen(reps, "r");
+  dups_file = sonic_fopen(dups, "r");
 
-  sonic_file = safe_fopen_gz(params->sonic, "w");
+  sonic_file = sonic_fopen_gz(sonic, "w");
 
   return_value = gzwrite(sonic_file, &sonic_magic, sizeof(sonic_magic));
 
@@ -133,7 +134,7 @@ int make_sonic(parameters *params)
   fclose(reps_file);
   gzclose(sonic_file);
 
-  fprintf( stderr, "SONIC file %s is ready.\n", params->sonic);
+  fprintf( stderr, "SONIC file %s is ready.\n", sonic);
   return RETURN_SUCCESS;
   
 }
@@ -143,7 +144,7 @@ int make_sonic(parameters *params)
      TODO:  implement this. Replace write/read
   */
 
-int load_sonic(parameters *params){
+int load_sonic(char *sonic){
 
   gzFile sonic_file;
   int sonic_magic;
@@ -169,7 +170,7 @@ int load_sonic(parameters *params){
   
   fprintf (stderr, "Loading SONIC file..\n");
 		     
-  sonic_file = safe_fopen_gz(params->sonic, "r");
+  sonic_file = sonic_fopen_gz(sonic, "r");
 
   
   return_value = gzread(sonic_file, &sonic_magic, sizeof(sonic_magic));
@@ -180,7 +181,7 @@ int load_sonic(parameters *params){
   }
 
   if (sonic_magic != SONIC_MAGIC){
-    fprintf(stderr, "Invalid SONIC file (%s). Please use a correctly created SONIC file.\n", params->sonic);
+    fprintf(stderr, "Invalid SONIC file (%s). Please use a correctly created SONIC file.\n", sonic);
     return EXIT_SONIC;
   }
 
@@ -252,3 +253,51 @@ int load_sonic(parameters *params){
   
 }
 
+FILE* sonic_fopen( char* path, char* mode)
+{
+	/* Safe file open. Try to open a file; exit if file does not exist */
+	FILE* file;
+	char err[500];
+
+	file = fopen( path, mode);  
+	if( !file)
+	{
+		fprintf( stderr, "[TARDIS INPUT ERROR] Unable to open file %s in %s mode.", path, mode[0]=='w' ? "write" : "read");
+		exit(EXIT_FILE_OPEN_ERROR);
+
+	}
+	return file;
+}
+
+gzFile sonic_fopen_gz( char* path, char* mode)
+{
+	/* Safe file open. Try to open a file; exit if file does not exist */
+	gzFile file;
+	char err[500];
+
+	file = gzopen( path, mode);  
+	if( !file)
+	{
+	        fprintf( stderr, "[TARDIS INPUT ERROR] Unable to open file %s in %s mode.", path, mode[0]=='w' ? "write" : "read");
+		exit(EXIT_FILE_OPEN_ERROR);		
+	}
+	return file;
+}
+
+int count_bed_lines(FILE *bed_file)
+{
+	int number_of_lines;
+	char line[MAX_LENGTH];
+	char *return_value;
+
+	number_of_lines = 0;
+	while (!feof(bed_file)){
+		return_value = fgets(line, MAX_LENGTH, bed_file);
+		if (feof(bed_file))
+			break;
+		if (line[0] != 0)
+			number_of_lines++;
+	}
+
+	return number_of_lines;
+}

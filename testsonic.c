@@ -81,51 +81,52 @@ int parse_command_line( int argc, char** argv)
 	}
 
 
-	if (do_load_sonic){
-	  load_sonic(sonic);
-	} 
-
-	else if (do_make_sonic)
-	{
-	  return make_sonic(ref_genome, gaps, reps, dups, sonic);
-	}	
-
 	
 	/* check if --ref   is invoked */
-	if( ref_genome [0] == 0)
+	if( ref_genome [0] == 0 && do_make_sonic)
 	{
 		fprintf( stderr, "[SONIC CMDLINE ERROR] Please enter reference genome file (FASTA) using the --ref option.\n");
 		return 0;
 	}
 
 	/* check if --gaps  is invoked */
-	if( gaps [0] == 0)
+	if( gaps [0] == 0 && do_make_sonic)
 	{
 		fprintf( stderr, "[SONIC CMDLINE ERROR] Please enter the assembly gaps file (BED) using the --gaps option.\n");
 		return 0;
 	}
 
 	/* check if --reps  is invoked */
-	if( reps [0] == 0)
+	if( reps [0] == 0 && do_make_sonic)
 	{
 		fprintf( stderr, "[SONIC CMDLINE ERROR] Please enter the repeats file (RepeaMasker) using the --reps option.\n");
 		return 0;
 	}
 
 	/* check if --dups  is invoked */
-	if( dups [0] == 0)
+	if( dups [0] == 0 && do_make_sonic)
 	{
 		fprintf( stderr, "[SONIC CMDLINE ERROR] Please enter the segmental duplications file (BED) using the --dups option.\n");
 		return 0;
 	}
 
 	/* check if --mei is invoked. If not, set Alu:L1Hs:SVA as default */
-	if( mei [0] == 0)
+	if( mei [0] == 0 && do_make_sonic)
 	{
 		strcpy(  mei, "Alu:L1:SVA");
 	}
 
+	if (do_load_sonic){
+	  load_sonic(sonic);
+	} 
 
+	else if (do_make_sonic)
+	{
+	  make_sonic(ref_genome, gaps, reps, dups, sonic);
+	}	
+
+
+	
 	return 1;
 
 }

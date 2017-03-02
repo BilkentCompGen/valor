@@ -262,7 +262,7 @@ FILE* sonic_fopen( char* path, char* mode)
 	file = fopen( path, mode);  
 	if( !file)
 	{
-		fprintf( stderr, "[TARDIS INPUT ERROR] Unable to open file %s in %s mode.", path, mode[0]=='w' ? "write" : "read");
+		fprintf( stderr, "[TARDIS INPUT ERROR] Unable to open file %s in %s mode.\n", path, mode[0]=='w' ? "write" : "read");
 		exit(EXIT_FILE_OPEN_ERROR);
 
 	}
@@ -278,7 +278,7 @@ gzFile sonic_fopen_gz( char* path, char* mode)
 	file = gzopen( path, mode);  
 	if( !file)
 	{
-	        fprintf( stderr, "[TARDIS INPUT ERROR] Unable to open file %s in %s mode.", path, mode[0]=='w' ? "write" : "read");
+	        fprintf( stderr, "[TARDIS INPUT ERROR] Unable to open file %s in %s mode.\n", path, mode[0]=='w' ? "write" : "read");
 		exit(EXIT_FILE_OPEN_ERROR);		
 	}
 	return file;

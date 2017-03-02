@@ -18,6 +18,9 @@
 #define MAX_LENGTH 1024
 #endif
 
+#define STRAND_FWD 0
+#define STRAND_REV 1
+
 int  make_sonic(char *, char *, char *, char *, char *);
 
 int load_sonic(char *);

@@ -22,12 +22,12 @@
 #define STRAND_REV 1
 
 int  make_sonic(char *, char *, char *, char *, char *);
-
 int load_sonic(char *);
 
 FILE* sonic_fopen( char*, char*);
 gzFile sonic_fopen_gz( char*, char*);
 int count_bed_lines(FILE *);
-
-
+int count_bed_chromosome_lines(FILE *, char *);
+void sonic_set_str( char**, char*);
+void* sonic_get_mem( size_t );
 #endif

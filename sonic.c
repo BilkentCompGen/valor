@@ -3,7 +3,7 @@
 */
 
 #include "sonic.h"
-
+#include "sonic_interval.h"
 
 int make_sonic(char *ref_genome, char *gaps, char *reps, char *dups, char *sonic)
 {
@@ -300,4 +300,59 @@ int count_bed_lines(FILE *bed_file)
 	}
 
 	return number_of_lines;
+}
+
+int count_bed_chromosome_lines(FILE *bed_file, char *chromosome)
+{
+	int number_of_lines;
+	char line[MAX_LENGTH];
+	char *return_value;
+	int return_value_int;
+	char this_chromosome[MAX_LENGTH];
+	
+	number_of_lines = 0;
+	while (!feof(bed_file)){
+   	        return_value_int = fscanf(bed_file, "%s", this_chromosome);
+		if (feof(bed_file))
+			break;
+		if (line[0] != 0){
+		        return_value = fgets(line, MAX_LENGTH, bed_file);
+			if (!strcmp(this_chromosome, chromosome))
+			        number_of_lines++;
+		}
+	}
+
+	return number_of_lines;
+}
+
+void sonic_set_str( char** target, char* source)
+{
+	if( *target != NULL)
+	{
+		free( ( *target));
+	}
+
+	if (source != NULL)
+	{
+		( *target) = ( char*) sonic_get_mem( sizeof( char) * ( strlen( source) + 1));
+		strncpy( ( *target), source, ( strlen( source) + 1));
+	}
+	else
+	{
+		( *target) = NULL;
+	}
+}
+
+void* sonic_get_mem( size_t size)
+{
+	void* ret;
+
+	ret = malloc( size);
+	if( ret == NULL)
+	{
+		fprintf( stderr, "[SONIC] Cannot allocate memory. Requested memory = %0.2f MB.\n", ( float) ( size / 1048576.0));
+		exit( 0);
+	}
+
+	return ret;
 }

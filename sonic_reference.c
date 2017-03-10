@@ -26,3 +26,65 @@ int get_chromosome_info(FILE *ref_index, int number_of_chromosomes, int **length
   
   return RETURN_SUCCESS;
 }
+
+void sonic_write_gc_profile(gzFile sonic_file, FILE *ref_file, int number_of_chromosomes, char **chromosome_names, int *chromosome_lengths)
+{
+
+  char ch;
+  int char_count;
+  int gc;
+  int chromosome_index;
+  char this_chromosome[255];
+  char line[MAX_LENGTH];
+  int chrom_name_length;
+  int return_value;
+  
+  chromosome_index = -1;
+  
+  while (!feof(ref_file)){
+
+    ch = fgetc(ref_file);
+    if (ch == EOF)
+      break;
+
+    if (ch == '>'){
+      fscanf(ref_file, "%s", this_chromosome);
+      fgets(line, MAX_LENGTH, ref_file);
+      
+      chromosome_index = sonic_find_chromosome_index(chromosome_names, this_chromosome, number_of_chromosomes);
+      if (chromosome_index != -1)
+	gzwrite(sonic_file, &chromosome_index, sizeof(chromosome_index));
+	/*
+      chrom_name_length = strlen(this_chromosome);
+      return_value = gzwrite(sonic_file, &chrom_name_length, sizeof(chrom_name_length));
+      return_value = gzwrite(sonic_file, this_chromosome, chrom_name_length);      */
+      char_count = 0;
+      gc = 0;
+    }
+
+    else if (!isspace(ch)){
+      
+      ch = toupper(ch);
+      char_count++;
+
+      if (ch == 'G' || ch == 'C')
+	gc++;
+      
+    }
+    
+  }
+  
+}
+
+int sonic_find_chromosome_index(char **chromosome_names, char *this_chromosome, int number_of_chromosomes){
+  int i;
+  /* linear scan. Not really proud of it, but it shouldn't affect performance anyway */
+  for (i = 0; i < number_of_chromosomes; i++){
+
+    if (!strcmp(chromosome_names[i], this_chromosome))
+      return i;
+    
+  }
+
+  return -1;
+}

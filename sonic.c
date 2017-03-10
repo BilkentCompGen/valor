@@ -112,6 +112,11 @@ int make_sonic(char *ref_genome, char *gaps, char *reps, char *dups, char *sonic
   
   free(bed_entry);	 
 
+
+  /* gc profile here */
+
+  sonic_write_gc_profile(sonic_file, ref_file, number_of_chromosomes, chromosome_names, chromosome_lengths);
+  
   for (i=0; i < number_of_chromosomes; i++)  /* free memory */
     free(chromosome_names[i]);
   free(chromosome_names);
@@ -127,7 +132,7 @@ int make_sonic(char *ref_genome, char *gaps, char *reps, char *dups, char *sonic
 
 
 
-int load_sonic(char *sonic){
+sonic *load_sonic(char *sonic_file_name){
 
   gzFile sonic_file;
   int sonic_magic;
@@ -152,32 +157,40 @@ int load_sonic(char *sonic){
   int repeat_type_length;
   int repeat_class_length;
   int repeat_start, repeat_end;
+  sonic *this_sonic;
   
   fprintf (stderr, "Loading SONIC file..\n");
 		     
-  sonic_file = sonic_fopen_gz(sonic, "r");
+  sonic_file = sonic_fopen_gz(sonic_file_name, "r");
 
   
   return_value = gzread(sonic_file, &sonic_magic, sizeof(sonic_magic));
 
   if (return_value == 0){
     fprintf(stderr, "Cannot read the SONIC file.\n");
-    return EXIT_FILE_OPEN_ERROR;
+    return NULL;
   }
 
   if (sonic_magic != SONIC_MAGIC){
-    fprintf(stderr, "Invalid SONIC file (%s). Please use a correctly created SONIC file.\n", sonic);
-    return EXIT_SONIC;
+    fprintf(stderr, "Invalid SONIC file (%s). Please use a correctly created SONIC file.\n", sonic_file_name);
+    return NULL;
+    //exit (EXIT_SONIC);
   }
 
 
-  return_value = gzread(sonic_file, &number_of_chromosomes, sizeof(number_of_chromosomes));  /* write number of chromosomes */ ////////////
+  return_value = gzread(sonic_file, &number_of_chromosomes, sizeof(number_of_chromosomes));  /* read number of chromosomes */ 
   fprintf(stderr, "Number of chromosomes: %d\n", number_of_chromosomes);
+
+  this_sonic = alloc_sonic(number_of_chromosomes);
   
-  for (i=0; i < number_of_chromosomes; i++){  /* write chromosome names and lengths */ /////////////
+  for (i=0; i < number_of_chromosomes; i++){  /* read chromosome names and lengths */ 
     return_value = gzread(sonic_file, &chrom_name_length, sizeof(chrom_name_length));
     return_value = gzread(sonic_file, chromosome, chrom_name_length);
-    return_value = gzread(sonic_file, &chromosome_length, sizeof(int));      
+    return_value = gzread(sonic_file, &chromosome_length, sizeof(int));
+    sonic_set_str(&(this_sonic->chromosome_names[i]), chromosome);
+    this_sonic->chromosome_gc_profile[i] = (char *) sonic_get_mem(sizeof(char ) * (chromosome_length / (SONIC_GC_SLIDE - 1)));
+    this_sonic->chromosome_lengths[i] = chromosome_length;
+    this_sonic->genome_length += chromosome_length;
     /* fprintf(stderr, "Chromosome name: %s, length: %d\n", chromosome, chromosome_length); */
   }
 
@@ -187,11 +200,17 @@ int load_sonic(char *sonic){
 
   for (i=0; i < number_of_chromosomes; i++){
     return_value = gzread(sonic_file, &number_of_entries, sizeof(number_of_entries)); // number of gaps in this chromosome
-    fprintf(stderr, "Chromosome %d gaps %d\n", i, number_of_entries);
+    
+    /* fprintf(stderr, "Chromosome %d gaps %d\n", i, number_of_entries); */
+
+    this_sonic->number_of_gaps_in_chromosome[i] = number_of_entries;
+    this_sonic->gaps[i] = alloc_sonic_interval(number_of_entries, 0);
     
     for (j = 0; j < number_of_entries; j++){
       return_value = gzread(sonic_file, &start, sizeof(start));
       return_value = gzread(sonic_file, &end, sizeof(end));
+      this_sonic->gaps[i][j].start = start;
+      this_sonic->gaps[i][j].end = end;
       /* fprintf(stderr, "[gaps]\t%d\t%d\n", start, end); */
     }
   }    
@@ -202,9 +221,14 @@ int load_sonic(char *sonic){
     return_value = gzread(sonic_file, &number_of_entries, sizeof(number_of_entries)); // number of gaps in this chromosome
     /* fprintf(stderr, "Chromosome %d dups %d\n", i, number_of_entries); */
     
+    this_sonic->number_of_dups_in_chromosome[i] = number_of_entries;
+    this_sonic->dups[i] = alloc_sonic_interval(number_of_entries, 0);
+    
     for (j = 0; j < number_of_entries; j++){
       return_value = gzread(sonic_file, &start, sizeof(start));
       return_value = gzread(sonic_file, &end, sizeof(end));
+      this_sonic->dups[i][j].start = start;
+      this_sonic->dups[i][j].end = end;
       /*fprintf(stderr, "[dups]\t%d\t%d\n", start, end); */
     }
 
@@ -215,8 +239,11 @@ int load_sonic(char *sonic){
 
   for (i=0; i < number_of_chromosomes; i++){
     return_value = gzread(sonic_file, &number_of_entries, sizeof(number_of_entries)); // number of gaps in this chromosome
-    fprintf(stderr, "Chromosome %d reps %d\n", i, number_of_entries);
-    
+    /*    fprintf(stderr, "Chromosome %d reps %d\n", i, number_of_entries); */
+
+    this_sonic->number_of_repeats_in_chromosome[i] = number_of_entries;
+    this_sonic->reps[i] = alloc_sonic_interval(number_of_entries, 1);
+
     for (j = 0; j < number_of_entries; j++){
       return_value = gzread(sonic_file, &start, sizeof(start));
       return_value = gzread(sonic_file, &end, sizeof(end));
@@ -231,6 +258,15 @@ int load_sonic(char *sonic){
       repeat_class[repeat_class_length] = 0;
       return_value = gzread(sonic_file, &repeat_start, sizeof(repeat_start));
       return_value = gzread(sonic_file, &repeat_end, sizeof(repeat_end));
+           	    
+      this_sonic->reps[i][j].start = start;
+      this_sonic->reps[i][j].end = end;
+
+      this_sonic->reps[i][j].repeat_item->strand = strand;
+      this_sonic->reps[i][j].repeat_item->repeat_start = repeat_start;
+      this_sonic->reps[i][j].repeat_item->repeat_end = repeat_end;
+      sonic_set_str(&(this_sonic->reps[i][j].repeat_item->repeat_class), repeat_class);
+      sonic_set_str(&(this_sonic->reps[i][j].repeat_item->repeat_type), repeat_type);
       
       /* fprintf(stderr, "[reps]\t%d\t%d\t%c\t%s\t%s\t%d\t%d\n", start, end, strand, repeat_type, repeat_class, repeat_start, repeat_end); */
 
@@ -240,7 +276,7 @@ int load_sonic(char *sonic){
 
 
   gzclose(sonic_file);
-  return RETURN_SUCCESS;
+  return this_sonic;
 
   
 }
@@ -462,12 +498,12 @@ sonic_bed_line *sonic_read_bed_file(FILE *bed_file, int line_count, int is_repea
       bed_entry[i].repeat_item = (sonic_repeat *) sonic_get_mem(sizeof(sonic_repeat));
 
       if (strand[0] == '+'){
-	bed_entry[i].repeat_item->strand = STRAND_FWD;
+	bed_entry[i].repeat_item->strand = SONIC_STRAND_FWD;
 	repeat_start = atoi(repeat_start_string);
 	repeat_end   = atoi(repeat_end_string);
       }
       else{
-      	bed_entry[i].repeat_item->strand = STRAND_REV;
+      	bed_entry[i].repeat_item->strand = SONIC_STRAND_REV;
 	repeat_start = atoi(repeat_left);
 	repeat_end   = atoi(repeat_end_string);
       }
@@ -515,3 +551,60 @@ void sonic_write_repeat_item(gzFile sonic_file, sonic_repeat *repeat_item)
   }
 
 }
+
+
+sonic *alloc_sonic(int number_of_chromosomes)
+{
+  sonic *new_sonic;
+  int i;
+  
+  new_sonic = (sonic *) sonic_get_mem (sizeof(sonic));
+
+
+  new_sonic->chromosome_lengths = (int *) sonic_get_mem(sizeof(int) * number_of_chromosomes);
+  new_sonic->number_of_gaps_in_chromosome = (int *) sonic_get_mem(sizeof(int) * number_of_chromosomes);
+  new_sonic->number_of_dups_in_chromosome = (int *) sonic_get_mem(sizeof(int) * number_of_chromosomes);
+  new_sonic->number_of_repeats_in_chromosome = (int *) sonic_get_mem(sizeof(int) * number_of_chromosomes);
+
+  new_sonic->chromosome_names = (char **) sonic_get_mem(sizeof(char *) * number_of_chromosomes);
+  new_sonic->chromosome_gc_profile = (char **) sonic_get_mem(sizeof(char *) * number_of_chromosomes);
+  
+  new_sonic->gaps = (sonic_interval **) sonic_get_mem(sizeof(sonic_interval *) * number_of_chromosomes);
+  new_sonic->dups = (sonic_interval **) sonic_get_mem(sizeof(sonic_interval *) * number_of_chromosomes);
+  new_sonic->reps = (sonic_interval **) sonic_get_mem(sizeof(sonic_interval *) * number_of_chromosomes);
+
+  for (i = 0; i < number_of_chromosomes; i++){
+    new_sonic->chromosome_names[i] = NULL;
+  }
+  
+  new_sonic->number_of_chromosomes = number_of_chromosomes;
+  new_sonic->genome_length = 0;
+
+  return new_sonic;
+}
+
+sonic_interval *alloc_sonic_interval(int number_of_entries, int is_repeat)
+{
+  sonic_interval *new_sonic_interval;
+  int i;
+  
+  new_sonic_interval = (sonic_interval *) sonic_get_mem (sizeof(sonic_interval) * number_of_entries);
+
+  if (!is_repeat)
+    new_sonic_interval->repeat_item = NULL;
+  else{
+    for (i = 0; i < number_of_entries; i++){
+      new_sonic_interval[i].repeat_item = (sonic_repeat *) sonic_get_mem (sizeof(sonic_repeat));
+      new_sonic_interval[i].repeat_item->repeat_type = NULL;
+      new_sonic_interval[i].repeat_item->repeat_class = NULL;
+      new_sonic_interval[i].repeat_item->repeat_start = 0;
+      new_sonic_interval[i].repeat_item->repeat_end = 0;
+      new_sonic_interval[i].repeat_item->strand = 0;
+    }
+  }
+
+  return new_sonic_interval;
+}
+
+
+

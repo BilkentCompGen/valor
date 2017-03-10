@@ -25,12 +25,12 @@ typedef struct sonic_interval_linked_list
   struct _interval_linked_list *next;
 } sonic_interval_linked_list;
 
-typedef struct sonic_interval_array
+typedef struct _sonic_interval
 {
   int start;
   int end;
   struct _sonic_repeat *repeat_item;
-} sonic_interval_array;
+} sonic_interval;
 
 
 typedef struct _sonic_bed_line

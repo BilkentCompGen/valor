@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <getopt.h>
 #include "sonic.h"
+sonic *test_sonic;
+
 
 int parse_command_line( int argc, char** argv)
 {
@@ -17,7 +19,7 @@ int parse_command_line( int argc, char** argv)
 	char sonic[1024];
 	char reps[1024];
 	char mei[1024];
-
+	
 	ref_genome[0] = 0;
 	gaps[0] = 0;
 	dups[0] = 0;
@@ -117,7 +119,7 @@ int parse_command_line( int argc, char** argv)
 	}
 
 	if (do_load_sonic){
-	  load_sonic(sonic);
+	  test_sonic = load_sonic(sonic);
 	} 
 
 	else if (do_make_sonic)

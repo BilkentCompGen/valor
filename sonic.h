@@ -19,9 +19,11 @@
 #define MAX_LENGTH 1024
 #endif
 
-#define STRAND_FWD 0
-#define STRAND_REV 1
+#define SONIC_STRAND_FWD 0
+#define SONIC_STRAND_REV 1
 
+#define SONIC_GC_WINDOW 100
+#define SONIC_GC_SLIDE 100
 
 typedef struct _sonic
 {
@@ -33,14 +35,16 @@ typedef struct _sonic
   long genome_length;
   char **chromosome_gc_profile;
   char **chromosome_names;
-  struct _sonic_interval_array **gaps;
-  struct _sonic_interval_array **dups;
-  struct _sonic_interval_array **reps;
+  struct _sonic_interval **gaps;
+  struct _sonic_interval **dups;
+  struct _sonic_interval **reps;
 } sonic;
 
 
 int  make_sonic(char *, char *, char *, char *, char *);
-int load_sonic(char *);
+sonic * load_sonic(char *);
+sonic *alloc_sonic(int);
+sonic_interval *alloc_sonic_interval(int, int);
 
 FILE* sonic_fopen( char*, char*);
 gzFile sonic_fopen_gz( char*, char*);

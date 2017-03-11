@@ -32,7 +32,9 @@ void sonic_write_gc_profile(gzFile sonic_file, FILE *ref_file, int number_of_chr
 
   char ch;
   int char_count;
+  int window_id;
   int gc;
+  char gc_content;
   int chromosome_index;
   char this_chromosome[255];
   char line[MAX_LENGTH];
@@ -40,6 +42,7 @@ void sonic_write_gc_profile(gzFile sonic_file, FILE *ref_file, int number_of_chr
   int return_value;
   
   chromosome_index = -1;
+  window_id = 0;
   
   while (!feof(ref_file)){
 
@@ -58,7 +61,7 @@ void sonic_write_gc_profile(gzFile sonic_file, FILE *ref_file, int number_of_chr
       chrom_name_length = strlen(this_chromosome);
       return_value = gzwrite(sonic_file, &chrom_name_length, sizeof(chrom_name_length));
       return_value = gzwrite(sonic_file, this_chromosome, chrom_name_length);      */
-      char_count = 0;
+      char_count = 1;
       gc = 0;
     }
 
@@ -69,7 +72,11 @@ void sonic_write_gc_profile(gzFile sonic_file, FILE *ref_file, int number_of_chr
 
       if (ch == 'G' || ch == 'C')
 	gc++;
-      
+
+      if (char_count % SONIC_GC_WINDOW == 0){
+	gc_content = (char) (100 * gc / SONIC_GC_WINDOW);
+	window_id++;
+      }
     }
     
   }

@@ -188,7 +188,7 @@ sonic *load_sonic(char *sonic_file_name){
     return_value = gzread(sonic_file, chromosome, chrom_name_length);
     return_value = gzread(sonic_file, &chromosome_length, sizeof(int));
     sonic_set_str(&(this_sonic->chromosome_names[i]), chromosome);
-    this_sonic->chromosome_gc_profile[i] = (char *) sonic_get_mem(sizeof(char ) * (chromosome_length / (SONIC_GC_SLIDE - 1)));
+    this_sonic->chromosome_gc_profile[i] = (char *) sonic_get_mem(sizeof(char ) * (chromosome_length / (SONIC_GC_WINDOW)));
     this_sonic->chromosome_lengths[i] = chromosome_length;
     this_sonic->genome_length += chromosome_length;
     /* fprintf(stderr, "Chromosome name: %s, length: %d\n", chromosome, chromosome_length); */
@@ -274,7 +274,11 @@ sonic *load_sonic(char *sonic_file_name){
 
   }    
 
+  /* read GC profiles */
 
+  
+  sonic_read_gc_profile(sonic_file, this_sonic);
+  
   gzclose(sonic_file);
   return this_sonic;
 
@@ -522,7 +526,7 @@ sonic_bed_line *sonic_read_bed_file(FILE *bed_file, int line_count, int is_repea
     
   }
   
-  fprintf(stderr, "read %d lines.\n", i);
+  //  fprintf(stderr, "read %d lines.\n", i);
   qsort(bed_entry, line_count, sizeof(sonic_bed_line), bed_comp); /* sort the bed entries */
   return bed_entry;
 }

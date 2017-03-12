@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 #include "sonic_interval.h"
 
 /* Return Codes */
@@ -24,6 +25,8 @@
 
 #define SONIC_GC_WINDOW 100
 #define SONIC_GC_SLIDE 100
+
+#define SONIC_END_OF_GC 12345654
 
 typedef struct _sonic
 {

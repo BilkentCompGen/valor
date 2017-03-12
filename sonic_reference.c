@@ -16,12 +16,12 @@ int get_chromosome_info(FILE *ref_index, int number_of_chromosomes, int **length
   (*names) = (char **) sonic_get_mem(sizeof(char *) * number_of_chromosomes);
 
   for (i=0; i < number_of_chromosomes; i++){
-    retval = fscanf( ref_index, "%s%d%*s%*s%*d", chrom_name, &chrom_len);
+    retval = fscanf( ref_index, "%s%d%*s%*s%*d\n", chrom_name, &chrom_len);
     if ( retval <= 0)
       return RETURN_ERROR;
     (*names)[i] = NULL;
     sonic_set_str( &((*names)[i]), chrom_name);
-    (*lengths)[i] = chrom_len;    
+    (*lengths)[i] = chrom_len;
   }
   
   return RETURN_SUCCESS;
@@ -40,12 +40,17 @@ void sonic_write_gc_profile(gzFile sonic_file, FILE *ref_file, int number_of_chr
   char line[MAX_LENGTH];
   int chrom_name_length;
   int return_value;
-  
+  int written_gc;
+  int end_of_gc;
+
+  end_of_gc = SONIC_END_OF_GC;
   chromosome_index = -1;
   window_id = 0;
+
+  written_gc = 0;
   
   while (!feof(ref_file)){
-
+    
     ch = fgetc(ref_file);
     if (ch == EOF)
       break;
@@ -53,16 +58,26 @@ void sonic_write_gc_profile(gzFile sonic_file, FILE *ref_file, int number_of_chr
     if (ch == '>'){
       fscanf(ref_file, "%s", this_chromosome);
       fgets(line, MAX_LENGTH, ref_file);
+
+
+      /*
+      if (written_gc != 0)
+	fprintf (stderr, "len: %d, expected %d windows, written %d\n", chromosome_lengths[chromosome_index], (chromosome_lengths[chromosome_index] / (SONIC_GC_WINDOW)), written_gc);
+      */
       
       chromosome_index = sonic_find_chromosome_index(chromosome_names, this_chromosome, number_of_chromosomes);
-      if (chromosome_index != -1)
+      if (chromosome_index != -1){
+	/* fprintf (stderr, "GC Chromosome: [%d]\t%s (%s)\n", chromosome_index, this_chromosome, chromosome_names[chromosome_index]); */
 	gzwrite(sonic_file, &chromosome_index, sizeof(chromosome_index));
+      }
 	/*
       chrom_name_length = strlen(this_chromosome);
       return_value = gzwrite(sonic_file, &chrom_name_length, sizeof(chrom_name_length));
       return_value = gzwrite(sonic_file, this_chromosome, chrom_name_length);      */
       char_count = 1;
       gc = 0;
+      written_gc = 0;
+      window_id = 0;
     }
 
     else if (!isspace(ch)){
@@ -74,13 +89,20 @@ void sonic_write_gc_profile(gzFile sonic_file, FILE *ref_file, int number_of_chr
 	gc++;
 
       if (char_count % SONIC_GC_WINDOW == 0){
-	gc_content = (char) (100 * gc / SONIC_GC_WINDOW);
+	gc_content = (char) (100.0 * gc / SONIC_GC_WINDOW);
+	written_gc++;
 	window_id++;
+	/*
+	fprintf(stderr, "charcnt: %d\twinid: %d\tgc: %d - %f", char_count, window_id, (int) gc_content ,  (100.0 * gc / SONIC_GC_WINDOW) );
+	getc(stdin); */
+	gc = 0;
+	gzwrite(sonic_file, &gc_content, sizeof(gc_content));
       }
     }
     
   }
-  
+
+  gzwrite(sonic_file, &end_of_gc, sizeof(end_of_gc));
 }
 
 int sonic_find_chromosome_index(char **chromosome_names, char *this_chromosome, int number_of_chromosomes){
@@ -94,4 +116,12 @@ int sonic_find_chromosome_index(char **chromosome_names, char *this_chromosome, 
   }
 
   return -1;
+}
+
+
+void  sonic_read_gc_profile(gzFile sonic_file, sonic *this_sonic)
+{
+  int chromosome_index;
+  char gc_content;
+  int window_id;
 }

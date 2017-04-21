@@ -28,6 +28,8 @@
 
 #define SONIC_END_OF_GC 12345654
 
+long long sonic_mem_usage;
+
 typedef struct _sonic
 {
   int number_of_chromosomes;
@@ -55,7 +57,9 @@ int count_bed_lines(FILE *);
 int count_bed_chromosome_lines(FILE *, char *);
 void sonic_set_str( char**, char*);
 void* sonic_get_mem( size_t );
+void* sonic_free_mem( void *, size_t );
 void sonic_write_bed_entries(gzFile, sonic_bed_line *, int, int, char **);
 sonic_bed_line *sonic_read_bed_file(FILE *, int, int);
 void sonic_write_repeat_item(gzFile, sonic_repeat *);
+double sonic_get_mem_usage(void);
 #endif

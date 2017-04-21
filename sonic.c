@@ -31,7 +31,8 @@ int make_sonic(char *ref_genome, char *gaps, char *reps, char *dups, char *sonic
   char **chromosome_names;
   
   sonic_bed_line *bed_entry;
-  
+
+  sonic_mem_usage = 0;
   ref_file = sonic_fopen(ref_genome, "r");
 
   sprintf(ref_genome_index, "%s.fai", ref_genome);
@@ -126,6 +127,7 @@ int make_sonic(char *ref_genome, char *gaps, char *reps, char *dups, char *sonic
   gzclose(sonic_file);
 
   fprintf( stderr, "SONIC file %s is ready.\n", sonic);
+  fprintf( stdout, "Memory usage: %0.2f MB.\n", sonic_get_mem_usage());
   return RETURN_SUCCESS;
   
 }
@@ -158,6 +160,8 @@ sonic *load_sonic(char *sonic_file_name){
   int repeat_class_length;
   int repeat_start, repeat_end;
   sonic *this_sonic;
+
+  sonic_mem_usage = 0;
   
   fprintf (stderr, "Loading SONIC file..\n");
 		     
@@ -280,6 +284,8 @@ sonic *load_sonic(char *sonic_file_name){
   sonic_read_gc_profile(sonic_file, this_sonic);
   
   gzclose(sonic_file);
+
+  fprintf( stdout, "SONIC file loaded. Memory usage: %0.2f MB.\n", sonic_get_mem_usage());
   return this_sonic;
 
   
@@ -390,7 +396,19 @@ void* sonic_get_mem( size_t size)
 		exit( 0);
 	}
 
-	return ret;
+	sonic_mem_usage += size;
+}
+
+void* sonic_free_mem( void *ptr, size_t size)
+{
+	void* ret;
+
+	if ( ptr != NULL){
+	  
+	  free( ptr);
+	  sonic_mem_usage -= size;
+	  
+	}
 }
 
 void sonic_write_bed_entries(gzFile sonic_file, sonic_bed_line *bed_entry, int line_count, int number_of_chromosomes, char **chromosome_names)
@@ -610,5 +628,9 @@ sonic_interval *alloc_sonic_interval(int number_of_entries, int is_repeat)
   return new_sonic_interval;
 }
 
+double sonic_get_mem_usage()
+{
+  return sonic_mem_usage/1048576.0;
+}
 
 

@@ -59,21 +59,10 @@ void sonic_write_gc_profile(gzFile sonic_file, FILE *ref_file, int number_of_chr
       fscanf(ref_file, "%s", this_chromosome);
       fgets(line, MAX_LENGTH, ref_file);
 
-
-      /*
-      if (written_gc != 0)
-	fprintf (stderr, "len: %d, expected %d windows, written %d\n", chromosome_lengths[chromosome_index], (chromosome_lengths[chromosome_index] / (SONIC_GC_WINDOW)), written_gc);
-      */
-      
       chromosome_index = sonic_find_chromosome_index(chromosome_names, this_chromosome, number_of_chromosomes);
       if (chromosome_index != -1){
-	/* fprintf (stderr, "GC Chromosome: [%d]\t%s (%s)\n", chromosome_index, this_chromosome, chromosome_names[chromosome_index]); */
 	gzwrite(sonic_file, &chromosome_index, sizeof(chromosome_index));
       }
-	/*
-      chrom_name_length = strlen(this_chromosome);
-      return_value = gzwrite(sonic_file, &chrom_name_length, sizeof(chrom_name_length));
-      return_value = gzwrite(sonic_file, this_chromosome, chrom_name_length);      */
       char_count = 1;
       gc = 0;
       written_gc = 0;
@@ -92,9 +81,6 @@ void sonic_write_gc_profile(gzFile sonic_file, FILE *ref_file, int number_of_chr
 	gc_content = (char) (100.0 * gc / SONIC_GC_WINDOW);
 	written_gc++;
 	window_id++;
-	/*
-	fprintf(stderr, "charcnt: %d\twinid: %d\tgc: %d - %f", char_count, window_id, (int) gc_content ,  (100.0 * gc / SONIC_GC_WINDOW) );
-	getc(stdin); */
 	gc = 0;
 	gzwrite(sonic_file, &gc_content, sizeof(gc_content));
       }
@@ -124,4 +110,22 @@ void  sonic_read_gc_profile(gzFile sonic_file, sonic *this_sonic)
   int chromosome_index;
   char gc_content;
   int window_id;
+  int return_value;
+  int number_of_gc_windows;
+  
+  
+  while (!gzeof(sonic_file)){
+    return_value = gzread(sonic_file, &chromosome_index, sizeof(chromosome_index));
+    if (chromosome_index == SONIC_END_OF_GC)
+      break;
+
+    number_of_gc_windows = this_sonic->chromosome_lengths[chromosome_index] / (SONIC_GC_WINDOW);
+    
+    window_id = 0;
+    while (window_id < number_of_gc_windows){
+      return_value = gzread(sonic_file, &gc_content, sizeof(gc_content));
+      this_sonic->chromosome_gc_profile[chromosome_index][window_id++] = gc_content;
+    }
+  }
+
 }

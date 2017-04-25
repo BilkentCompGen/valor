@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS = -O0 -g
 LDFLAGS = -lz -lm -lpthread
-SOURCES = sonic.c sonic.h sonic_interval.c sonic_interval.h sonic_reference.c sonic_reference.h
+SOURCES = sonic.c sonic.h sonic_interval.c sonic_interval.h sonic_reference.c sonic_reference.h sonic_structures.h
 TESTSOURCES = testsonic.c
 TESTEXE = testsonic
 OBJECTS = $(SOURCES:.c=.o)

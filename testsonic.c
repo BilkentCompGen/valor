@@ -5,6 +5,7 @@
 #include "sonic.h"
 sonic *test_sonic;
 
+char bedfile[1024];
 
 int parse_command_line( int argc, char** argv)
 {
@@ -26,6 +27,7 @@ int parse_command_line( int argc, char** argv)
 	reps[0] = 0;
 	mei[0] = 0;
 	sonic[0] = 0;
+	bedfile[0] = 0;
 	
 	static struct option long_options[] = 
 	{
@@ -36,6 +38,7 @@ int parse_command_line( int argc, char** argv)
 			{"mei"    , required_argument,   0, 'm'},
 			{"make-sonic"    , required_argument,	 0, 'c'},
 			{"sonic"    , required_argument,	 0, 's'},
+			{"bed"    , required_argument,	 0, 'b'},
 			{0        , 0,                   0,  0 }
 	};
 
@@ -44,7 +47,7 @@ int parse_command_line( int argc, char** argv)
 		return 0;
 	}
 
-	while( ( o = getopt_long( argc, argv, "f:g:d:r:m:c:s:", long_options, &index)) != -1)
+	while( ( o = getopt_long( argc, argv, "f:g:d:r:m:c:s:b:", long_options, &index)) != -1)
 	{
 		switch( o)
 		{
@@ -77,6 +80,10 @@ int parse_command_line( int argc, char** argv)
 
 		case 'm':
 			strcpy(  mei, optarg);
+			break;
+
+		case 'b':
+			strcpy(  bedfile, optarg);
 			break;
 
 		}
@@ -135,7 +142,32 @@ int parse_command_line( int argc, char** argv)
 
 int main(int argc, char **argv){
 
+  FILE *bed;
+
+  char chrom[1024]; int s, e;
+
+  sonic_interval *this_interval;
+  
   parse_command_line(argc, argv);
 
+  if (test_sonic!= NULL && bedfile[0] != 0){
+    bed = fopen(bedfile, "r");
+    if (bed == NULL)
+      return -1;
+
+    while (fscanf(bed, "%s\t%d\t%d\n", chrom, &s, &e) > 0){
+      
+      fprintf(stdout, "Search gaps %s-%d-%d\n", chrom, s, e);
+      this_interval = sonic_intersect(test_sonic, chrom, s, e, GAP);
+      sonic_print_interval(this_interval);
+      fprintf(stdout, "Search dups %s-%d-%d\n", chrom, s, e);
+      this_interval = sonic_intersect(test_sonic, chrom, s, e, DUP);
+      sonic_print_interval(this_interval); 
+      fprintf(stdout, "Search res %s-%d-%d\n", chrom, s, e);
+      this_interval = sonic_intersect(test_sonic, chrom, s, e, REP);
+      sonic_print_interval(this_interval);
+    }
+  }
+  
 }
 

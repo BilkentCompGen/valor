@@ -94,8 +94,8 @@ void sonic_write_gc_profile(gzFile sonic_file, FILE *ref_file, int number_of_chr
 int sonic_find_chromosome_index(char **chromosome_names, char *this_chromosome, int number_of_chromosomes){
   int i;
   /* linear scan. Not really proud of it, but it shouldn't affect performance anyway */
-  for (i = 0; i < number_of_chromosomes; i++){
 
+  for (i = 0; i < number_of_chromosomes; i++){
     if (!strcmp(chromosome_names[i], this_chromosome))
       return i;
     

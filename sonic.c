@@ -190,6 +190,7 @@ sonic *load_sonic(char *sonic_file_name){
   for (i=0; i < number_of_chromosomes; i++){  /* read chromosome names and lengths */ 
     return_value = gzread(sonic_file, &chrom_name_length, sizeof(chrom_name_length));
     return_value = gzread(sonic_file, chromosome, chrom_name_length);
+    chromosome[chrom_name_length] = 0;
     return_value = gzread(sonic_file, &chromosome_length, sizeof(int));
     sonic_set_str(&(this_sonic->chromosome_names[i]), chromosome);
     this_sonic->chromosome_gc_profile[i] = (char *) sonic_get_mem(sizeof(char ) * (chromosome_length / (SONIC_GC_WINDOW)));
@@ -205,7 +206,7 @@ sonic *load_sonic(char *sonic_file_name){
   for (i=0; i < number_of_chromosomes; i++){
     return_value = gzread(sonic_file, &number_of_entries, sizeof(number_of_entries)); // number of gaps in this chromosome
     
-    /* fprintf(stderr, "Chromosome %d gaps %d\n", i, number_of_entries); */
+    /* fprintf(stderr, "Chromosome %d [%s] gaps %d\n", i, this_sonic->chromosome_names[i], number_of_entries);  */
 
     this_sonic->number_of_gaps_in_chromosome[i] = number_of_entries;
     this_sonic->gaps[i] = alloc_sonic_interval(number_of_entries, 0);
@@ -397,6 +398,7 @@ void* sonic_get_mem( size_t size)
 	}
 
 	sonic_mem_usage += size;
+	return ret;
 }
 
 void* sonic_free_mem( void *ptr, size_t size)

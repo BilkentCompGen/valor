@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <math.h>
 #include "sonic_interval.h"
+#include "sonic_structures.h"
 
 /* Return Codes */
 #ifndef RETURN_SUCCESS
@@ -30,20 +31,6 @@
 
 long long sonic_mem_usage;
 
-typedef struct _sonic
-{
-  int number_of_chromosomes;
-  int *number_of_gaps_in_chromosome;
-  int *number_of_dups_in_chromosome;
-  int *number_of_repeats_in_chromosome;
-  int *chromosome_lengths;
-  long genome_length;
-  char **chromosome_gc_profile;
-  char **chromosome_names;
-  struct _sonic_interval **gaps;
-  struct _sonic_interval **dups;
-  struct _sonic_interval **reps;
-} sonic;
 
 
 int  make_sonic(char *, char *, char *, char *, char *);

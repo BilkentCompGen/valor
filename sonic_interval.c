@@ -206,7 +206,48 @@ int sonic_is_segmental_duplication(sonic *this_sonic, char *this_chromosome, int
     return 0;
 
   return 1;
-
     
 }
 
+int sonic_is_gap(sonic *this_sonic, char *this_chromosome, int pos_start, int pos_end){
+
+  sonic_interval *this_interval;
+
+  this_interval = sonic_intersect(this_sonic, this_chromosome, pos_start, pos_end, GAP);
+
+  if (this_interval == NULL)
+    return 0;
+
+  return 1;
+
+}
+
+sonic_repeat *sonic_is_mobile_element(sonic *this_sonic, char *this_chromosome, int pos_start, int pos_end, char *mei_string){
+
+  sonic_interval *this_interval;
+
+  char *tok;
+  char *str;
+  
+  this_interval = sonic_intersect(this_sonic, this_chromosome, pos_start, pos_end, REP);
+
+  if (this_interval == NULL)
+    return NULL;
+
+  
+  str = mei_string;
+  
+  tok = strtok(str, ":");
+  
+  while (tok != NULL){
+    if (strstr(this_interval->repeat_item->repeat_type, tok) != NULL)
+      return this_interval->repeat_item;
+    
+    tok = strtok(NULL, ":");
+  }
+    
+  
+  return NULL;
+  
+
+}

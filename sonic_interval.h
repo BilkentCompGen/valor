@@ -18,5 +18,5 @@ int sonic_is_satellite(sonic *, char *, int, int);
 int sonic_is_gap(sonic *, char *, int, int);
 int sonic_is_segmental_duplication(sonic *, char *, int, int);
 sonic_repeat *sonic_is_mobile_element(sonic *, char *, int, int, char *);
-
+float sonic_get_gc_content(sonic *, char *, int, int);
 #endif

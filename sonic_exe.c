@@ -126,12 +126,12 @@ int parse_command_line( int argc, char** argv)
 	}
 
 	if (do_load_sonic){
-	  test_sonic = load_sonic(sonic);
+	  test_sonic = sonic_load(sonic);
 	} 
 
 	else if (do_make_sonic)
 	{
-	  make_sonic(ref_genome, gaps, reps, dups, sonic);
+	  sonic_build(ref_genome, gaps, reps, dups, sonic);
 	}	
 
 
@@ -147,6 +147,8 @@ int main(int argc, char **argv){
   char chrom[1024]; int s, e;
 
   sonic_interval *this_interval;
+
+  float gc;
   
   parse_command_line(argc, argv);
 
@@ -155,8 +157,10 @@ int main(int argc, char **argv){
     if (bed == NULL)
       return -1;
 
+    
+    
     while (fscanf(bed, "%s\t%d\t%d\n", chrom, &s, &e) > 0){
-      
+      /*
       fprintf(stdout, "Search gaps %s-%d-%d\n", chrom, s, e);
       this_interval = sonic_intersect(test_sonic, chrom, s, e, GAP);
       sonic_print_interval(this_interval);
@@ -166,7 +170,12 @@ int main(int argc, char **argv){
       fprintf(stdout, "Search res %s-%d-%d\n", chrom, s, e);
       this_interval = sonic_intersect(test_sonic, chrom, s, e, REP);
       sonic_print_interval(this_interval);
-    }
+      */
+      gc = sonic_get_gc_content(test_sonic, chrom, s, e);
+      fprintf(stdout, "GC %s-%d-%d \t\t %f\n", chrom, s, e, gc);
+    } 
+
+    
   }
   
 }

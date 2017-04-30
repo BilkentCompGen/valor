@@ -33,8 +33,8 @@ long long sonic_mem_usage;
 
 
 
-int  make_sonic(char *, char *, char *, char *, char *);
-sonic * load_sonic(char *);
+int  sonic_build(char *, char *, char *, char *, char *);
+sonic * sonic_load(char *);
 sonic *alloc_sonic(int);
 sonic_interval *alloc_sonic_interval(int, int);
 

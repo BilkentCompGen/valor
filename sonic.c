@@ -6,7 +6,7 @@
 #include "sonic_interval.h"
 #include "sonic_reference.h"
 
-int make_sonic(char *ref_genome, char *gaps, char *reps, char *dups, char *sonic)
+int sonic_build(char *ref_genome, char *gaps, char *reps, char *dups, char *sonic)
 {
   FILE *ref_file;
   FILE *ref_index;
@@ -134,7 +134,7 @@ int make_sonic(char *ref_genome, char *gaps, char *reps, char *dups, char *sonic
 
 
 
-sonic *load_sonic(char *sonic_file_name){
+sonic *sonic_load(char *sonic_file_name){
 
   gzFile sonic_file;
   int sonic_magic;

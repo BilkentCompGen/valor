@@ -249,5 +249,35 @@ sonic_repeat *sonic_is_mobile_element(sonic *this_sonic, char *this_chromosome, 
   
   return NULL;
   
+}
 
+
+float sonic_get_gc_content(sonic *this_sonic, char *this_chromosome, int pos_start, int pos_end){
+
+  
+  int chromosome_index;
+  int window_count;
+  float gc_content;
+  int start_gc;
+  
+  chromosome_index = sonic_find_chromosome_index(this_sonic->chromosome_names, this_chromosome, this_sonic->number_of_chromosomes);
+
+  if (chromosome_index == -1)
+    return 0.0;
+  
+  window_count = 0;
+  gc_content = 0.0;
+
+  start_gc = pos_start;
+
+  while (start_gc < pos_end){
+    window_count++;
+    gc_content += (float) this_sonic->chromosome_gc_profile[chromosome_index][start_gc / SONIC_GC_WINDOW];
+    start_gc += SONIC_GC_WINDOW;
+  }
+
+  if (gc_content != 0.0)
+    return (gc_content / window_count);
+  else
+    return 0.0;
 }

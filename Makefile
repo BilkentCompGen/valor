@@ -1,6 +1,6 @@
 CC=gcc
-CFLAGS = -O0 -g
-LDFLAGS = -lz -lm -lpthread
+CFLAGS = -O3 -g -Wall -Wextra -pedantic -Wwrite-strings
+LDFLAGS = -lz -lm -lpthread -Wall
 SOURCES = sonic.c sonic.h sonic_interval.c sonic_interval.h sonic_reference.c sonic_reference.h sonic_structures.h
 EXESOURCES = sonic_exe.c
 EXEFILE = sonic

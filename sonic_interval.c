@@ -227,7 +227,7 @@ sonic_repeat *sonic_is_mobile_element(sonic *this_sonic, char *this_chromosome, 
   sonic_interval *this_interval;
 
   char *tok;
-  char *str;
+  char str[1024];
   
   this_interval = sonic_intersect(this_sonic, this_chromosome, pos_start, pos_end, REP);
 
@@ -235,18 +235,18 @@ sonic_repeat *sonic_is_mobile_element(sonic *this_sonic, char *this_chromosome, 
     return NULL;
 
   
-  str = mei_string;
+  strcpy(str, mei_string);
   
   tok = strtok(str, ":");
   
   while (tok != NULL){
-    if (strstr(this_interval->repeat_item->repeat_type, tok) != NULL)
+    if (strstr(this_interval->repeat_item->repeat_type, tok) != NULL){
       return this_interval->repeat_item;
+    }
     
     tok = strtok(NULL, ":");
   }
     
-  
   return NULL;
   
 }
@@ -271,6 +271,7 @@ float sonic_get_gc_content(sonic *this_sonic, char *this_chromosome, int pos_sta
   start_gc = pos_start;
 
   while (start_gc < pos_end){
+    printf("gc content window %s-%d. Index: %d. content %f\n", this_chromosome, start_gc, (start_gc/SONIC_GC_WINDOW), (float) this_sonic->chromosome_gc_profile[chromosome_index][start_gc / SONIC_GC_WINDOW]);
     window_count++;
     gc_content += (float) this_sonic->chromosome_gc_profile[chromosome_index][start_gc / SONIC_GC_WINDOW];
     start_gc += SONIC_GC_WINDOW;

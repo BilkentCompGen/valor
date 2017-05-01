@@ -27,7 +27,7 @@ int get_chromosome_info(FILE *ref_index, int number_of_chromosomes, int **length
   return RETURN_SUCCESS;
 }
 
-void sonic_write_gc_profile(gzFile sonic_file, FILE *ref_file, int number_of_chromosomes, char **chromosome_names, int *chromosome_lengths)
+void sonic_write_gc_profile(gzFile sonic_file, FILE *ref_file, int number_of_chromosomes, char **chromosome_names)
 {
 
   char ch;
@@ -38,8 +38,8 @@ void sonic_write_gc_profile(gzFile sonic_file, FILE *ref_file, int number_of_chr
   int chromosome_index;
   char this_chromosome[255];
   char line[MAX_LENGTH];
-  int chrom_name_length;
   int return_value;
+  char *return_value_char;
   int written_gc;
   int end_of_gc;
 
@@ -48,6 +48,8 @@ void sonic_write_gc_profile(gzFile sonic_file, FILE *ref_file, int number_of_chr
   window_id = 0;
 
   written_gc = 0;
+  gc = 0;
+  char_count = 0;
   
   while (!feof(ref_file)){
     
@@ -56,9 +58,15 @@ void sonic_write_gc_profile(gzFile sonic_file, FILE *ref_file, int number_of_chr
       break;
 
     if (ch == '>'){
-      fscanf(ref_file, "%s", this_chromosome);
-      fgets(line, MAX_LENGTH, ref_file);
-
+      return_value = fscanf(ref_file, "%s", this_chromosome);
+      if (return_value == EOF)
+	break;
+      
+      return_value_char = fgets(line, MAX_LENGTH, ref_file);
+      if (return_value_char == NULL)
+	break;
+      
+      
       chromosome_index = sonic_find_chromosome_index(chromosome_names, this_chromosome, number_of_chromosomes);
       if (chromosome_index != -1){
 	gzwrite(sonic_file, &chromosome_index, sizeof(chromosome_index));
@@ -116,7 +124,7 @@ void  sonic_read_gc_profile(gzFile sonic_file, sonic *this_sonic)
   
   while (!gzeof(sonic_file)){
     return_value = gzread(sonic_file, &chromosome_index, sizeof(chromosome_index));
-    if (chromosome_index == SONIC_END_OF_GC)
+    if (chromosome_index == SONIC_END_OF_GC || return_value == EOF)
       break;
 
     number_of_gc_windows = this_sonic->chromosome_lengths[chromosome_index] / (SONIC_GC_WINDOW);

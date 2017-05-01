@@ -15,13 +15,9 @@ int sonic_build(char *ref_genome, char *gaps, char *reps, char *dups, char *soni
   FILE *dups_file;
   gzFile sonic_file;
   int line_count;
-  int number_of_entries;
   int sonic_magic = SONIC_MAGIC;
   int return_value;
-  char *return_value_char;
-  char chromosome[MAX_LENGTH];
   int chrom_name_length;
-  int start, end;
   char ref_genome_index[MAX_LENGTH];
   int i;
   
@@ -116,7 +112,7 @@ int sonic_build(char *ref_genome, char *gaps, char *reps, char *dups, char *soni
 
   /* gc profile here */
 
-  sonic_write_gc_profile(sonic_file, ref_file, number_of_chromosomes, chromosome_names, chromosome_lengths);
+  sonic_write_gc_profile(sonic_file, ref_file, number_of_chromosomes, chromosome_names);
   
   for (i=0; i < number_of_chromosomes; i++)  /* free memory */
     free(chromosome_names[i]);
@@ -139,7 +135,6 @@ sonic *sonic_load(char *sonic_file_name){
   gzFile sonic_file;
   int sonic_magic;
   int return_value;
-  int line_count;
   char chromosome[MAX_LENGTH];
   int chrom_name_length;
   int start, end;
@@ -292,11 +287,10 @@ sonic *sonic_load(char *sonic_file_name){
   
 }
 
-FILE* sonic_fopen( char* path, char* mode)
+FILE* sonic_fopen( char* path, const char* mode)
 {
 	/* Safe file open. Try to open a file; exit if file does not exist */
 	FILE* file;
-	char err[500];
 
 	file = fopen( path, mode);  
 	if( !file)
@@ -308,11 +302,10 @@ FILE* sonic_fopen( char* path, char* mode)
 	return file;
 }
 
-gzFile sonic_fopen_gz( char* path, char* mode)
+gzFile sonic_fopen_gz( char* path, const char* mode)
 {
 	/* Safe file open. Try to open a file; exit if file does not exist */
 	gzFile file;
-	char err[500];
 
 	file = gzopen( path, mode);  
 	if( !file)
@@ -401,9 +394,8 @@ void* sonic_get_mem( size_t size)
 	return ret;
 }
 
-void* sonic_free_mem( void *ptr, size_t size)
+void sonic_free_mem( void *ptr, size_t size)
 {
-	void* ret;
 
 	if ( ptr != NULL){
 	  

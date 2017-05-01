@@ -147,7 +147,8 @@ int main(int argc, char **argv){
   char chrom[1024]; int s, e;
 
   sonic_interval *this_interval;
-
+  sonic_repeat *this_repeat;
+  
   float gc;
   
   parse_command_line(argc, argv);
@@ -170,9 +171,16 @@ int main(int argc, char **argv){
       fprintf(stdout, "Search res %s-%d-%d\n", chrom, s, e);
       this_interval = sonic_intersect(test_sonic, chrom, s, e, REP);
       sonic_print_interval(this_interval);
-      */
+      
       gc = sonic_get_gc_content(test_sonic, chrom, s, e);
       fprintf(stdout, "GC %s-%d-%d \t\t %f\n", chrom, s, e, gc);
+      */
+
+      this_repeat = sonic_is_mobile_element(test_sonic, chrom, s, e, "Alu:L1");
+      if (this_repeat == NULL)
+	fprintf(stdout, "NOT %s-%d-%d\n", chrom, s, e);
+      else
+	fprintf(stdout, "MEI %s-%d-%d\t type: %s\n", chrom, s, e, this_repeat->repeat_type);
     } 
 
     

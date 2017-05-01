@@ -38,13 +38,13 @@ sonic * sonic_load(char *);
 sonic *alloc_sonic(int);
 sonic_interval *alloc_sonic_interval(int, int);
 
-FILE* sonic_fopen( char*, char*);
-gzFile sonic_fopen_gz( char*, char*);
+FILE* sonic_fopen( char*, const char*);
+gzFile sonic_fopen_gz( char*, const char*);
 int count_bed_lines(FILE *);
 int count_bed_chromosome_lines(FILE *, char *);
 void sonic_set_str( char**, char*);
 void* sonic_get_mem( size_t );
-void* sonic_free_mem( void *, size_t );
+void sonic_free_mem( void *, size_t );
 void sonic_write_bed_entries(gzFile, sonic_bed_line *, int, int, char **);
 sonic_bed_line *sonic_read_bed_file(FILE *, int, int);
 void sonic_write_repeat_item(gzFile, sonic_repeat *);

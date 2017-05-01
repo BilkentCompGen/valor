@@ -74,15 +74,15 @@ sonic_interval *sonic_intersect(sonic *this_sonic, char *this_chromosome, int po
     return NULL;
   
   switch (interval_type){
-  case GAP:
+  case SONIC_GAP:
     this_interval_list = this_sonic->gaps[chromosome_index];
     interval_count = this_sonic->number_of_gaps_in_chromosome[chromosome_index];
     break;
-  case DUP:
+  case SONIC_DUP:
     this_interval_list = this_sonic->dups[chromosome_index];
     interval_count = this_sonic->number_of_dups_in_chromosome[chromosome_index];
     break;
-  case REP:
+  case SONIC_REP:
     this_interval_list = this_sonic->reps[chromosome_index];
     interval_count = this_sonic->number_of_repeats_in_chromosome[chromosome_index];
     break;
@@ -182,7 +182,7 @@ int sonic_is_satellite(sonic *this_sonic, char *this_chromosome, int pos_start, 
   char *is_satellite;
 
   /* potential problem here for general-case repeats within repeats */
-  this_interval = sonic_intersect(this_sonic, this_chromosome, pos_start, pos_end, REP);
+  this_interval = sonic_intersect(this_sonic, this_chromosome, pos_start, pos_end, SONIC_REP);
 
   if (this_interval == NULL)
     return 0;
@@ -200,7 +200,7 @@ int sonic_is_segmental_duplication(sonic *this_sonic, char *this_chromosome, int
 
   sonic_interval *this_interval;
 
-  this_interval = sonic_intersect(this_sonic, this_chromosome, pos_start, pos_end, DUP);
+  this_interval = sonic_intersect(this_sonic, this_chromosome, pos_start, pos_end, SONIC_DUP);
 
   if (this_interval == NULL)
     return 0;
@@ -213,7 +213,7 @@ int sonic_is_gap(sonic *this_sonic, char *this_chromosome, int pos_start, int po
 
   sonic_interval *this_interval;
 
-  this_interval = sonic_intersect(this_sonic, this_chromosome, pos_start, pos_end, GAP);
+  this_interval = sonic_intersect(this_sonic, this_chromosome, pos_start, pos_end, SONIC_GAP);
 
   if (this_interval == NULL)
     return 0;
@@ -229,7 +229,7 @@ sonic_repeat *sonic_is_mobile_element(sonic *this_sonic, char *this_chromosome, 
   char *tok;
   char str[1024];
   
-  this_interval = sonic_intersect(this_sonic, this_chromosome, pos_start, pos_end, REP);
+  this_interval = sonic_intersect(this_sonic, this_chromosome, pos_start, pos_end, SONIC_REP);
 
   if (this_interval == NULL)
     return NULL;

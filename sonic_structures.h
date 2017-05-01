@@ -2,7 +2,7 @@
 #define __SONIC_STRUCTURES
 
 
-typedef enum SONIC_INTERVAL_TYPE {GAP, DUP, REP} sonic_interval_type;
+typedef enum SONIC_INTERVAL_TYPE {SONIC_GAP, SONIC_DUP, SONIC_REP} sonic_interval_type;
 
 typedef struct _sonic_repeat
 {

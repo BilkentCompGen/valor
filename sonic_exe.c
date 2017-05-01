@@ -163,13 +163,13 @@ int main(int argc, char **argv){
     while (fscanf(bed, "%s\t%d\t%d\n", chrom, &s, &e) > 0){
       /*
       fprintf(stdout, "Search gaps %s-%d-%d\n", chrom, s, e);
-      this_interval = sonic_intersect(test_sonic, chrom, s, e, GAP);
+      this_interval = sonic_intersect(test_sonic, chrom, s, e, SONIC_GAP);
       sonic_print_interval(this_interval);
       fprintf(stdout, "Search dups %s-%d-%d\n", chrom, s, e);
-      this_interval = sonic_intersect(test_sonic, chrom, s, e, DUP);
+      this_interval = sonic_intersect(test_sonic, chrom, s, e, SONIC_DUP);
       sonic_print_interval(this_interval); 
       fprintf(stdout, "Search res %s-%d-%d\n", chrom, s, e);
-      this_interval = sonic_intersect(test_sonic, chrom, s, e, REP);
+      this_interval = sonic_intersect(test_sonic, chrom, s, e, SONIC_REP);
       sonic_print_interval(this_interval);
       
       gc = sonic_get_gc_content(test_sonic, chrom, s, e);

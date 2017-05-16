@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <time.h>
 #include "sonic_interval.h"
 #include "sonic_structures.h"
 
@@ -33,7 +34,7 @@ long long sonic_mem_usage;
 
 
 
-int  sonic_build(char *, char *, char *, char *, char *);
+int  sonic_build(char *, char *, char *, char *, char *, char *);
 sonic * sonic_load(char *);
 sonic *alloc_sonic(int);
 sonic_interval *alloc_sonic_interval(int, int);

@@ -20,6 +20,7 @@ int parse_command_line( int argc, char** argv)
 	char sonic[1024];
 	char reps[1024];
 	char mei[1024];
+	char info[1024];
 	
 	ref_genome[0] = 0;
 	gaps[0] = 0;
@@ -36,6 +37,7 @@ int parse_command_line( int argc, char** argv)
 			{"dups"   , required_argument,   0, 'd'},
 			{"reps"   , required_argument,   0, 'r'},
 			{"mei"    , required_argument,   0, 'm'},
+			{"info"    , required_argument,   0, 'i'},
 			{"make-sonic"    , required_argument,	 0, 'c'},
 			{"sonic"    , required_argument,	 0, 's'},
 			{"bed"    , required_argument,	 0, 'b'},
@@ -47,7 +49,7 @@ int parse_command_line( int argc, char** argv)
 		return 0;
 	}
 
-	while( ( o = getopt_long( argc, argv, "f:g:d:r:m:c:s:b:", long_options, &index)) != -1)
+	while( ( o = getopt_long( argc, argv, "f:i:g:d:r:m:c:s:b:", long_options, &index)) != -1)
 	{
 		switch( o)
 		{
@@ -80,6 +82,10 @@ int parse_command_line( int argc, char** argv)
 
 		case 'm':
 			strcpy(  mei, optarg);
+			break;
+
+		case 'i':
+			strcpy(  info, optarg);
 			break;
 
 		case 'b':
@@ -131,7 +137,7 @@ int parse_command_line( int argc, char** argv)
 
 	else if (do_make_sonic)
 	{
-	  sonic_build(ref_genome, gaps, reps, dups, sonic);
+	  sonic_build(ref_genome, gaps, reps, dups, info, sonic);
 	}	
 
 

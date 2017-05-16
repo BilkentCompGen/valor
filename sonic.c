@@ -6,7 +6,7 @@
 #include "sonic_interval.h"
 #include "sonic_reference.h"
 
-int sonic_build(char *ref_genome, char *gaps, char *reps, char *dups, char *sonic)
+int sonic_build(char *ref_genome, char *gaps, char *reps, char *dups, char *info, char *sonic)
 {
   FILE *ref_file;
   FILE *ref_index;
@@ -20,14 +20,16 @@ int sonic_build(char *ref_genome, char *gaps, char *reps, char *dups, char *soni
   int chrom_name_length;
   char ref_genome_index[MAX_LENGTH];
   int i;
+  time_t sonic_build_time;
+  int info_length;
   
-
   int number_of_chromosomes;
   int *chromosome_lengths;
   char **chromosome_names;
   
   sonic_bed_line *bed_entry;
 
+  sonic_build_time = time(NULL);
   sonic_mem_usage = 0;
   ref_file = sonic_fopen(ref_genome, "r");
 
@@ -47,6 +49,17 @@ int sonic_build(char *ref_genome, char *gaps, char *reps, char *dups, char *soni
     return EXIT_FILE_OPEN_ERROR;
   }
 
+  
+  return_value = gzwrite(sonic_file, &sonic_build_time, sizeof(sonic_build_time));
+
+  if (info == NULL)
+    sonic_set_str(&info, ref_genome);
+
+  
+  info_length = strlen(info);
+  return_value = gzwrite(sonic_file, &info_length, sizeof(info_length));
+  return_value = gzwrite(sonic_file, info, info_length);
+  
   number_of_chromosomes = get_number_of_chromosomes(ref_index);
   rewind(ref_index);
 
@@ -156,6 +169,11 @@ sonic *sonic_load(char *sonic_file_name){
   int repeat_start, repeat_end;
   sonic *this_sonic;
 
+  time_t sonic_build_time;
+  struct tm *sonic_ptm;
+  int info_length;
+  char *info;
+  
   sonic_mem_usage = 0;
   
   fprintf (stderr, "Loading SONIC file..\n");
@@ -177,6 +195,20 @@ sonic *sonic_load(char *sonic_file_name){
   }
 
 
+  return_value = gzread(sonic_file, &sonic_build_time, sizeof(sonic_build_time));
+
+  sonic_ptm = gmtime(&sonic_build_time);
+  
+  return_value = gzread(sonic_file, &info_length, sizeof(info_length));
+  info = (char *) sonic_get_mem(sizeof(char *) * (info_length+1));
+  
+  return_value = gzread(sonic_file, info, info_length);
+  info[info_length] = 0;
+
+  fprintf(stderr, "\nSONIC Info: %s\nBuilt in %s\n\n", info, asctime(sonic_ptm));
+  
+  sonic_free_mem(info, (info_length+1));
+  
   return_value = gzread(sonic_file, &number_of_chromosomes, sizeof(number_of_chromosomes));  /* read number of chromosomes */ 
   fprintf(stderr, "Number of chromosomes: %d\n", number_of_chromosomes);
 
@@ -478,7 +510,7 @@ sonic_bed_line *sonic_read_bed_file(FILE *bed_file, int line_count, int is_repea
       bed_entry[i].repeat_item = NULL;
       i++;
     }
-    fprintf(stderr,  "%s\t%d\t%d\n", chromosome, start, end);
+    //fprintf(stderr,  "%s\t%d\t%d\n", chromosome, start, end);
   }
 
   else {

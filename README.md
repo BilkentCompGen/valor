@@ -4,12 +4,13 @@ Some Organism's Nucleotide Information Container
 
 # Building a SONIC file
 
-	int sonic_build(char *ref_genome, char *gaps, char *reps, char *dups, char *sonic);
+	int sonic_build(char *ref_genome, char *gaps, char *reps, char *dups, char *info, char *sonic);
 
 	ref_genome: path to the reference genome file (FASTA) [input]. Also requires the ref_genome.fai file in the same directory (samtools faidx).
 	gaps: path to the gaps file (BED) [input].
 	reps: path to the repeat annotation file (UCSC/RepeatMasker .out) [input].
 	dups: path to the segmental duplications annotation file (BED) [input].
+	info: information string to annotate the SONIC file [input].
 	sonic: path to the SONIC file [output].
 	
 	RETURN VALUES:

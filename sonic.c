@@ -654,6 +654,61 @@ sonic_interval *alloc_sonic_interval(int number_of_entries, int is_repeat)
   return new_sonic_interval;
 }
 
+void free_sonic(sonic *this_sonic)
+{
+
+  int i;
+
+  int number_of_chromosomes;
+
+  number_of_chromosomes = this_sonic->number_of_chromosomes;
+
+  for (i = 0; i < number_of_chromosomes; i++){
+    sonic_free_mem(this_sonic->chromosome_names[i], strlen(this_sonic->chromosome_names[i]));
+    sonic_free_mem(this_sonic->chromosome_gc_profile[i], sizeof(char *) * (this_sonic->chromosome_lengths[i] / (SONIC_GC_WINDOW)));
+    free_sonic_interval(this_sonic->gaps[i], this_sonic->number_of_gaps_in_chromosome[i], 0);
+    free_sonic_interval(this_sonic->dups[i], this_sonic->number_of_dups_in_chromosome[i], 0);
+    free_sonic_interval(this_sonic->reps[i], this_sonic->number_of_repeats_in_chromosome[i], 1);
+  }
+  
+
+  sonic_free_mem(this_sonic->chromosome_lengths, sizeof(int) * number_of_chromosomes);
+  
+  sonic_free_mem(this_sonic->number_of_gaps_in_chromosome, sizeof(int) * number_of_chromosomes);
+  sonic_free_mem(this_sonic->number_of_dups_in_chromosome, sizeof(int) * number_of_chromosomes);
+  sonic_free_mem(this_sonic->number_of_repeats_in_chromosome, sizeof(int) * number_of_chromosomes);
+
+  
+  sonic_free_mem(this_sonic->chromosome_names, sizeof(char *) * number_of_chromosomes);
+  sonic_free_mem(this_sonic->chromosome_gc_profile, sizeof(char *) * number_of_chromosomes); 
+  
+  sonic_free_mem(this_sonic->gaps, sizeof(sonic_interval *) * number_of_chromosomes);
+  sonic_free_mem(this_sonic->dups, sizeof(sonic_interval *) * number_of_chromosomes);
+  sonic_free_mem(this_sonic->reps, sizeof(sonic_interval *) * number_of_chromosomes);
+  
+  sonic_free_mem(this_sonic, sizeof(sonic));
+  
+}
+
+void free_sonic_interval(sonic_interval *this_sonic_interval, int number_of_entries, int is_repeat)
+{
+
+  int i;
+  
+
+  if (is_repeat){    
+    for (i = 0; i < number_of_entries; i++){
+      sonic_free_mem (this_sonic_interval[i].repeat_item->repeat_type, strlen(this_sonic_interval[i].repeat_item->repeat_type));
+      sonic_free_mem (this_sonic_interval[i].repeat_item->repeat_class, strlen(this_sonic_interval[i].repeat_item->repeat_class));
+      sonic_free_mem (this_sonic_interval[i].repeat_item, sizeof(sonic_repeat));
+    }
+  }
+
+  sonic_free_mem (this_sonic_interval, sizeof(sonic_interval) * number_of_entries);
+
+}
+
+
 double sonic_get_mem_usage()
 {
   return sonic_mem_usage/1048576.0;

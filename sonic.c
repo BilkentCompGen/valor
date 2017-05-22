@@ -236,7 +236,10 @@ sonic *sonic_load(char *sonic_file_name){
     /* fprintf(stderr, "Chromosome %d [%s] gaps %d\n", i, this_sonic->chromosome_names[i], number_of_entries);  */
 
     this_sonic->number_of_gaps_in_chromosome[i] = number_of_entries;
-    this_sonic->gaps[i] = alloc_sonic_interval(number_of_entries, 0);
+    if (number_of_entries != 0)
+      this_sonic->gaps[i] = alloc_sonic_interval(number_of_entries, 0);
+    else
+      this_sonic->gaps[i] = NULL;
     
     for (j = 0; j < number_of_entries; j++){
       return_value = gzread(sonic_file, &start, sizeof(start));
@@ -254,7 +257,10 @@ sonic *sonic_load(char *sonic_file_name){
     /* fprintf(stderr, "Chromosome %d dups %d\n", i, number_of_entries); */
     
     this_sonic->number_of_dups_in_chromosome[i] = number_of_entries;
-    this_sonic->dups[i] = alloc_sonic_interval(number_of_entries, 0);
+    if (number_of_entries != 0)  
+      this_sonic->dups[i] = alloc_sonic_interval(number_of_entries, 0);
+    else
+      this_sonic->dups[i] = NULL;
     
     for (j = 0; j < number_of_entries; j++){
       return_value = gzread(sonic_file, &start, sizeof(start));
@@ -274,7 +280,10 @@ sonic *sonic_load(char *sonic_file_name){
     /*    fprintf(stderr, "Chromosome %d reps %d\n", i, number_of_entries); */
 
     this_sonic->number_of_repeats_in_chromosome[i] = number_of_entries;
-    this_sonic->reps[i] = alloc_sonic_interval(number_of_entries, 1);
+    if (number_of_entries != 0)
+      this_sonic->reps[i] = alloc_sonic_interval(number_of_entries, 1);
+    else
+      this_sonic->reps[i] = NULL;
 
     for (j = 0; j < number_of_entries; j++){
       return_value = gzread(sonic_file, &start, sizeof(start));

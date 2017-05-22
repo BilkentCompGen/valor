@@ -105,8 +105,7 @@ int sonic_find_chromosome_index(char **chromosome_names, char *this_chromosome, 
 
   for (i = 0; i < number_of_chromosomes; i++){
     if (!strcmp(chromosome_names[i], this_chromosome))
-      return i;
-    
+      return i;    
   }
 
   return -1;

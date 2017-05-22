@@ -191,6 +191,8 @@ int main(int argc, char **argv){
 
     
   }
+
+  free_sonic(test_sonic);
   
 }
 

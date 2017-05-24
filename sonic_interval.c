@@ -228,6 +228,7 @@ sonic_repeat *sonic_is_mobile_element(sonic *this_sonic, char *this_chromosome, 
 
   char *tok;
   char str[1024];
+  int mei_code;
   
   this_interval = sonic_intersect(this_sonic, this_chromosome, pos_start, pos_end, SONIC_REP);
 
@@ -236,14 +237,16 @@ sonic_repeat *sonic_is_mobile_element(sonic *this_sonic, char *this_chromosome, 
 
   
   strcpy(str, mei_string);
-  
+
+  mei_code = 0;
   tok = strtok(str, ":");
   
   while (tok != NULL){
     if (strstr(this_interval->repeat_item->repeat_type, tok) != NULL){
+      this_interval->repeat_item->mei_code = mei_code;
       return this_interval->repeat_item;
     }
-    
+    mei_code++;
     tok = strtok(NULL, ":");
   }
     

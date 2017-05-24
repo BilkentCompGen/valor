@@ -10,6 +10,7 @@ typedef struct _sonic_repeat
   char *repeat_type;
   char *repeat_class;
   int repeat_start, repeat_end;
+  int mei_code;
 } sonic_repeat;
 
 

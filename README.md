@@ -108,5 +108,5 @@ Some Organism's Nucleotide Information Container
 	end: end coordinate of the interval of interest (exclusive -- BED-like).
 
 	RETURN VALUE:
-		GC% over the region.
+		GC% over the region, returned in [0-100] interval.
 	

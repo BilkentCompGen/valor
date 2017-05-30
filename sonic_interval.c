@@ -23,32 +23,31 @@ int bed_comp( const void* p1, const void* p2){
 
 int count_bed_chromosome_lines(FILE *bed_file, char *chromosome)
 {
-	int number_of_lines;
-	char line[MAX_LENGTH];
-	char *return_value;
-	int return_value_int;
-	char this_chromosome[MAX_LENGTH];
+  int number_of_lines;
+  char line[MAX_LENGTH];
+  char *return_value;
+  int return_value_int;
+  char this_chromosome[MAX_LENGTH];
 	
-	number_of_lines = 0;
-	while (!feof(bed_file)){
-   	        return_value_int = fscanf(bed_file, "%s", this_chromosome);
-		if (feof(bed_file) || return_value_int == 0)
-			break;
-		if (line[0] != 0){
- 		        return_value = fgets(line, MAX_LENGTH, bed_file);
-			if (return_value == NULL){
-			  exit(EXIT_SONIC);
-	  }
+  number_of_lines = 0;
+  while (!feof(bed_file)){
+    return_value_int = fscanf(bed_file, "%s", this_chromosome);
+    if (feof(bed_file) || return_value_int == 0)
+      break;
+    if (line[0] != 0){
+      return_value = fgets(line, MAX_LENGTH, bed_file);
+      if (return_value == NULL){
+	exit(EXIT_SONIC);
+      }
 
-			if (!strcmp(this_chromosome, chromosome))
-			        number_of_lines++;
-		}
-	}
+      if (!strcmp(this_chromosome, chromosome))
+	number_of_lines++;
+    }
+  }
 
-	return number_of_lines;
+  return number_of_lines;
 }
 
-/* sonic_interval *sonic_intersect(sonic *this_sonic, char *this_chromosome, int pos_start, int pos_end, sonic_interval_type interval_type, float intersection_fraction){ */
 sonic_interval *sonic_intersect(sonic *this_sonic, char *this_chromosome, int pos_start, int pos_end, sonic_interval_type interval_type){
 
 
@@ -60,13 +59,6 @@ sonic_interval *sonic_intersect(sonic *this_sonic, char *this_chromosome, int po
   sonic_interval *this_interval_list;
   
   int chromosome_index;
-
-  /*
-  if (intersection_fraction < 0.0 || intersection_fraction > 1.0){
-    fprintf(stderr, "[SONIC] Intersection fraction value should be in [0,1] interval. Fraction=0 assumes any intersection.\n");
-    exit (EXIT_SONIC);
-    }*/
-
 
   chromosome_index = sonic_find_chromosome_index(this_sonic->chromosome_names, this_chromosome, this_sonic->number_of_chromosomes);
 
@@ -98,7 +90,6 @@ sonic_interval *sonic_intersect(sonic *this_sonic, char *this_chromosome, int po
     
   while (1){
 
-    //printf ("Search %d-%d-%d [%d]\n", start, med, end, interval_count);
     if (start > end)
       return NULL;
 
@@ -114,13 +105,6 @@ sonic_interval *sonic_intersect(sonic *this_sonic, char *this_chromosome, int po
       return NULL;
     }
 
-    /*
-    else if (start == med)
-      med = end;
-    else if (end == med)
-      med = start;
-    */
-    
     /* no hit, search left half */
     else if (pos_start < this_interval_list[med].start){
       end = med;
@@ -155,25 +139,25 @@ void sonic_print_interval(sonic_interval *this_interval){
 }
 
 int sonic_this_interval_intersects(int pos_start, int pos_end, int start, int end){
-      /* all in */
-    if (pos_start >= start && pos_end < end)
-      return 1;
+  /* all in */
+  if (pos_start >= start && pos_end < end)
+    return 1;
 
-    /* all cover */
-    else if (pos_start <= start && pos_end > end)
-      return 1;
+  /* all cover */
+  else if (pos_start <= start && pos_end > end)
+    return 1;
 
-    /* left */
-    else if (pos_start <= start && pos_end >= start)
-      return 1;
+  /* left */
+  else if (pos_start <= start && pos_end >= start)
+    return 1;
 
-    /* right */
-    else if (pos_start <= end && pos_end > end)
-      return 1;
+  /* right */
+  else if (pos_start <= end && pos_end > end)
+    return 1;
 
-    /* no hit.  */
+  /* no hit.  */
 
-    return 0;
+  return 0;
 }
 
 
@@ -274,7 +258,6 @@ float sonic_get_gc_content(sonic *this_sonic, char *this_chromosome, int pos_sta
   start_gc = pos_start;
 
   while (start_gc < pos_end){
-    printf("gc content window %s-%d. Index: %d. content %f\n", this_chromosome, start_gc, (start_gc/SONIC_GC_WINDOW), (float) this_sonic->chromosome_gc_profile[chromosome_index][start_gc / SONIC_GC_WINDOW]);
     window_count++;
     gc_content += (float) this_sonic->chromosome_gc_profile[chromosome_index][start_gc / SONIC_GC_WINDOW];
     start_gc += SONIC_GC_WINDOW;

@@ -48,6 +48,7 @@ typedef struct _sonic
   long genome_length;
   char **chromosome_gc_profile;
   char **chromosome_names;
+  int last_chromosome_index;
   struct _sonic_interval **gaps;
   struct _sonic_interval **dups;
   struct _sonic_interval **reps;

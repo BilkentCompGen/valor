@@ -30,8 +30,7 @@
 
 #define SONIC_END_OF_GC 12345654
 
-long long sonic_mem_usage;
-
+long sonic_mem_usage;
 
 
 int  sonic_build(char *, char *, char *, char *, char *, char *);

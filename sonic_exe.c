@@ -167,7 +167,7 @@ int main(int argc, char **argv){
     
     
     while (fscanf(bed, "%s\t%d\t%d\n", chrom, &s, &e) > 0){
-      /*
+      
       fprintf(stdout, "Search gaps %s-%d-%d\n", chrom, s, e);
       this_interval = sonic_intersect(test_sonic, chrom, s, e, SONIC_GAP);
       sonic_print_interval(this_interval);
@@ -180,7 +180,7 @@ int main(int argc, char **argv){
       
       gc = sonic_get_gc_content(test_sonic, chrom, s, e);
       fprintf(stdout, "GC %s-%d-%d \t\t %f\n", chrom, s, e, gc);
-      */
+      
 
       this_repeat = sonic_is_mobile_element(test_sonic, chrom, s, e, "Alu:L1");
       if (this_repeat == NULL)

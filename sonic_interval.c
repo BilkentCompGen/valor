@@ -60,7 +60,7 @@ sonic_interval *sonic_intersect(sonic *this_sonic, char *this_chromosome, int po
   
   int chromosome_index;
 
-  chromosome_index = sonic_find_chromosome_index(this_sonic->chromosome_names, this_chromosome, this_sonic->number_of_chromosomes);
+  chromosome_index = sonic_refind_chromosome_index(this_sonic, this_chromosome);
 
   if (chromosome_index == -1)
     return NULL;
@@ -247,7 +247,7 @@ float sonic_get_gc_content(sonic *this_sonic, char *this_chromosome, int pos_sta
   float gc_content;
   int start_gc;
   
-  chromosome_index = sonic_find_chromosome_index(this_sonic->chromosome_names, this_chromosome, this_sonic->number_of_chromosomes);
+  chromosome_index = sonic_refind_chromosome_index(this_sonic, this_chromosome);
 
   if (chromosome_index == -1)
     return 0.0;

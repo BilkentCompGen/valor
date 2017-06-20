@@ -1,6 +1,11 @@
 # sonic
 Some Organism's Nucleotide Information Container
 
+# Standalone SONIC builder example:
+
+	sonic --ref hg19.fasta --dups hg19.dups.bed --reps hg19_repeats.out --gaps hg19.gap.bed --make-sonic ucsc_hg19.sonic --info "UCSC_hg19"
+
+	Duplications and gaps are expected in BED format. Repeats are in RepeatMasker .out format.
 
 # Building a SONIC file
 

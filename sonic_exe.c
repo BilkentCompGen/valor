@@ -133,16 +133,15 @@ int parse_command_line( int argc, char** argv)
 
 	if (do_load_sonic){
 	  test_sonic = sonic_load(sonic);
+	  return 1;
 	} 
 
 	else if (do_make_sonic)
 	{
-	  sonic_build(ref_genome, gaps, reps, dups, info, sonic);
+	  sonic_build(ref_genome, gaps, reps, dups, info, sonic);	 
 	}	
-
-
 	
-	return 1;
+	return 0;
 
 }
 
@@ -156,8 +155,10 @@ int main(int argc, char **argv){
   sonic_repeat *this_repeat;
   
   float gc;
+
+  int loaded = 0;
   
-  parse_command_line(argc, argv);
+  loaded = parse_command_line(argc, argv);
 
   if (test_sonic!= NULL && bedfile[0] != 0){
     bed = fopen(bedfile, "r");
@@ -192,7 +193,8 @@ int main(int argc, char **argv){
     
   }
 
-  free_sonic(test_sonic);
+  if (loaded)
+    free_sonic(test_sonic);
 
   return 0;
 }

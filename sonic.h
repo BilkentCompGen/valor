@@ -1,6 +1,10 @@
 #ifndef __SONIC
 #define __SONIC
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+  
 #define SONIC_MAGIC 42
 
 #include <zlib.h>
@@ -51,4 +55,8 @@ void sonic_write_repeat_item(gzFile, sonic_repeat *);
 void free_sonic(sonic *);
 void free_sonic_interval(sonic_interval *, int, int);
 double sonic_get_mem_usage(void);
+
+#ifdef __cplusplus
+}
+#endif
 #endif

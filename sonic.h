@@ -33,6 +33,7 @@ extern "C" {
 #define SONIC_GC_SLIDE 100
 
 #define SONIC_END_OF_GC 12345654
+#define SONIC_END_OF_CHR -2
 
 long sonic_mem_usage;
 

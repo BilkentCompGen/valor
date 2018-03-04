@@ -1,0 +1,3 @@
+[submodule "sonic"]
+	path = sonic
+	url = https://github.com/calkan/sonic.git

@@ -10,7 +10,7 @@ Requirements
  * htslib (included; http://htslib.org/)
  * sonic  (included; https://github.com/calkan/sonic)
 
-Fetching valor
+Fetching VALOR
 ===============
 
 	git clone git@github.com:BilkentCompGen/valor.git --recursive

@@ -22,7 +22,7 @@ Type:
 
 	make libs
 	make
-	cp valor /path/to/your/favorite/binaries
+	cp valor /path/to/your/favorite/binaries (or sudo make install)
 
 
 Running VALOR
@@ -53,12 +53,4 @@ Building the SONIC file
 
 Please refer to the SONIC development repository: https://github.com/calkan/sonic/
 
-However, you can still build the SONIC file using TARDIS:
-
-	tardis --ref human_g1k_v37.fasta --make-sonic human_g1k_v37.sonic \
-		--dups human_g1k_v37.segmental_duplications.bed \
-		--gaps human_g1k_v37.assembly_gaps.bed \
-		--reps human_g1k_v37.repeatmasker.out 
-
-	
 

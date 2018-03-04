@@ -53,4 +53,13 @@ Building the SONIC file
 
 Please refer to the SONIC development repository: https://github.com/calkan/sonic/
 
+OUTPUT FORMAT
+=============
 
+in predicted_inversions.bed(like)
+
+```bed
+Chromosome-name BP1-start BP1-end BP2-start BP2-end 10XG-Support Read_Pair_Support
+```
+* Read pair Support: Number of read-pairs that support these breakpoints
+* 10XG Support: Number of 10XG Molecule-pairs that support these breakpoints

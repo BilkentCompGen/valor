@@ -1,6 +1,13 @@
 # sonic
 Some Organism's Nucleotide Information Container
 
+# Compilation
+Library only:
+       make
+       
+Standalone SONIC builder:
+       make exe
+
 # Standalone SONIC builder example:
 
 	sonic --ref hg19.fasta --dups hg19.dups.bed --reps hg19_repeats.out --gaps hg19.gap.bed --make-sonic ucsc_hg19.sonic --info "UCSC_hg19"

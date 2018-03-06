@@ -2,11 +2,14 @@
 Some Organism's Nucleotide Information Container
 
 # Compilation
+
 Library only:
-       make
+
+	make
        
 Standalone SONIC builder:
-       make exe
+
+	make exe
 
 # Standalone SONIC builder example:
 

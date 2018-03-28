@@ -35,7 +35,7 @@ extern "C" {
 #define SONIC_END_OF_GC 12345654
 #define SONIC_END_OF_CHR -2
 
-long sonic_mem_usage;
+extern long sonic_mem_usage;
 
 
 int  sonic_build(char *, char *, char *, char *, char *, char *);

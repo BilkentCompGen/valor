@@ -6,6 +6,8 @@
 #include "sonic_interval.h"
 #include "sonic_reference.h"
 
+long sonic_mem_usage;
+
 int sonic_build(char *ref_genome, char *gaps, char *reps, char *dups, char *info, char *sonic)
 {
   FILE *ref_file;

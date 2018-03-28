@@ -46,7 +46,7 @@ sonic_interval *alloc_sonic_interval(int, int);
 FILE* sonic_fopen( char*, const char*);
 gzFile sonic_fopen_gz( char*, const char*);
 int count_bed_lines(FILE *);
-int count_bed_chromosome_lines(FILE *, char *);
+  //int count_bed_chromosome_lines(FILE *, char *);
 void sonic_set_str( char**, char*);
 void* sonic_get_mem( size_t );
 void sonic_free_mem( void *, size_t );

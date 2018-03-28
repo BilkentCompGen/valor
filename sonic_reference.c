@@ -105,7 +105,7 @@ void sonic_write_gc_profile(gzFile sonic_file, FILE *ref_file, int number_of_chr
 	gzwrite(sonic_file, &end_of_gc, sizeof(end_of_gc));
 }
 
-int sonic_find_chromosome_index(char **chromosome_names, char *this_chromosome, int number_of_chromosomes){
+int sonic_find_chromosome_index(char **chromosome_names, const char *this_chromosome, int number_of_chromosomes){
 	int i;
 
 	/* linear scan. Not really proud of it, but it shouldn't affect performance anyway */
@@ -118,7 +118,7 @@ int sonic_find_chromosome_index(char **chromosome_names, char *this_chromosome, 
 	return -1;
 }
 
-int sonic_refind_chromosome_index(sonic *this_sonic, char *this_chromosome){
+int sonic_refind_chromosome_index(sonic *this_sonic, const char *this_chromosome){
 	int i;
 
 	if (this_sonic->last_chromosome_index != -1 && !strcmp(this_sonic->chromosome_names[this_sonic->last_chromosome_index], this_chromosome))

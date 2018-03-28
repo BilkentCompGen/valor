@@ -375,7 +375,7 @@ int count_bed_lines(FILE *bed_file)
 }
 
 
-int count_bed_chromosome_entries(sonic_bed_line *bed_entry, int number_of_entries, char *chromosome)
+int count_bed_chromosome_entries(sonic_bed_line *bed_entry, int number_of_entries, const char *chromosome)
 {
         int count;
 	int i;

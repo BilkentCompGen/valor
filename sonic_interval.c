@@ -21,7 +21,7 @@ int bed_comp( const void* p1, const void* p2){
 }
 
 
-int count_bed_chromosome_lines(FILE *bed_file, char *chromosome)
+int count_bed_chromosome_lines(FILE *bed_file, const char *chromosome)
 {
   int number_of_lines;
   char line[MAX_LENGTH];
@@ -48,7 +48,7 @@ int count_bed_chromosome_lines(FILE *bed_file, char *chromosome)
   return number_of_lines;
 }
 
-sonic_interval *sonic_intersect(sonic *this_sonic, char *this_chromosome, int pos_start, int pos_end, sonic_interval_type interval_type){
+sonic_interval *sonic_intersect(sonic *this_sonic, const char *this_chromosome, int pos_start, int pos_end, sonic_interval_type interval_type){
 
 
   int start;
@@ -161,7 +161,7 @@ int sonic_this_interval_intersects(int pos_start, int pos_end, int start, int en
 }
 
 
-int sonic_is_satellite(sonic *this_sonic, char *this_chromosome, int pos_start, int pos_end){
+int sonic_is_satellite(sonic *this_sonic, const char *this_chromosome, int pos_start, int pos_end){
   sonic_interval *this_interval;
   char *is_satellite;
 
@@ -180,7 +180,7 @@ int sonic_is_satellite(sonic *this_sonic, char *this_chromosome, int pos_start, 
   
 }
 
-int sonic_is_segmental_duplication(sonic *this_sonic, char *this_chromosome, int pos_start, int pos_end){
+int sonic_is_segmental_duplication(sonic *this_sonic, const char *this_chromosome, int pos_start, int pos_end){
 
   sonic_interval *this_interval;
 
@@ -193,7 +193,7 @@ int sonic_is_segmental_duplication(sonic *this_sonic, char *this_chromosome, int
     
 }
 
-int sonic_is_gap(sonic *this_sonic, char *this_chromosome, int pos_start, int pos_end){
+int sonic_is_gap(sonic *this_sonic, const char *this_chromosome, int pos_start, int pos_end){
 
   sonic_interval *this_interval;
 
@@ -206,7 +206,7 @@ int sonic_is_gap(sonic *this_sonic, char *this_chromosome, int pos_start, int po
 
 }
 
-sonic_repeat *sonic_is_mobile_element(sonic *this_sonic, char *this_chromosome, int pos_start, int pos_end, char *mei_string){
+sonic_repeat *sonic_is_mobile_element(sonic *this_sonic, const char *this_chromosome, int pos_start, int pos_end, const char *mei_string){
 
   sonic_interval *this_interval;
 
@@ -239,7 +239,7 @@ sonic_repeat *sonic_is_mobile_element(sonic *this_sonic, char *this_chromosome, 
 }
 
 
-float sonic_get_gc_content(sonic *this_sonic, char *this_chromosome, int pos_start, int pos_end){
+float sonic_get_gc_content(sonic *this_sonic, const char *this_chromosome, int pos_start, int pos_end){
 
   
   int chromosome_index;

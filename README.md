@@ -18,9 +18,10 @@ Fetching VALOR
 Compilation
 ===========
 
-Type:
+
 	Change SV_TO_FIND variable in the make file to find different variants #TODO change this to cmdline variable	
 
+Type:
 	make libs
 	make
 	cp valor /path/to/your/favorite/binaries (or sudo make install)

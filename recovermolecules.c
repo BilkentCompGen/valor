@@ -1,7 +1,3 @@
-/*
-	TODO:			
-	Learn to use is_concordant from common.h
-*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -13,9 +9,6 @@
 #include "interval10X.h"
 #include "vector.h"
 
-//int interval_size(interval *this){
-//        return this->end - this->start +1;
-//}
 #define PROGRESS_DISTANCE 5001
 #define RX_N90_THRESHOLD 4
 //What should be the initial size for each array?
@@ -32,13 +25,13 @@ void filter_molecules( vector_t *mols){
 		if( current_barcode == I10X_VECTOR_GET(mols,i+1)->barcode){
 			int j;
 			for(j=i+1;j<mols->size
-				 && I10X_VECTOR_GET(mols,j)->barcode==current_barcode;j++);
+					&& I10X_VECTOR_GET(mols,j)->barcode==current_barcode;j++);
 			i=j;
 
 		}
 		else{
-//			VALOR_LOG("%lu - %lu are not equal at %d\n",current_barcode,I10X_VECTOR_GET(mols,i+1)->barcode,i);	
-	//		printf("removed %d: current barcode %lu: next barcode %lu\n",i,current_barcode,I10X_VECTOR_GET(mols,1+i)->barcode);
+			//			VALOR_LOG("%lu - %lu are not equal at %d\n",current_barcode,I10X_VECTOR_GET(mols,i+1)->barcode,i);	
+			//		printf("removed %d: current barcode %lu: next barcode %lu\n",i,current_barcode,I10X_VECTOR_GET(mols,1+i)->barcode);
 			vector_remove(mols,i);
 			i++;
 		}
@@ -49,16 +42,18 @@ void filter_molecules( vector_t *mols){
 			j++;
 		}
 	}
-//	printf("vsize %zu\n",j);
+	//	printf("vsize %zu\n",j);
 	vector_defragment(mols);
-//	printf("vsize %zu\n",mols->size);
+	//	printf("vsize %zu\n",mols->size);
 
 	//qsort(mols->items,mols->size,sizeof(void*),interval_start_comp);
 }
 vector_t *recover_molecules( vector_t *vector){
-	printf("Sorting the DNA Intervals\n");
+
 	vector_t *regions = vector_init(sizeof(interval_10X),INITIAL_ARRAY_SIZE);
 	vector_t *coverages = vector_init(sizeof(double),INITIAL_ARRAY_SIZE);
+	
+	printf("Sorting the DNA Intervals\n");
 	qsort(vector->items, vector->size, sizeof(void *),barcode_comp);
 	int i;
 
@@ -96,8 +91,8 @@ vector_t *recover_molecules( vector_t *vector){
 			}
 			else{
 				if( covered / interval_size(&merger) > MIN_COVERAGE &&
-					covered / interval_size(&merger) < MAX_COVERAGE
-	 				&& interval_size(&merger) > CLONE_MIN){
+						covered / interval_size(&merger) < MAX_COVERAGE
+						&& interval_size(&merger) > CLONE_MIN){
 					vector_put(regions,&merger);
 					vector_put(coverages,&covered);
 				}
@@ -107,8 +102,8 @@ vector_t *recover_molecules( vector_t *vector){
 			}
 		}
 		if( covered / interval_size(&merger) > MIN_COVERAGE &&
-			covered / interval_size(&merger) < MAX_COVERAGE
-			&& interval_size(&merger) > CLONE_MIN){
+				covered / interval_size(&merger) < MAX_COVERAGE
+				&& interval_size(&merger) > CLONE_MIN){
 			vector_put(regions,&merger);
 			vector_put(coverages,&covered);
 		}
@@ -120,18 +115,18 @@ vector_t *recover_molecules( vector_t *vector){
 	update_progress(iter,vector->size);		
 	printf("\rDone\n");
 
-//	qsort(regions->items,regions->size,sizeof(void*),interval_start_comp);
-	#if DEVELOPMENT_
-	FILE *write_ptr = fopen(OUT_DIR"inferredmolecules.out","a+");
+	//	qsort(regions->items,regions->size,sizeof(void*),interval_start_comp);
+#if VALOR_DEBUG
+	FILE *write_ptr = fopen(OUT_DIR"/inferredmolecules.out","w+");
 	for( i = 0; i < regions->size;i++){
 		double *ccp = vector_get(coverages,i);
 		fprintf(write_ptr,"%d\t%d\t%d\t%lu\t%lf\n",CUR_CHR,I10X_VECTOR_GET(regions,i)->start,I10X_VECTOR_GET(regions,i)->end,I10X_VECTOR_GET(regions,i)->barcode,*ccp);
 	}
 
 	fclose(write_ptr);
-	#endif
+#endif
 	vector_free(coverages);
-	
+
 
 
 	return regions;

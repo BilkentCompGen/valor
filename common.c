@@ -8,7 +8,7 @@
 #include <htslib/hts.h>
 
 #include "common.h"
-
+#include "quotes.h"
 
 // Track memory usage
 long long memUsage = 0;
@@ -73,6 +73,17 @@ void print_error( char* msg)
 	fprintf( stderr, "\n%s\n", msg);
 	fprintf( stderr, "Invoke parameter -h for help.\n");
 	exit( EXIT_COMMON);
+}
+
+void print_quote( void)
+{
+	/* print a quote by the Doctor */
+
+	int quotenum;
+
+	srand(time(NULL));
+	quotenum = rand() % NUM_QUOTES;
+	fprintf( stderr, "\n\t%s\n\n", quotes[quotenum]);
 }
 
 FILE* safe_fopen( char* path, char* mode)
@@ -199,6 +210,83 @@ int is_discordant( bam1_core_t bam_alignment_core, int min, int max)
 	/* All passed. Read is concordant */
 	return RPCONC;
 }
+
+
+int is_alt_concordant( int p1, int p2, int flag, char strand1, char strand2, int min, int max){
+	if( ( flag & BAM_FPAIRED) == 0)
+	{
+		/* Read is single-end. Skip this by calling it concordant */
+		return RPSEND;
+	}
+	/*
+	if( ( flag & BAM_FPROPER_PAIR) == 0)
+	{
+		//Not proper pair
+		return RPUNMAPPED;
+	}*/
+
+	if( ( flag & BAM_FUNMAP) != 0)  // c.a.
+	{
+		/* Read unmapped; Orphan or OEA */
+		return RPUNMAPPED;
+	}
+
+	if( ( flag & BAM_FMUNMAP) != 0) // c.a.
+	{
+		/* Mate unmapped; Orphan or OEA */
+		return RPUNMAPPED;
+	}
+
+	if( strand1 != 0 && strand2 != 0)
+	{
+		/* -- orientation = inversion */
+		return RPMM;
+	}
+
+	if( strand1 == 0 && strand2 == 0)
+	{
+		/* ++ orientation = inversion */
+		return RPPP;
+	}
+
+	if( abs(p1-p2) > DUP_MIN_DIST){
+//		if( bam_alignment_core.pos <= bam_alignment_core.mpos) // c.a.
+		{
+			/* Read is placed BEFORE its mate */
+			if(  strand1 != 0 && strand2 == 0)
+			{
+				/* -+ orientation = tandem duplication */
+				return RPTDUPPM; //was 0 before
+			}
+		}
+//		else
+		{
+			/* Read is placed AFTER its mate */
+			if(  strand1 == 0 && strand2 != 0)
+			{
+				/* +- orientation = tandem duplication */
+				return RPTDUPMP; //was 0 before
+			}
+		}
+
+
+	}
+	/* Passed all of the above. proper pair, both mapped, in +- orientation. Now check the isize */
+	if( abs(p1-p2) < min) // c.a.
+	{
+		/* Deletion or Insertion */
+		return RPINS;
+	}
+	else if(abs(p1-p2) > max)
+	{
+		return RPDEL;
+	}
+
+	/* All passed. Read is concordant */
+	return RPCONC;
+}
+
+
 
 int is_concordant( bam1_core_t bam_alignment_core, int min, int max)
 {

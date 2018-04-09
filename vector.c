@@ -1,4 +1,22 @@
 #include "vector.h"
+
+
+void vector_execute_for_all(vector_t *v, void (*foo)(void *)){
+        int i;
+        for(i=0;i<v->size;i++){
+                foo(vector_get(v,i));
+        }
+}
+
+vector_t *vector_execute_for_all_and_save(vector_t *v, void *(*foo)(void *)){
+        int i;
+        vector_t *rt = vector_init(VECTOR_VARIABLE_SIZE,v->size);
+        for(i=0;i<v->size;i++){
+                vector_soft_put(rt,foo(vector_get(v,i)));
+        }
+        return rt;
+}
+
 vector_t *vector_init(size_t item_sizeof, size_t initial_limit){
 	vector_t *new_vector = (vector_t *) getMem( sizeof(vector_t));
 	new_vector->item_sizeof = item_sizeof;
@@ -52,6 +70,7 @@ void vector_update_remove_policy(vector_t *vector, int policy){
 int vector_contains(vector_t *vector, void *item){
 	int i;
 	for(i=0;i<vector->size;i++){
+		if(vector->items[i] == NULL){continue;}
 		if(memcmp(vector->items[i], item,vector->item_sizeof)==0){
 			return i;
 		}

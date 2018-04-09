@@ -1,4 +1,5 @@
 #include "statistics.h"
+#include "valorconfig.h"
 double molecule_mean(vector_t *regions){
         int i;
         double sum = 0;
@@ -33,7 +34,7 @@ vector_t *group_overlapping_molecules(vector_t *molecules){
 	vector_put(vector_get(vector_of_groups,index),current);
 
 	for(i=1;i<molecules->size;i++){
-		if(!interval_overlaps(current,vector_get(molecules,i))){
+		if(!interval_overlaps(current,vector_get(molecules,i),MAX_FRAG_SIZE)){
 			index++;
 			vector_soft_put(vector_of_groups,
 				vector_init(sizeof(interval_10X),16));

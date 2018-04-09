@@ -1,4 +1,6 @@
 #include "graph.h"
+#include <assert.h>
+
 
 graph_t *graph_init(size_t init_size, size_t node_size){
         graph_t *new_graph = ht_init(init_size, node_size, sizeof(vector_t));
@@ -15,7 +17,7 @@ void graph_put_node(graph_t *g, void *item){
 	edges->size = 0;
 	edges->rmv = &free;
 	edges->fragmental = 0;
-	edges->REMOVE_POLICY = 0;
+	edges->REMOVE_POLICY = REMP_FAST;
 }
 
 void graph_put_edge(graph_t *g, void *i1, void *i2){
@@ -30,25 +32,12 @@ void graph_put_edge(graph_t *g, void *i1, void *i2){
 }
 
 void graph_free(graph_t *g){
-/*	int i,j,k;
-	vector_t *bucket;
-	pair_t *pair;
-	vector_t *vect;
-	for(i=0;i<g->size;i++){
-		bucket = g->buckets[i];
-		for(j=0;j<bucket->size;j++){
-			pair = vector_get(bucket,j);
-			vect = pair->value;
-			for(k=0;k<vect->size;k++){
-				free(vect->items[k]);
-			}
-			free(vect->items);
-		}	
-	}
-*/
 	ht_free(g);
 }
 
+int graph_have_node_wcmp(graph_t *g, void *item, int (*cmp)(const void *, const void *)){
+	return ht_get_wcmp(g,item,cmp)!=NULL;
+}
 int graph_have_node(graph_t *g, void *item){
 	return ht_get(g,item)!=NULL;
 }
@@ -69,6 +58,7 @@ void graph_trim(graph_t *g){
 	}
 	vector_free(al);
 }
+
 
 int graph_remove_node(graph_t *g, void *item, int hard){
 	if(!graph_have_node(g,item)){return -1;}
@@ -94,14 +84,12 @@ int graph_remove_node(graph_t *g, void *item, int hard){
 			edges = graph_get_edges(g,*(void **)vector_get(neigh,i));
 			if(edges==NULL){continue;}
 			for(j=0;j<edges->size;j++){
-				if(memcmp(item,*(void**)vector_get(edges,j),g->key_size)==0){
-//					printf("found edges at %d-%d\n",i,j);
+				if(g->key_cmp(item,*(void**)vector_get(edges,j),g->key_size)==0){
 					vector_remove(edges,j);
 					break;
 				}
 
 			}
-			//assert(j!=edges->size);
 		}
 	break;
 	case G_REMOVE_SOFT:

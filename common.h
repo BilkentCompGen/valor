@@ -21,6 +21,10 @@
 #define RETURN_SUCCESS 0
 #define RETURN_ERROR 1
 
+/* STRAND */
+#define READ_STRAND_POS 0 
+#define READ_STRAND_NEG 1
+
 #define MAX_BAMS 256
 
 /* Maximum filename length */
@@ -99,6 +103,8 @@ htsFile* safe_hts_open( char* path, char* mode);
 /* General BAM processing functions */
 int is_proper( int flag);
 int is_discordant( bam1_core_t bam_alignment_core, int min, int max);
+
+int is_alt_concordant( int p1, int p2, int flag, char s1, char s2, int min, int max);
 int is_concordant( bam1_core_t bam_alignment_core, int min, int max);
 char base_as_char( int base_as_int);
 char complement_char( char base);

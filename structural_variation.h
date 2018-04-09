@@ -3,37 +3,44 @@
 #include "vector.h"
 #include "graph.h"
 #include "interval10X.h"
+#include "readbam.h"
 
 typedef enum SV_TYPE{
 	SV_INVERSION,
-	SV_DUPLICATION
+	SV_DUPLICATION,
+	SV_INVERTED_DUPLICATION
 }sv_type;
 
 typedef interval_pair splitmolecule_t;
 
 typedef struct sv{
-	int covered;
-	int inactive;
+	splitmolecule_t AB;
+	splitmolecule_t CD;
+//	double depths[2];
 	int supports[2];
 	int tabu;
 	int dv;
-	splitmolecule_t AB;
-	splitmolecule_t CD;
-//	double depths[4];
 	sv_type type;
+	char orientation;
+	_Bool covered;
+	_Bool inactive;
 }sv_t;
 
-#define DUP_BACK_COPY 0
+#define DUP_BACK_COPY 3
 #define DUP_FORW_COPY 1
 #define SPCL_VECTOR_GET(V,I) ((splitmolecule_t *)vector_get((V),(I)))
 
 #define SV_VECTOR_GET(V,I) ((sv_t *)vector_get((V),(I)))
 
+int g_remove_all(graph_t *,vector_t *, vector_t *);
+vector_t *g_dfs_components(graph_t *);
 const char *sv_type_name(sv_type);
+
+int _svcmp(const void *v1, const void *v2,size_t);
+int sv_comp(const void *v1, const void *v2);
 int sv_equals(const void *i1, const void *i2);
 splitmolecule_t *splitmolecule_init(interval_10X *i1,interval_10X *i2);
 void sv_fprint(FILE *stream, int chr, sv_t *inv);
-
 graph_t *make_sv_graph(vector_t *svs);
 sv_t *sv_init(splitmolecule_t *,splitmolecule_t *,sv_type);
 
@@ -43,9 +50,9 @@ splitmolecule_t *sv_reduce_breakpoints(sv_t*);
 vector_t *discover_split_molecules(vector_t *regions);
 vector_t *find_svs(vector_t *split_molecules,sv_type);
 
-
+void sv_graph_reset(graph_t *g);
 void splitmolecule_destroy(splitmolecule_t *molecule);
-void update_sv_supports(vector_t *svs,vector_t *sup_v1, vector_t *sup_v2,sv_type);
+void update_sv_supports(vector_t *svs, bam_vector_pack *,sv_type);
 size_t sv_hf(hashtable_t *table, const void *inv);
 splitmolecule_t *splitmolecule_copy(splitmolecule_t *to_copy);
 void sv_graph_visualize(graph_t *g, FILE *stream);

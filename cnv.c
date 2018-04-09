@@ -1,13 +1,25 @@
 #include "cnv.h"
 
 
+
+double get_depth_region(short *depths, int start, int end){
+	if( end <start){ return get_depth_region(depths,end,start);}
+	double sum = 0;
+	int i;
+	
+	for( i = start/MOLECULE_BIN_SIZE;i<end/MOLECULE_BIN_SIZE;i++){
+		sum+=depths[i];
+	}
+	return sum / ceil((end-start)/MOLECULE_BIN_SIZE);
+}
+
 int cmp_short(const void *a, const void *b){
 	short aa = *(short *) a;
 	short bb = *(short *) b;
 	return aa - bb;
 }
 
-
+/*
 double calculate_chromosome_RD_mean(bam_info *in_bam, sonic *snc, int chr_no){
 
 	double mean;
@@ -30,7 +42,7 @@ double calculate_chromosome_RD_mean(bam_info *in_bam, sonic *snc, int chr_no){
 
  // Followinw Code should remove the outlier read depths
  // not worth for the time it uses
-/*
+//
 	qsort(read_depths,chr_len,sizeof(short),cmp_short);
 	sum = 0;
 	for( i=0;i<chr_len;i++){
@@ -66,10 +78,11 @@ double calculate_chromosome_RD_mean(bam_info *in_bam, sonic *snc, int chr_no){
 	}
 
 	printf("After outlier filtering Chromosome %s mean is %lf\n",snc->chromosome_names[chr_no],mean);
-*/
+
 	freeMem(read_depths,sizeof(short)*snc->chromosome_lengths[chr_no]);
 	return mean;
 }
+
 
 void calculate_GC_histogram(bam_info *in_bam, sonic *snc, int chr_no){
 	int i,j;
@@ -99,6 +112,82 @@ void calculate_GC_histogram(bam_info *in_bam, sonic *snc, int chr_no){
 		}
 	}
 }
+*/
+double make_global_molecule_mean(short *depths, sonic *snc, int chr){
+	
+	long bin_count = snc->chromosome_lengths[chr] / MOLECULE_BIN_SIZE;
+	double sum = 0;
+	int i;
+	for(i=0;i<bin_count;i++){
+		sum+= depths[i];
+	}
+	
+	return sum/bin_count;
+}
+
+double make_global_molecule_std_dev(short *depths, sonic *snc, int chr, double mean){
+	double sum = 0;
+	long bin_count = snc->chromosome_lengths[chr] / MOLECULE_BIN_SIZE;
+	int i;
+
+//	short *depths_copy = malloc(sizeof(short) *bin_count);
+//	memcpy(depths_copy,depths,bin_count*sizeof(short));
+
+//	qsort(depths_copy,bin_count,sizeof(short),cmp_short);
+	sum = 0;
+	for( i=0;i<bin_count;i++){
+		sum+=(depths[i]-mean)*(depths[i]-mean);
+	}
+
+	double std_dev = sqrt((double)sum/bin_count);
+
+/*
+	int start = 0;
+	int end = bin_count;
+	while( std_dev > ( mean/4)){
+	
+
+
+		int val = depths_copy[start];
+		while(val ==depths_copy[++start]);
+
+		val = depths_copy[end-1];
+		while(val == depths_copy[--end-1]);
+
+		sum = 0;
+		for( i=start;i<end;i++){
+			sum+=(depths_copy[i]);
+		}
+		mean = sum / (end-start);
+			
+		sum = 0;
+		for( i=start;i<end;i++){
+			sum+=(depths_copy[i]-mean)*(depths_copy[i]-mean);
+		}
+		std_dev=sqrt((double)sum/(end-start));
+	}
+*/
+	return std_dev;
+}
+
+short *make_molecule_depth_array(vector_t *regions, sonic *snc, int chr){
+	long bin_count = snc->chromosome_lengths[chr] / MOLECULE_BIN_SIZE;
+	short *depths = malloc(sizeof(short) * bin_count);
+	int i, j;
+
+	for( i=0;i<bin_count;i++){
+		depths[i] = 0;
+	}
+	
+	for( i=0;i<regions->size;i++){
+		interval_10X *molecule = vector_get(regions,i);
+		for( j=molecule->start;j<molecule->end;j+=MOLECULE_BIN_SIZE){
+			depths[j/MOLECULE_BIN_SIZE]++;	
+		}
+	}
+	return depths;
+}
+
 /*
 duplication_t *check_cnv(bam_info *in_bam, sonic *snc, int chr, inversion_t *pair){
 

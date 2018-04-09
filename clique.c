@@ -16,7 +16,6 @@ int clique_plateau_move( clique_t *c, graph_t *sv_graph, adjlist_t *al, int TABU
 	removed = 1;
 	sv_t *tmp;
 	sv_t **etmp;
-//	printf("\rClique Size: %8zu \tGraph # of items: %8zu\tIteration %9d",c->items->size,sv_graph->number_of_items,ccc++);
 
 	//ADD
 	for(i=0;i< al->size;i++){
@@ -66,7 +65,6 @@ int clique_plateau_move( clique_t *c, graph_t *sv_graph, adjlist_t *al, int TABU
 			}
 		}
 	}
-	//MAKE RE-edging faster, efficient
 
 	if(max==INT_MIN){removed = 0;}
 	else{
@@ -83,17 +81,21 @@ int clique_plateau_move( clique_t *c, graph_t *sv_graph, adjlist_t *al, int TABU
 	return added||removed;
 }
 
-int add_entr,rem_entr,add_ext,rem_ext;
-clique_t *clique_find_clique(graph_t *sv_graph,int seed, float lambda, float gamma){
+
+clique_t *clique_find_clique(graph_t *sv_graph, vector_t *component, int seed, float lambda, float gamma){
 
 	//Sort nodes with degree
 	//qsort(sv_graph->nodes->items, sv_graph->nodes->size, sizeof(void *),graph_node_cmp);
-	adjlist_t *adjg = graph_to_al(sv_graph);
+	adjlist_t *adjg = graph_make_al(sv_graph,component);
+	if(adjg->size == 0){
+		return  NULL;
+	}
 	al_sortbydegree(adjg);
+	
 	sv_t *initial = al_get_value(adjg,0);	
 
 	//graph_node *initial = vector_head(sv_graph->nodes);
-	clique_t *clique = clique_init(lambda,gamma,initial);
+	clique_t *clique = clique_init(lambda,gamma,initial,sv_graph->number_of_items);
 	if(clique==NULL){ 
 //		fprintf(stderr,"Null Clique");
 		return NULL;
@@ -118,59 +120,54 @@ clique_t *clique_find_clique(graph_t *sv_graph,int seed, float lambda, float gam
 	initial->inactive = 1;
 
 
-//	vector_remove(clique->items,0);
-//	printf("\n");
-	while(clique_plateau_move(clique,sv_graph,adjg,3+adjg->size/1000));
-//	fprintf(stderr, "Add entry %d, Add exit %d\nRem entry %d, Rem exit %d\n",add_entr,add_ext,rem_entr,rem_ext);
-//	printf("\n");
 
+
+	while(clique_plateau_move(clique,sv_graph,adjg,3+component->size/100));
 	vector_free(adjg);
 	return clique;
 }
 
 
 //TODO test methods
-clique_t *clique_init(float lambda, float gamma, sv_t *node){
+clique_t *clique_init(float lambda, float gamma, sv_t *node, size_t gsize){
 	if( node==NULL){ return NULL;}
 	clique_t *new_clique = getMem(sizeof(clique_t));
 	new_clique->items = vector_init(sizeof(sv_t*),INITIAL_CLIQUE_COUNT);
+	new_clique->check_set = set_init( gsize*2, sizeof(sv_t *));
+	new_clique->check_set->key_cmp = &_svcmp;
 	new_clique->e_prime = 0;
 	new_clique->v_prime = 1;
 	new_clique->lambda = lambda;
 	new_clique->gamma = gamma;
 	vector_put(new_clique->items,&node);
-
-	add_entr = 0;
-	rem_entr = 0;
-	add_ext = 0;
-	rem_ext = 0;
 	return new_clique;
 }
 
 void clique_free(clique_t *c){
 	if(c==NULL){return;}
 	vector_free(c->items);
+	set_free(c->check_set);
 	freeMem(c,sizeof(c));
 }
 int clique_add_node(clique_t *c, graph_t *g, sv_t *node){
-	add_entr++;
+
 	if(!graph_have_node(g,node)){return -1;}
 	vector_t *edges = graph_get_edges(g,node);
 	vector_put(c->items,&node);
+	set_put(c->check_set,&node);
 	c->v_prime++;
 	int i;
 	sv_t **adj_item;
 	for(i=0;i<edges->size;i++){
 		adj_item = vector_get(edges,i);
-		if(vector_contains(c->items,adj_item)!=-1){
+//		if(vector_contains(c->items,adj_item)!=-1){
+		if(set_has(c->check_set,adj_item)){
 			c->e_prime++;
 		}
 	}
-	add_ext++;
 	return c->e_prime;
 }
 int clique_rem_node(clique_t *c, graph_t *g, sv_t *node){
-	rem_entr++;
 	int i = 0;
 	assert(graph_have_node(g,node));
 	assert(vector_contains(c->items,&node)!=-1);
@@ -178,7 +175,8 @@ int clique_rem_node(clique_t *c, graph_t *g, sv_t *node){
 
 	size_t index = vector_contains(c->items, &node);
 	if(index!=-1){
-		vector_remove(c->items,i);
+		vector_remove(c->items,index);
+		set_remove(c->check_set,&node);
 	}else{
 		return -1;
 	}
@@ -187,12 +185,11 @@ int clique_rem_node(clique_t *c, graph_t *g, sv_t *node){
 	sv_t **adj_item;
 	for(i=0;i<edges->size;i++){
 		adj_item = vector_get(edges,i);
-		if(vector_contains(c->items,adj_item)!=-1){
+//		if(vector_contains(c->items,adj_item)!=-1){
+		if(set_has(c->check_set,adj_item)){
 			c->e_prime--;
 		}
 	}
-	rem_ext++;
-
 	return c->e_prime;
 }
 

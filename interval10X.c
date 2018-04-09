@@ -40,6 +40,7 @@ int interval_pair_comp(const void *v1, const void *v2){
 	return p1->start1 - p2->start1;
 }
 
+//Fix this for varying length
 char *decode_ten_x_barcode( unsigned long barcode){
 	int i;
 	char *text = malloc(17); 
@@ -93,20 +94,22 @@ unsigned long encode_ten_x_barcode(unsigned char* source){
 	return result;
 }
 
-int interval_overlaps(interval_10X *i1, interval_10X *i2){
-	return ((i2->start >= i1->start - MAX_FRAG_SIZE) &&
-			(i2->start <= i1->end + MAX_FRAG_SIZE)) ||
-		((i2->end >= i1->start - MAX_FRAG_SIZE) &&
-		 	(i2->end <= i1->end + MAX_FRAG_SIZE));
+int interval_overlaps(interval_10X *i1, interval_10X *i2, int relax){
+	return ((i2->start >= i1->start - relax) &&
+			(i2->start <= i1->end + relax)) ||
+		((i2->end >= i1->start - relax) &&
+		 	(i2->end <= i1->end + relax));
 }
 
-int interval_pair_overlaps(interval_pair *p1, interval_pair *p2){
+int interval_pair_overlaps(interval_pair *p1, interval_pair *p2,int relax){
 	return interval_overlaps( 
 	&(interval_10X){p1->start1,p1->end1,p1->barcode},
-	&(interval_10X){p2->start1,p2->end1,p2->barcode}
+	&(interval_10X){p2->start1,p2->end1,p2->barcode},
+	relax
 	) && interval_overlaps(
 	&(interval_10X){p1->start2,p1->end2,p1->barcode},
-	&(interval_10X){p2->start2,p2->end2,p2->barcode}
+	&(interval_10X){p2->start2,p2->end2,p2->barcode},
+	relax
 	);
 }
 
@@ -133,7 +136,7 @@ int interval_can_pair(interval_10X *i1, interval_10X *i2){
 	        return (i1->barcode == i2->barcode) &&
                 (interval_size(i1) + interval_size(i2) - 2 >= CLONE_MIN) &&
                 (interval_size(i1) + interval_size(i2) - 2 <= CLONE_MAX) &&
-                (i2->start - i1->end >= INV_MIN_SIZE) &&
-                (i2->start - i1->end <= INV_MAX_SIZE);
+                (i2->start - i1->end >= CLONE_MIN_DIST) &&
+                (i2->start - i1->end <= CLONE_MAX_DIST);
 }
 

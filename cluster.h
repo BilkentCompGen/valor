@@ -14,5 +14,5 @@ int cluster_comp(const void *a, const void *b);
 
 sv_cluster *sv_cluster_make(clique_t *c);
 void sv_cluster_destroy(void *cluster);
-void sv_cluster_graph_fix(sv_cluster *cluster, graph_t *graph);//Remove Cluster from the graph
+void sv_cluster_graph_fix(sv_cluster *cluster, vector_t *component,graph_t *graph);//Remove Cluster from the graph
 #endif

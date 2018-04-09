@@ -2,6 +2,62 @@
 
 
 
+size_t SuperFastStringHash(hashtable_t *table, const void *key){
+	return SuperFastHash(key,strlen(key)) % table->size;
+}
+size_t SuperFastDangHash(hashtable_t *table, const void *key){
+	return SuperFastHash(key,table->key_size) % table->size;
+}
+
+#define get16bits(d) (*((const uint16_t *) (d)))
+
+uint32_t SuperFastHash (const char * data, int len) {
+        uint32_t hash = len, tmp;
+        int rem;
+
+        if (len <= 0 || data == NULL) return 0;
+
+        rem = len & 3;
+        len >>= 2;
+
+        /* Main loop */
+        for (;len > 0; len--) {
+        hash  += get16bits (data);
+        tmp    = (get16bits (data+2) << 11) ^ hash;
+        hash   = (hash << 16) ^ tmp;
+        data  += 2*sizeof (uint16_t);
+        hash  += hash >> 11;
+        }
+
+        /* Handle end cases */
+        switch (rem) {
+        case 3: hash += get16bits (data);
+                hash ^= hash << 16;
+                hash ^= ((signed char)data[sizeof (uint16_t)]) << 18;
+                hash += hash >> 11;
+                break;
+        case 2: hash += get16bits (data);
+                hash ^= hash << 11;
+                hash += hash >> 17;
+                break;
+        case 1: hash += (signed char)*data;
+                hash ^= hash << 10;
+                hash += hash >> 1;
+        }
+
+        /* Force "avalanching" of final 127 bits */
+        hash ^= hash << 3;
+        hash += hash >> 5;
+        hash ^= hash << 4;
+        hash += hash >> 17;
+        hash ^= hash << 25;
+        hash += hash >> 6;
+
+        return hash;
+}
+
+
+
 ht_iter_t *make_ht_iterator(hashtable_t *table){
 	if(table==NULL){return NULL;}
 	ht_iter_t *iter = getMem(sizeof(ht_iter_t));
@@ -29,7 +85,7 @@ int ht_iter_next(ht_iter_t *iter){
 		iter->index = 0;
 		iter->bucket_no++;
 		while( iter->ht->size > iter->bucket_no 
-			&& iter->ht->buckets[iter->bucket_no]->size <= 0){
+				&& iter->ht->buckets[iter->bucket_no]->size <= 0){
 			iter->bucket_no++;
 		}
 	}
@@ -66,7 +122,7 @@ hashtable_t *ht_init( size_t table_size,size_t key_size, size_t item_size){
 	hashtable_t *new_table = getMem(sizeof(hashtable_t));
 	new_table->size = table_size;
 	new_table->buckets = getMem(sizeof(vector_t *) * table_size);
-	
+
 	int i;
 	new_table->value_size = item_size;
 	new_table->key_size = key_size;
@@ -74,6 +130,7 @@ hashtable_t *ht_init( size_t table_size,size_t key_size, size_t item_size){
 	new_table->hf = &ht_default_hash_function;
 	new_table->number_of_items = 0;
 
+	new_table->key_cmp = &memcmp;
 	new_table->key_rmv = &free;
 	new_table->val_rmv = &free;
 	for(i=0;i<table_size;i++){
@@ -86,6 +143,22 @@ void ht_update_load_factor(hashtable_t *table, double load_factor){
 	table->optimal_load_factor = load_factor;
 }
 
+pair_t *ht_get_wcmp(hashtable_t *table, void *key, int(* cmp)(const void *, const void *)){
+	size_t bucket_index = table->hf(table,key);
+	vector_t *bucket = table->buckets[bucket_index];
+	int i;
+	pair_t *tpair;
+	for(i=0;i<bucket->size;i++){
+		tpair = vector_get(bucket,i);
+		if(cmp(tpair->key,key) == 0){
+			return tpair;
+		}
+	}
+	return NULL;
+}
+
+
+
 
 pair_t *ht_get(hashtable_t *table, void *key){
 	size_t bucket_index = table->hf(table,key);
@@ -94,7 +167,7 @@ pair_t *ht_get(hashtable_t *table, void *key){
 	pair_t *tpair;
 	for(i=0;i<bucket->size;i++){
 		tpair = vector_get(bucket,i);
-		if(memcmp(tpair->key,key,table->key_size) == 0){
+		if(table->key_cmp(tpair->key,key,table->key_size) == 0){
 			return tpair;
 		}
 	}
@@ -121,13 +194,39 @@ void __ht_put_pair(hashtable_t *table, pair_t *pair){
 	pair_t *tpair;
 	for(i=0;i<bucket->size;i++){
 		tpair = vector_get(bucket,i);
-		if(memcmp(tpair->key,pair->key,table->key_size) == 0){
+		if(table->key_cmp(tpair->key,pair->key,table->key_size) == 0){
 			memcpy(tpair->value,pair->value,table->value_size);
 		}
 	}
 	vector_put(bucket, pair);
 	table->number_of_items++;
 }
+void *ht_soft_put(hashtable_t *table, void *key){
+	ht_load_factor_check(table);
+	size_t bucket_index = table->hf(table,key);
+	vector_t *bucket = table->buckets[bucket_index];
+	int i;
+	pair_t *tpair;
+	for(i=0;i<bucket->size;i++){
+		tpair = vector_get(bucket,i);
+
+		if(table->key_cmp(tpair->key,key,table->key_size) == 0){
+			return tpair->value;
+		}
+	}
+
+	void *new_key = key;
+	void *new_val = getMem(table->value_size);
+
+	pair_t new_pair;
+	new_pair.key = new_key;
+	new_pair.value = new_val;
+	vector_put(bucket, &new_pair);
+	tpair = vector_tail(bucket);
+	table->number_of_items++;
+	return tpair->value;
+}
+
 
 void *ht_put(hashtable_t *table, void *key){
 	ht_load_factor_check(table);
@@ -138,7 +237,7 @@ void *ht_put(hashtable_t *table, void *key){
 	for(i=0;i<bucket->size;i++){
 		tpair = vector_get(bucket,i);
 
-		if(memcmp(tpair->key,key,table->key_size) == 0){
+		if(table->key_cmp(tpair->key,key,table->key_size) == 0){
 			return tpair->value;
 		}
 	}
@@ -162,7 +261,7 @@ void ht_remove(hashtable_t *table, void *key){
 	pair_t *tpair;
 	for(i=0;i<bucket->size;i++){
 		tpair = vector_get(bucket,i);
-		if(memcmp(tpair->key,key,table->key_size) == 0){
+		if(table->key_cmp(tpair->key,key,table->key_size) == 0){
 			table->key_rmv(tpair->key);
 			table->val_rmv(tpair->value);
 			vector_remove(bucket,i);
@@ -170,6 +269,24 @@ void ht_remove(hashtable_t *table, void *key){
 			return;
 		}
 	}
+}
+
+vector_t *ht_select_pairs_wcmp(hashtable_t *table, vector_t *set,int (*cmp)(const void *, const void *)){
+	vector_t *pairs = vector_init(sizeof(pair_t),set->size);
+	int i;
+	for(i=0;i<set->size;i++){
+		vector_put(pairs,ht_get_wcmp(table,vector_get(set,i),cmp));
+	}
+	return pairs;
+}
+
+vector_t *ht_select_pairs(hashtable_t *table, vector_t *set){
+	vector_t *pairs = vector_init(sizeof(pair_t),set->size);
+	int i;
+	for(i=0;i<set->size;i++){
+		vector_put(pairs,ht_get(table,vector_get(set,i)));
+	}
+	return pairs;
 }
 
 vector_t *ht_to_vector(hashtable_t *table){
@@ -199,7 +316,7 @@ void ht_expand(hashtable_t *table){
 	table->size = new_size;
 	for(i=0;i<new_size;i++){
 		table->buckets[i] =
-			 vector_init(sizeof(pair_t),INIT_BUCKET_SIZE);
+			vector_init(sizeof(pair_t),INIT_BUCKET_SIZE);
 	} 
 
 	pair_t *tpair;
@@ -228,7 +345,7 @@ void ht_shrink(hashtable_t *table){
 
 	for(i=0;i<pairs->size;i++){
 		tpair=vector_get(pairs,i);
-		 __ht_put_pair(table,tpair);
+		__ht_put_pair(table,tpair);
 	}
 	table->size = new_size;
 	vector_free(pairs);
@@ -240,8 +357,8 @@ void ht_load_factor_check(hashtable_t *table){
 		ht_expand(table);
 	}
 	else if (lf < table->optimal_load_factor-0.2){
-//		Is Auto-shrinking really a good idea?
-//		ht_shrink(table);
+		//		Is Auto-shrinking really a good idea?
+		//		ht_shrink(table);
 	}
 }
 

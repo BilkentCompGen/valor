@@ -3,7 +3,49 @@
 //#include "processbam.h"
 #include "valorconfig.h"
 #include "sonic.h"
-#define INITIAL_ARRAY_SIZE 25000
+#include "hashtable.h"
+
+#define INITIAL_ARRAY_SIZE 100000
+
+
+
+int altcomp(const void *v1, const void *v2){
+
+	alt_read *r1 = *(void **)v1;
+	alt_read *r2 = *(void **)v2;
+
+	return strcmp(r1->read_name,r2->read_name);
+}
+
+//TODO: move this
+vector_t *dang_string_tokenize(const char *str, const  char *delimiters){
+        vector_t *tokens = vector_init(VECTOR_VARIABLE_SIZE,8);
+
+        if(str == NULL){ return tokens;}
+        size_t str_size = strlen(str);
+        if(delimiters == NULL || delimiters[0] == 0){
+                char * dummy = malloc(str_size*sizeof(char)+1);
+                strcpy(dummy,str);
+                vector_soft_put(tokens,dummy);
+                return tokens;
+        }
+        size_t prev = 0;
+        size_t index = 0;
+        while(prev < str_size){
+                index = strcspn(str+prev,delimiters);
+                char *dummy = malloc((index + 1) * sizeof(char));
+                memcpy(dummy,str+prev,index);
+                dummy[index] = 0;
+                vector_soft_put(tokens,dummy);
+                prev+=(1+index);
+        }
+	vector_zip(tokens);
+        return tokens;
+}
+	
+void *tokenize_commas(void *val){
+	return dang_string_tokenize(val,",");
+}
 void print_alignment_core(bam1_core_t *bam_alignment_core){
 	printf( "%d\t%d\t%u\t%u\t%u\t%u\t%u\t%d\t%d\t%d\t%d\n", 
 		bam_alignment_core->tid ,	
@@ -20,29 +62,20 @@ void print_alignment_core(bam1_core_t *bam_alignment_core){
 }
 
 
-bam_vector_pack *make_bam_vector_pack(int count){
-	int i;
-	vector_t **vectors = (vector_t **) getMem(sizeof(vector_t *) * count); //A vector of intervals for each alignment	
-	vector_t **ppvectors = (vector_t **) getMem(sizeof(vector_t *) * count); //A vector of intervals for each alignment
-	vector_t **mmvectors = (vector_t **) getMem(sizeof(vector_t *) * count); //A vector of intervals for each alignment
-	vector_t **pmdup = (vector_t **) getMem(sizeof(vector_t *) * count); //A vector of intervals for each alignment
-	vector_t **mpdup = (vector_t **) getMem(sizeof(vector_t *) * count); //A vector of intervals for each alignment
-	
-	for( i=0; i<count;i++){
-		vectors[i] = vector_init(sizeof(interval_10X),INITIAL_ARRAY_SIZE);
-		mmvectors[i] = vector_init(sizeof(interval_discordant),INITIAL_ARRAY_SIZE);
-		ppvectors[i] = vector_init(sizeof(interval_discordant),INITIAL_ARRAY_SIZE);
-		pmdup[i] = vector_init(sizeof(interval_discordant),INITIAL_ARRAY_SIZE);
-		mpdup[i] = vector_init(sizeof(interval_discordant),INITIAL_ARRAY_SIZE);
-		
-	}
+bam_vector_pack *make_bam_vector_pack(){
 	bam_vector_pack *new_pack = malloc(sizeof(bam_vector_pack));
-	new_pack->concordants=vectors;
-	new_pack->mm_discordants=mmvectors;
-	new_pack->pp_discordants=ppvectors;
-	new_pack->pm_dup=pmdup;
-	new_pack->mp_dup=mpdup;
-	new_pack->count = count;
+	new_pack->concordants= vector_init(sizeof(interval_10X),
+		INITIAL_ARRAY_SIZE);
+	new_pack->mm_discordants=vector_init(sizeof(interval_discordant),
+		INITIAL_ARRAY_SIZE);
+	new_pack->pp_discordants=vector_init(sizeof(interval_discordant),
+		INITIAL_ARRAY_SIZE);
+	new_pack->pm_discordants=vector_init(sizeof(interval_discordant),
+		INITIAL_ARRAY_SIZE);
+;
+	new_pack->mp_discordants=vector_init(sizeof(interval_discordant),
+		INITIAL_ARRAY_SIZE);
+;
 	return new_pack;
 
 }
@@ -98,15 +131,46 @@ bam_stats *calculate_bam_statistics( bam_info* in_bam, char* bam_path, int numbe
 	if(hts_close(bam_file)){
 		fprintf(stderr,"Error closing Bam file\n");
 	}
-//	vector_free(read_vec);
+	vector_free(read_vec);
 	return statistics;
 }
 
+void sstrcpy ( void *dest, const void *source, size_t dummy){
+	strcpy(dest,source);
+}
 
-bam_vector_pack *read_10X_bam( bam_info* in_bam, char* bam_path, sonic *snc){
+int sstrcmp( const void *v1, const void *v2, size_t dummy){
+	return strcmp(v1,v2);
+}
+
+int chr_to_tid(hashtable_t *table,char *name){
+	int *tid = ht_get_value(table,name);
+	return tid==NULL?-1:*tid;
+}
+
+void free_alt_read(void *vread){
+	alt_read *read = vread;
+	free(read->read_name);
+	free(read->positions);
+	free(read);
+}
+
+bam_vector_pack **read_10X_bam( bam_info* in_bam, char* bam_path, sonic *snc){
 
 	int i;
 	bam_stats *statistics = calculate_bam_statistics(in_bam,bam_path,READ_SAMPLE_SIZE);
+
+	vector_t *alt_reads = vector_init(sizeof(alt_read),INITIAL_ARRAY_SIZE);
+	alt_reads->rmv = free_alt_read;
+//	INIT chrname Lookup table
+	hashtable_t *chr_id_table = ht_init(48,sizeof(char *),sizeof(int));
+	chr_id_table->key_cmp = sstrcmp;
+	chr_id_table->hf = SuperFastStringHash;
+	for(i=0;i<snc->number_of_chromosomes;i++){
+		int *val = ht_soft_put(chr_id_table,snc->chromosome_names[i]);
+		*val = i;
+	}	
+//
 
 
 	double frag_min = MAX(0, statistics->read_length_mean - 3 * statistics->read_length_std_dev);
@@ -121,126 +185,203 @@ bam_vector_pack *read_10X_bam( bam_info* in_bam, char* bam_path, sonic *snc){
 	bam1_core_t *bam_alignment_core;
 	bam1_t* bam_alignment;	
 	int return_value;
-	in_bam->read_depth = getMem(sizeof(short*)*bam_header->n_targets);
-	in_bam->chromosome_mean_rd = getMem(sizeof(double)*bam_header->n_targets);
-	for(i=0;i<snc->number_of_chromosomes;i++){
-		in_bam->read_depth[i]=getMem(sizeof(short)*snc->chromosome_lengths[i]);
-		int j;
-		for( j=0;j<snc->chromosome_lengths[i];j++){
-			in_bam->read_depth[i][j]=0;
-		}
-	}	
-	
+
 	fprintf(stderr,"Reading BAM file %s.\n", bam_path);
 
 	
-	bam_vector_pack *pack = make_bam_vector_pack(bam_header->n_targets);
-
+	bam_vector_pack **packs = malloc(sizeof(bam_vector_pack)*snc->number_of_chromosomes);
+	for( i = 0; i< snc->number_of_chromosomes;i++){
+		packs[i] = make_bam_vector_pack();
+	}
 	bam_alignment = bam_init1();
 	return_value = bam_read1( (bam_file->fp).bgzf, bam_alignment);
-	int valid = 0;
-	int counter = 0;
-	int ppcnt = 0;
-	int mmcnt = 0;
+
 	while(  return_value != -1){
 		
 		bam_alignment_core = &bam_alignment->core;
 		//print_alignment_core(bam_alignment_core);
 		if(bam_alignment_core->tid==-1) goto skip; //Skip invalid reads
-		if(bam_alignment_core->tid!=bam_alignment_core->mtid) goto skip;
-//		if( bam_alignment_core->isize < 0) goto skip;
-
 		if( bam_alignment_core->pos == -1) goto skip;
 
-
-		int ccval = (is_concordant(*bam_alignment_core, frag_min, frag_max));
-		int start1,end1,start2,end2;
-
-		unsigned long barcode = encode_ten_x_barcode( bam_aux_get(bam_alignment,"BX"));
-
-//		printf("Barcode: %lu\n",barcode);
-		start1 =MIN(bam_alignment_core->mpos,bam_alignment_core->pos);
-		start2 =MAX(bam_alignment_core->mpos,bam_alignment_core->pos);
-		end1=start1+bam_alignment_core->l_qseq;
-		end2=start2+bam_alignment_core->l_qseq;
-
-
-		in_bam->read_depth[bam_alignment_core->tid][
-			bam_alignment_core->pos]++;
-
 		if( bam_alignment_core->mpos == -1) goto skip;
-		in_bam->read_depth[bam_alignment_core->tid][
-			bam_alignment_core->mpos]++;
-		in_bam->read_count+=2;
+		unsigned long barcode = encode_ten_x_barcode( bam_aux_get(bam_alignment,"BX"));
+		if( CHECK_ALTERNATIVE_MAPPINGS){
+
+				alt_read *new_alt = malloc(sizeof(alt_read));
+				char * read_name = bam_get_qname(bam_alignment);
+				new_alt->read_name = malloc(sizeof(char) * (strlen(read_name) + 1));
+				strcpy(new_alt->read_name,read_name);
+				new_alt->barcode = barcode;
+
+				if(barcode==-1){goto skip;}
+				char *flag = bam_aux_get(bam_alignment,ALTERNATIVE_MAPPING_FLAG);
+				if(flag!=NULL){
+					flag+=1;//Skip the Z
+				}
+				vector_t *alts = dang_string_tokenize((char *)flag,";,");
+
+				new_alt->count = 1+alts->size/6;
+
+				new_alt->positions = malloc(sizeof(simple_interval) * new_alt->count);
+				new_alt->flag =  bam_alignment_core->flag;
+				new_alt->positions[0].tid = bam_alignment_core->tid;
+				new_alt->positions[0].start = bam_alignment_core->pos;
+				new_alt->positions[0].end = bam_alignment_core->pos + bam_alignment_core->l_qseq;
+				new_alt->positions[0].strand = bam_is_rev(bam_alignment); 
+
+				int new_count = new_alt->count;
+				alts->REMOVE_POLICY= REMP_LAZY;
+				for(i=0;i<new_alt->count-1;i++){
+					int qual = atoi(vector_get(alts,6*i+4));
+					int tid = chr_to_tid(chr_id_table,vector_get(alts,6*i));
+					if( tid == -1 || 0.75 * bam_alignment_core->qual  > qual+1){
+						new_count--;
+						int k;
+						for(k=0;k<6;k++){
+							vector_remove(alts,6*i+k);
+						}
+					}
+				}
+				vector_defragment(alts);
+				alts->REMOVE_POLICY = REMP_SORTED;
+				new_alt->count = new_count;
+				for(i=0;i<new_alt->count-1;i++){
+					new_alt->positions[1+i].tid = chr_to_tid(chr_id_table,vector_get(alts,6*i));
+					new_alt->positions[1+i].start = atoi(vector_get(alts,6*i+1));
+					new_alt->positions[1+i].end = bam_alignment_core->l_qseq + new_alt->positions[1+i].start;
+					new_alt->positions[1+i].strand = strcmp(vector_get(alts,6*i+2),"+")==0?READ_STRAND_POS:READ_STRAND_NEG;
+				}
+				
+				vector_free(alts);
+				vector_soft_put(alt_reads,new_alt);
+			
+		}else{
+
+			if(bam_alignment_core->tid!=bam_alignment_core->mtid) goto skip;
+
+			int ccval = (is_concordant(*bam_alignment_core, frag_min, frag_max));
+			int start1,end1,start2,end2;
+			
+			start1 = MIN(bam_alignment_core->mpos,bam_alignment_core->pos);
+			start2 = MAX(bam_alignment_core->mpos,bam_alignment_core->pos);
+			end1 = start1+bam_alignment_core->l_qseq;
+			end2 = start2+bam_alignment_core->l_qseq;
 
 
-		if(barcode==-1){goto skip;}
-		if( bam_alignment_core->qual < MIN_QUAL) goto skip;
-		switch(ccval){
-		case RPCONC:
-		//			in_bam->read_depth[bam_alignment_core->tid][end2]++;
-			valid ++;
-			vector_put(pack->concordants[bam_alignment_core->tid],
-				&(interval_10X){start1,end2,barcode}
-				);
-		break;
-		case RPPP:
-			vector_put(pack->pp_discordants[bam_alignment_core->tid],
-				&(interval_discordant){start1,end1,start2,end2,barcode}
-				);
-			ppcnt ++;		
-		break;
-		case RPMM:
-			vector_put(pack->mm_discordants[bam_alignment_core->tid],
-				&(interval_discordant){start1,end1,start2,end2,barcode}
-				);
-			mmcnt ++;
-		break;
-		case RPTDUPPM:
 
-			VALOR_LOG("%d %d %d %d +-\n",start1,end1,start2,end2);
-			vector_put(pack->pm_dup[bam_alignment_core->tid],&(interval_discordant){start1,end1,start2,end2,barcode});
-		break;
-		case RPTDUPMP:
+			in_bam->read_count+=2;
 
-			VALOR_LOG("%d %d %d %d -+\n",start1,end1,start2,end2);
-			vector_put(pack->mp_dup[bam_alignment_core->tid],&(interval_discordant){start1,end1,start2,end2,barcode});
-		break;
+			if(barcode==-1){goto skip;}
+			if( bam_alignment_core->qual < MIN_QUAL) goto skip;
+			switch(ccval){
+			case RPCONC:
+				vector_put(packs[bam_alignment_core->tid]->concordants,
+					&(interval_10X){start1,end2,barcode}
+					);
+			break;
+			case RPPP:
+				vector_put(packs[bam_alignment_core->tid]->pp_discordants,
+					&(interval_discordant){start1,end1,start2,end2,barcode}
+					);
+			break;
+			case RPMM:
+				vector_put(packs[bam_alignment_core->tid]->mm_discordants,
+					&(interval_discordant){start1,end1,start2,end2,barcode}
+					);
+			break;
+			case RPTDUPPM:
+				vector_put(packs[bam_alignment_core->tid]->pm_discordants,&(interval_discordant){start1,end1,start2,end2,barcode});
+			break;
+			case RPTDUPMP:
+				vector_put(packs[bam_alignment_core->tid]->mp_discordants,&(interval_discordant){start1,end1,start2,end2,barcode});
+			break;
 
-		default:
-		break;
+			default:
+			break;
+			}
 		}
 		skip:
-		counter ++;
 		return_value = bam_read1( (bam_file->fp).bgzf, bam_alignment);
 	}
+	if(CHECK_ALTERNATIVE_MAPPINGS){
+//This might take some time...
+		qsort(alt_reads->items,alt_reads->size,sizeof( void *),altcomp);
+		for(i=1;i<alt_reads->size;i++){
+			alt_read *a1 = vector_get(alt_reads,i-1);
+			alt_read *a2 = vector_get(alt_reads,i);
+			if(strcmp(a1->read_name,a2->read_name)==0){
+				int j,k;
+				for(j=0;j<a1->count;j++){
+					for(k=0;k<a2->count;k++){
+						if(a1->positions[j].tid != a2->positions[k].tid) continue;
+
+						int ccval = (is_alt_concordant(a1->positions[j].start,a2->positions[k].end,a1->flag,
+								a2->positions[k].strand, a1->positions[j].strand, frag_min, frag_max));
+						int start1,end1,start2,end2;
+						
+
+						if( a1->positions[j].start > a2->positions[k].start){
+							start1 = a2->positions[k].start;
+							start2 = a1->positions[j].start;;
+							end1 = a2->positions[k].end;
+							end2 = a1->positions[j].end;
+						}
+						else{
+							start2 = a2->positions[k].start;
+							start1 = a1->positions[j].start;;
+							end2 = a2->positions[k].end;
+							end1 = a1->positions[j].end;
+						}
+						switch(ccval){
+						case RPCONC:
+							vector_put(packs[a1->positions[j].tid]->concordants,
+								&(interval_10X){start1,end2,a1->barcode}
+								);
+						break;
+						case RPPP:
+							vector_put(packs[a1->positions[j].tid]->pp_discordants,
+								&(interval_discordant){start1,end1,start2,end2,a1->barcode}
+								);
+						break;
+						case RPMM:
+							vector_put(packs[a1->positions[j].tid]->mm_discordants,
+								&(interval_discordant){start1,end1,start2,end2,a1->barcode}
+								);
+						break;
+						case RPTDUPPM:
+							vector_put(packs[a1->positions[j].tid]->pm_discordants,&(interval_discordant){start1,end1,start2,end2,a1->barcode});
+						break;
+						case RPTDUPMP:
+							vector_put(packs[a1->positions[j].tid]->mp_discordants,&(interval_discordant){start1,end1,start2,end2,a1->barcode});
+						break;
+
+						default:
+						break;
+						}
+				
+					}
+				}
+				i++;
+			}
+		}
+	}
 	free(statistics);
-	bam_hdr_destroy(bam_header);
-	bam_destroy1(bam_alignment);
+	vector_free(alt_reads);
 	if(hts_close(bam_file)){
 		fprintf(stderr,"Error closing Bam file\n");
 	}
-	printf("Read %d valid lines out of %d reads\n++discordants:%d\t--discordants:%d\n",valid,counter,ppcnt,mmcnt);
 	
-	return pack;
+	bam_hdr_destroy(bam_header);
+	bam_destroy1(bam_alignment);
+	return packs;
 }
 
 
 void destroy_bams(bam_vector_pack *reads){
-	int i;
-	for( i = 0; i < reads->count ; i++){
-		vector_free(reads->concordants[i]);
-		vector_free(reads->pp_discordants[i]);
-		vector_free(reads->mm_discordants[i]);
-		vector_free(reads->pm_dup[i]);
-		vector_free(reads->mp_dup[i]);
-	}
-
-	freeMem(reads->concordants,sizeof(vector_t **));
-	freeMem(reads->mm_discordants,sizeof(vector_t **));
-	freeMem(reads->pp_discordants,sizeof(vector_t **));
-	freeMem(reads->pm_dup,sizeof(vector_t **));
-	freeMem(reads->mp_dup,sizeof(vector_t **));
-	freeMem(reads,sizeof(bam_vector_pack));
-
+	vector_free(reads->concordants);
+	vector_free(reads->pp_discordants);
+	vector_free(reads->mm_discordants);
+	vector_free(reads->pm_discordants);
+	vector_free(reads->mp_discordants);
+	free(reads);
 }

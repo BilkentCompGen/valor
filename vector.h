@@ -13,15 +13,27 @@
 #define REMP_SORTED 0
 #define REMP_FAST 1
 #define REMP_LAZY 2
+
+#define VECTOR_VARIABLE_SIZE 0
 typedef struct __vector_t{
 	void **items;
 	size_t item_sizeof;
 	size_t limit;
 	size_t size;
-	int REMOVE_POLICY;
+	char REMOVE_POLICY;
 	int fragmental;
 	void (*rmv)(void *);
 } vector_t;
+
+vector_t *vector_execute_for_all_and_save(vector_t *v, void *(*foo)(void *));
+void vector_execute_for_all(vector_t *v, void (*foo)(void *));
+typedef void (*foo_gen_no_ret)(void *);
+typedef void *(*foo_gen_wi_ret)(void *);
+#define vector_exec(V,FOO) _Generic((FOO), \
+                foo_gen_no_ret:vector_execute_for_all,\
+                foo_gen_wi_ret:vector_execute_for_all_and_save\
+                        )((V),(FOO))
+
 vector_t *vector_init(size_t item_sizeof, size_t initial_limit);
 int vector_put(vector_t *vector, void* item);
 void vector_soft_put(vector_t *vector, void *item);

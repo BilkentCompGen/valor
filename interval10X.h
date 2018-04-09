@@ -21,11 +21,11 @@ typedef interval_pair interval_discordant;
 
 int interval_can_pair(interval_10X *i1, interval_10X *i2);
 
-int interval_pair_overlaps(interval_pair *p1,interval_pair *i2);
+int interval_pair_overlaps(interval_pair *p1,interval_pair *i2, int relaxation);
 
 int interval_size(interval_10X *interval);
 
-int interval_overlaps( interval_10X *interval, interval_10X *that);
+int interval_overlaps( interval_10X *interval, interval_10X *that, int relaxation);
 
 int interval_distance( interval_10X *interval, interval_10X *that);
 

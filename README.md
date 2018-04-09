@@ -19,11 +19,14 @@ Compilation
 ===========
 
 
-	Change SV_TO_FIND variable in the make file to find different variants #TODO change this to cmdline variable	
+	Change SV_TO_FIND variable in the make file to find different variants	
 
 Type:
+	
 	make libs
+	
 	make
+	
 	cp valor /path/to/your/favorite/binaries (or sudo make install)
 
 

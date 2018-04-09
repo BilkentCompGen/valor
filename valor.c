@@ -30,7 +30,7 @@ double CLONE_STD_DEV;
 
 int main( int argc, char **argv){
 
-	sv_type svs_to_find = SV_DUPLICATION;
+	sv_type svs_to_find = SV_TO_FIND;
 	bam_info *in_bams;
 	char *bamname = argv[1];
 

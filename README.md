@@ -19,6 +19,7 @@ Compilation
 ===========
 
 Type:
+	Change SV_TO_FIND variable in the make file to find different variants #TODO change this to cmdline variable	
 
 	make libs
 	make
@@ -56,10 +57,10 @@ Please refer to the SONIC development repository: https://github.com/calkan/soni
 OUTPUT FORMAT
 =============
 
-in predicted_inversions.bed(like)
+in [OUTPUT_DIR]/predicted_inversions.bedpe
 
 ```bed
-Chromosome-name BP1-start BP1-end BP2-start BP2-end 10XG-Support Read_Pair_Support
+Chromosome-name BP1-start BP1-end Chromosome-name BP2-start BP2-end SV_TYPE 10XG-Support Read_Pair_Support
 ```
 * Read pair Support: Number of read-pairs that support these breakpoints
 * 10XG Support: Number of 10XG Molecule-pairs that support these breakpoints

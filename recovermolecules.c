@@ -17,7 +17,7 @@
 //Assumes sorted barcodes
 void filter_molecules( vector_t *mols, sonic *snc, int chr){
 	unsigned long current_barcode;		
-	int i = 0;
+	int i;
 	mols->REMOVE_POLICY = REMP_LAZY;
 
 	for(i=0;i<mols->size;i++){
@@ -31,6 +31,7 @@ void filter_molecules( vector_t *mols, sonic *snc, int chr){
 			continue;
 		}
 	}
+	i=0;
 	vector_defragment(mols);
 	while(i+1<mols->size){
 		current_barcode = I10X_VECTOR_GET(mols,i)->barcode;

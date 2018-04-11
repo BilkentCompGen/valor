@@ -133,7 +133,9 @@ int main( int argc, char **argv){
 			sv_t *sv = vector_get(variations[i],k);
 			sv_fprint(logFile,i,sv);
 			if(sv->supports[0] < 1 || sv->supports[1] < 1){
+				#if DEVELOPMENT_
 				fprintf(logFile,"removed\n");
+				#endif
 				vector_remove(variations[i],k);
 			}
 
@@ -144,7 +146,9 @@ int main( int argc, char **argv){
 				sv_t *inv = vector_get(variations[i],k);
 				if(sonic_is_gap(snc,snc->chromosome_names[i],
 							inv->AB.start1,inv->CD.end2)){
+					#if DEVELOPMENT_
 					sv_fprint(logFile,i,vector_get(variations[i],k));
+					#endif
 					vector_remove(variations[i],k);
 				}
 			}
@@ -201,8 +205,10 @@ int main( int argc, char **argv){
 				int is_ref_sat_target = sonic_is_satellite(snc,snc->chromosome_names[i],target_start,target_end);	
 				int does_cnv_support_dup = get_depth_region(depth_array,start,end) > global_molecule_mean + 1 * global_molecule_std;
 				if( (is_ref_dup_source && is_ref_dup_target) || !does_cnv_support_dup   || is_ref_gap_source || is_ref_gap_target || is_ref_sat_source || is_ref_sat_target){
+					#if DEVELOPMENT_
 					fprintf(logFile,"%d %d %d %d %d %lf\n",does_cnv_support_dup, is_ref_dup_source, is_ref_dup_target, start, end, get_depth_region(depth_array,start,end));
 					sv_fprint(logFile,i,vector_get(variations[i],k));
+					#endif
 					vector_remove(variations[i],k);
 				}
 			}

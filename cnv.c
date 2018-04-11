@@ -7,7 +7,7 @@ double get_depth_region(short *depths, int start, int end){
 	double sum = 0;
 	int i;
 	
-	for( i = start/MOLECULE_BIN_SIZE;i<end/MOLECULE_BIN_SIZE;i++){
+	for( i = floor(start/MOLECULE_BIN_SIZE);i<ceil(end/MOLECULE_BIN_SIZE);i++){
 		sum+=depths[i];
 	}
 	return sum / ceil((end-start)/MOLECULE_BIN_SIZE);

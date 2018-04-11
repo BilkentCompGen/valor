@@ -54,6 +54,8 @@ vector_t *dang_string_tokenize(const char *str, const  char *delimiter);
 bam_stats *calculate_bam_statistics(bam_info *, char *bam_path, int number_of_reads);
 bam_vector_pack *make_bam_vector_pack();
 int read_pcs_bam( bam_info* in_bam, char *bam_path, int pool_no, bam_vector_pack *pack);
+
+bam_vector_pack *read_10X_chr( bam_info* in_bam, char *bam_path, sonic *snc,int chr, bam_stats *);
 bam_vector_pack **read_10X_bam( bam_info* in_bam, char *bam_path, sonic *snc);
 void destroy_bams( bam_vector_pack* reads);
 #endif

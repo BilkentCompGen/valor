@@ -130,7 +130,7 @@ void g_dfs_step(graph_t *g, vector_t *comp, sv_t *sv){
 
 vector_t *g_dfs_components(graph_t *g){
 	adjlist_t *al = graph_to_al(g);
-        vector_t *comps = vector_init(sizeof(vector_t),48);
+        vector_t *comps = vector_init(sizeof(vector_t),16);
 	comps->rmv  = &vector_free;
         int i;
 

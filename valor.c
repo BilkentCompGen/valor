@@ -26,14 +26,11 @@ FILE *logFile = NULL;
 double CLONE_MEAN;
 double CLONE_STD_DEV;
 
-#ifndef SV_TO_FIND
-#define SV_TO_FIND SV_INVERSION
-#endif
 
 
 int main( int argc, char **argv){
 
-	sv_type svs_to_find = SV_TO_FIND;
+	sv_type svs_to_find = SV_INVERTED_DUPLICATION;
 	bam_info *in_bams;
 	char *bamname = argv[1];
 
@@ -67,8 +64,10 @@ int main( int argc, char **argv){
 	in_bams->sample_name = NULL;
 
 
+	bam_stats *stats = calculate_bam_statistics(in_bams, bamname, READ_SAMPLE_SIZE);
 
-	bam_vector_pack **reads = read_10X_bam(in_bams,bamname,snc);
+//	bam_vector_pack **reads = read_10X_bam(in_bams,bamname,snc);
+	bam_vector_pack **reads = malloc(sizeof(bam_vector_pack) * snc->number_of_chromosomes);//read_10X_bam(in_bams,bamname,snc);
 
 	regions = getMem(sizeof(vector_t *) * snc->number_of_chromosomes);
 	variations = getMem(sizeof(vector_t *) * snc->number_of_chromosomes);
@@ -82,6 +81,7 @@ int main( int argc, char **argv){
 		if(filecul==NULL){ fprintf(stderr,"Could not open %s\n",fileculname); return -1;}
 #endif
 		CUR_CHR = i;
+		reads[i] = read_10X_chr(in_bams,bamname,snc,i,stats);
 		if(reads[i]->concordants->size == 0){
 			printf("No Reads for Chromosome %s to %s\r",
 					snc->chromosome_names[first_skipped],snc->chromosome_names[i]);
@@ -369,6 +369,7 @@ int main( int argc, char **argv){
 					mean_depth       
 			);
 		}
+		fflush(outbedfile);
 #if DEVELOPMENT_
 		for(j=0;j<clusters[i]->size;j++){
 			sv_cluster *svc = vector_get(clusters[i],j);
@@ -389,6 +390,7 @@ int main( int argc, char **argv){
 		fclose(filecul);
 #endif
 		free(depth_array);
+		destroy_bams(reads[i]);
 		vector_free(variations[i]);
 		vector_free(clusters[i]);
 		graph_free(sv_graph);
@@ -403,10 +405,6 @@ int main( int argc, char **argv){
 	freeMem(clusters, sizeof(vector_t *) * snc->number_of_chromosomes);
 	freeMem(variations,sizeof(vector_t *) * snc->number_of_chromosomes);
 	free(regions);
-
-	for(i=0;i<snc->number_of_chromosomes;i++){
-		destroy_bams(reads[i]);
-	}
 	free(reads);
 	free_sonic(snc);
 	fclose(logFile);

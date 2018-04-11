@@ -1,5 +1,6 @@
 #include "clique.h"
 #include "cluster.h"
+#include <limits.h>
 #include <assert.h>
 #define INITIAL_CLIQUE_COUNT 12
 

@@ -200,7 +200,10 @@ bam_vector_pack **read_10X_bam( bam_info* in_bam, char* bam_path, sonic *snc){
 		
 		bam_alignment_core = &bam_alignment->core;
 		//print_alignment_core(bam_alignment_core);
+
 		if(bam_alignment_core->tid==-1) goto skip; //Skip invalid reads
+		if(bam_alignment_core->tid >= snc->number_of_chromosomes) goto skip; //Skip invalid reads
+		
 		if( bam_alignment_core->pos == -1) goto skip;
 
 		if( bam_alignment_core->mpos == -1) goto skip;

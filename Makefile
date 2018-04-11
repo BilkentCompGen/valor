@@ -1,13 +1,13 @@
 VALOR_VERSION := "0.5-alpha"
 VALOR_UPDATE := "16 Mar 2018"
-OUT_DIR := "VALOR_OUTPUT"
-LOG_FILE := "valor.log"
-SV_TO_FIND := "SV_DUPLICATION"
+OUT_DIR := "VALOR_OUTPUT2"
+LOG_FILE := "valor.log2"
+SV_TO_FIND := "SV_INVERTED_DUPLICATION"
 #Change above variable to one of these "SV_INVERSION" "SV_DUPLICATION" "SV_INVERTED_DUPLICATION"
 VALOR_DEBUG := 0
 LIVE_PROG := 0
 BUILD_DATE := "$(shell date)"
-CC=clang
+CC=gcc
 OPT=-O3
 CFLAGS =  -Wall  $(OPT) -I htslib -I vh -I sonic -DSV_TO_FIND=$(SV_TO_FIND) -DVALOR_LOG_FILE=\"$(LOG_FILE)\" -DVALOR_VERSION=\"$(VALOR_VERSION)\" -DBUILD_DATE=\"$(BUILD_DATE)\" -DVALOR_UPDATE=\"$(VALOR_UPDATE)\" -DVALOR_DEBUG=$(VALOR_DEBUG) -DLIVE_PROGRESS=$(LIVE_PROG) -DOUT_DIR=\"$(OUT_DIR)\"
 LDFLAGS = htslib/libhts.a -lz -lm -lpthread sonic/libsonic.a

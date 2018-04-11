@@ -26,6 +26,9 @@ FILE *logFile = NULL;
 double CLONE_MEAN;
 double CLONE_STD_DEV;
 
+#ifndef SV_TO_FIND
+#define SV_TO_FIND SV_INVERSION
+#endif
 
 
 int main( int argc, char **argv){
@@ -92,7 +95,7 @@ int main( int argc, char **argv){
 		double global_molecule_mean = 0;
 		double global_molecule_std = 0;
 		regions[i] = recover_molecules(reads[i]->concordants);
-		if(svs_to_find == SV_DUPLICATION || svs_to_find == SV_INVERTED_DUPLICATION){
+		if( svs_to_find == SV_INVERSION || svs_to_find == SV_DUPLICATION || svs_to_find == SV_INVERTED_DUPLICATION){
 			depth_array = make_molecule_depth_array(regions[i],snc,i);
 			global_molecule_mean = make_global_molecule_mean(depth_array,snc,i);
 			global_molecule_std = make_global_molecule_std_dev(depth_array,snc,i,global_molecule_mean);
@@ -193,9 +196,10 @@ int main( int argc, char **argv){
 
 				int is_ref_gap_source = sonic_is_gap(snc,snc->chromosome_names[i],start,end);
 				int is_ref_gap_target = sonic_is_gap(snc,snc->chromosome_names[i],target_start,target_end);
-				
+				int is_ref_sat_source = sonic_is_satellite(snc,snc->chromosome_names[i],start,end);
+				int is_ref_sat_target = sonic_is_satellite(snc,snc->chromosome_names[i],target_start,target_end);	
 				int does_cnv_support_dup = get_depth_region(depth_array,start,end) > global_molecule_mean + 1 * global_molecule_std;
-				if( (is_ref_dup_source && is_ref_dup_target) || !does_cnv_support_dup   || is_ref_gap_source || is_ref_gap_target){
+				if( (is_ref_dup_source && is_ref_dup_target) || !does_cnv_support_dup   || is_ref_gap_source || is_ref_gap_target || is_ref_sat_source || is_ref_sat_target){
 					fprintf(logFile,"%d %d %d %d %d %lf\n",does_cnv_support_dup, is_ref_dup_source, is_ref_dup_target, start, end, get_depth_region(depth_array,start,end));
 					sv_fprint(logFile,i,vector_get(variations[i],k));
 					vector_remove(variations[i],k);
@@ -284,15 +288,7 @@ int main( int argc, char **argv){
 			while(garbage_graph->number_of_items > 2){
 				printf("graph size :%zu\n",garbage_graph->number_of_items);
 				clique_t *c = clique_find_clique(garbage_graph,garbage,0,QCLIQUE_LAMBDA,QCLIQUE_GAMMA);
-				int c1=0;
-				int c2=0;
 
-				for(k=0;k<garbage->size;k++){
-					if(graph_have_node(garbage_graph,vector_get(garbage,k))){
-					c1++;
-					}
-					c2++;
-				}
 				if(c==NULL||c->v_prime<=0){clique_free(c);break;}
 				sv_cluster *svc_garbage = sv_cluster_make(c);
 				clique_free(c);
@@ -310,17 +306,8 @@ int main( int argc, char **argv){
 				sv_graph_reset(garbage_graph);
 
 				sv_cluster_graph_fix(svc_garbage,garbage,garbage_graph);
-				c1=0;
-				c2=0;
 
-				for(k=0;k<garbage->size;k++){
-					if(graph_have_node(garbage_graph,vector_get(garbage,k))){
-					c1++;
-					}
-					c2++;
-				}
 
-				printf("%d:%d\n",c1,c2);
 
 				vector_put(clusters[i],svc_garbage);
 				iteration_no++;
@@ -365,9 +352,11 @@ int main( int argc, char **argv){
 					mean_depth = get_depth_region(depth_array,svc->break_points->start1,svc->break_points->end1);
 				}
 				if(mean_depth < global_molecule_mean + 1.25 * global_molecule_std){ continue;}
+			}else{
+				mean_depth = get_depth_region(depth_array,first->AB.end1,first->CD.start1)/2 + get_depth_region(depth_array,first->AB.end2,first->CD.start2)/2;
 			}
 
-			fprintf(outbedfile,"%s\t%d\t%d\t%s\t%d\t%d\t%s\t%zu\t%d\n",
+			fprintf(outbedfile,"%s\t%d\t%d\t%s\t%d\t%d\t%s\t%zu\t%d\t%lf\n",
 					snc->chromosome_names[i],
 					svc->break_points->start1,
 					svc->break_points->end1,
@@ -376,8 +365,8 @@ int main( int argc, char **argv){
 					svc->break_points->end2,
 					sv_type_name(svs_to_find),
 					svc->items->size,
-					svc->supports[0]+svc->supports[1]
-				//	mean_depth       
+					svc->supports[0]+svc->supports[1],
+					mean_depth       
 			);
 		}
 #if DEVELOPMENT_

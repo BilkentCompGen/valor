@@ -35,7 +35,7 @@ extern double CLONE_STD_DEV;
 #define QCLIQUE_LAMBDA 0.5
 #define QCLIQUE_GAMMA 0.55
 #define QCLIQUE_TABU 20
-#define MAX_INVERSIONS_IN_GRAPH 81500
+#define MAX_INVERSIONS_IN_GRAPH 52500
 /***************INFER CLONES******************/
 #define WINDOW_SIZE  (MAX_FRAG_SIZE) // min window size
 #define MIN_COVERAGE  0 // min coverage of window size

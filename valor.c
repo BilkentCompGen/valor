@@ -30,7 +30,7 @@ double CLONE_STD_DEV;
 
 int main( int argc, char **argv){
 
-	sv_type svs_to_find = SV_INVERTED_DUPLICATION;
+	sv_type svs_to_find = SV_TO_FIND;
 	bam_info *in_bams;
 	char *bamname = argv[1];
 
@@ -102,7 +102,8 @@ int main( int argc, char **argv){
 			global_molecule_std = MIN(global_molecule_std,global_molecule_mean/2);
 			printf("Global Molecule mean is: %lf\nGlobal Standard Deviation is: %lf\n",global_molecule_mean,global_molecule_std);
 		}
-		filter_molecules(regions[i]);
+
+		filter_molecules(regions[i],snc,i);
 
 		qsort(regions[i]->items,regions[i]->size,sizeof(void*),interval_start_comp);  
 		groups = group_overlapping_molecules(regions[i]);

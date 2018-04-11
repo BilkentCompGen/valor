@@ -15,11 +15,23 @@
 #define INITIAL_ARRAY_SIZE 650
 
 //Assumes sorted barcodes
-void filter_molecules( vector_t *mols){
+void filter_molecules( vector_t *mols, sonic *snc, int chr){
 	unsigned long current_barcode;		
 	int i = 0;
 	mols->REMOVE_POLICY = REMP_LAZY;
 
+	for(i=0;i<mols->size;i++){
+		interval_10X *ival = vector_get(mols,i);
+		if(
+			sonic_is_gap(snc,snc->chromosome_names[chr]
+				,ival->start,ival->end) ||
+			sonic_is_satellite(snc,snc->chromosome_names[chr]
+				,ival->start,ival->end)){
+			vector_remove(mols,i);
+			continue;
+		}
+	}
+	vector_defragment(mols);
 	while(i+1<mols->size){
 		current_barcode = I10X_VECTOR_GET(mols,i)->barcode;
 		if( current_barcode == I10X_VECTOR_GET(mols,i+1)->barcode){
@@ -30,23 +42,12 @@ void filter_molecules( vector_t *mols){
 
 		}
 		else{
-			//			VALOR_LOG("%lu - %lu are not equal at %d\n",current_barcode,I10X_VECTOR_GET(mols,i+1)->barcode,i);	
-			//		printf("removed %d: current barcode %lu: next barcode %lu\n",i,current_barcode,I10X_VECTOR_GET(mols,1+i)->barcode);
 			vector_remove(mols,i);
 			i++;
 		}
 	}
-	int j=0;
-	for(i=0;i<mols->size;i++){
-		if(vector_get(mols,i)!=NULL){
-			j++;
-		}
-	}
-	//	printf("vsize %zu\n",j);
-	vector_defragment(mols);
-	//	printf("vsize %zu\n",mols->size);
 
-	//qsort(mols->items,mols->size,sizeof(void*),interval_start_comp);
+	vector_defragment(mols);
 }
 vector_t *recover_molecules( vector_t *vector){
 

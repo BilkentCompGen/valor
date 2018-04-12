@@ -132,7 +132,7 @@ int main( int argc, char **argv){
 		for (k=0;k<variations[i]->size;k++){
 			sv_t *sv = vector_get(variations[i],k);
 			sv_fprint(logFile,i,sv);
-			if(sv->supports[0] < 1 || sv->supports[1] < 1){
+			if(sv->supports[0] < 4 || sv->supports[1] < 4){
 				#if DEVELOPMENT_
 				fprintf(logFile,"removed\n");
 				#endif
@@ -250,9 +250,10 @@ int main( int argc, char **argv){
 		vector_t *comps = g_dfs_components(sv_graph);
 
 		if(comps->size == 0){continue;}
-
+		
 		for(k=0;k<comps->size;k++){
 			vector_t *garbage = vector_get(comps,k);
+			size_t initial_size = garbage->size;
 			qsort(garbage->items, garbage->size, sizeof(sv_t *),&sv_comp);
 
 /*
@@ -288,12 +289,13 @@ int main( int argc, char **argv){
 			vector_put(clusters[i],svc);
 //Now Explore Non Overlapping SV's
 */
-			if(garbage->size < 4){continue;}
+			if(garbage->size < 16){continue;}
 			graph_t *garbage_graph = sv_graph;//= make_sv_graph(garbage);
 			printf("Component Size %zu\n",garbage->size);
 			int iteration_no = 0;
 			while(garbage_graph->number_of_items > 2){
-				printf("graph size :%zu\n",garbage_graph->number_of_items);
+				if(garbage->size < initial_size /3){break;}
+
 				clique_t *c = clique_find_clique(garbage_graph,garbage,0,QCLIQUE_LAMBDA,QCLIQUE_GAMMA);
 
 				if(c==NULL||c->v_prime<=0){clique_free(c);break;}
@@ -301,12 +303,14 @@ int main( int argc, char **argv){
 				clique_free(c);
 				
 				if(svc_garbage==NULL){break;}
-				if(svc_garbage->items->size < 4){
+				if(svc_garbage->items->size < 16){
 					sv_graph_reset(garbage_graph);
 					sv_cluster_graph_fix(svc_garbage,garbage,sv_graph);
 					sv_cluster_destroy(svc_garbage);
 					continue;
 				}
+
+				printf("graph size :%zu\n",garbage_graph->number_of_items);
 				printf("Found a clique of size %zu, Fixing Graph Now\n",svc_garbage->items->size);
 				
 

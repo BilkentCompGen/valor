@@ -38,15 +38,17 @@ sv_cluster *sv_cluster_make(clique_t *c){
 		if(!interval_pair_overlaps(new_cluster->break_points,scl_tmp,CLONE_MEAN)){splitmolecule_destroy(scl_tmp); continue;}
 		vector_put(new_cluster->items,*sv_tmp);	
 		cnt++;
-//		interval_pair_intersect(new_cluster->break_points, scl_tmp);
+		if((*sv_tmp)->type == SV_INVERSION){
+			interval_pair_intersect(new_cluster->break_points, scl_tmp);
 //
 //	avg_t = avg_(t-1) * (t-1)/(t) + new / t
 //
-
-		new_cluster->break_points->start1 = (double)(new_cluster->break_points->start1)*((cnt-1)/cnt)+ scl_tmp->start1/cnt;
-		new_cluster->break_points->end1 = (double)(new_cluster->break_points->end1)*((cnt-1)/cnt)+ scl_tmp->end1/cnt;
-		new_cluster->break_points->start2 = (double)(new_cluster->break_points->start2)*((cnt-1)/cnt)+ scl_tmp->start2/cnt;
-		new_cluster->break_points->end2 = (double)(new_cluster->break_points->end2)*((cnt-1)/cnt)+ scl_tmp->end2/cnt;
+		}else{
+			new_cluster->break_points->start1 = (double)(new_cluster->break_points->start1)*((cnt-1)/cnt)+ scl_tmp->start1/cnt;
+			new_cluster->break_points->end1 = (double)(new_cluster->break_points->end1)*((cnt-1)/cnt)+ scl_tmp->end1/cnt;
+			new_cluster->break_points->start2 = (double)(new_cluster->break_points->start2)*((cnt-1)/cnt)+ scl_tmp->start2/cnt;
+			new_cluster->break_points->end2 = (double)(new_cluster->break_points->end2)*((cnt-1)/cnt)+ scl_tmp->end2/cnt;
+		}
 		new_cluster->supports[0]+=(*sv_tmp)->supports[0];
 		new_cluster->supports[1]+=(*sv_tmp)->supports[1];
 

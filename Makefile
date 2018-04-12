@@ -1,4 +1,4 @@
-VALOR_VERSION := "0.1-beta"
+VALOR_VERSION := "2.0"
 VALOR_UPDATE := "16 Mar 2018"
 OUT_DIR := "VALOR_OUTPUT"
 LOG_FILE := "valor.log"

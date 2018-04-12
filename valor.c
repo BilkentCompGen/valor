@@ -131,8 +131,10 @@ int main( int argc, char **argv){
 
 		for (k=0;k<variations[i]->size;k++){
 			sv_t *sv = vector_get(variations[i],k);
-			sv_fprint(logFile,i,sv);
 			if(sv->supports[0] < 4 || sv->supports[1] < 4){
+				fprintf(logFile,"Sup ");
+				sv_fprint(logFile,i,sv);
+		
 				#if DEVELOPMENT_
 				fprintf(logFile,"removed\n");
 				#endif
@@ -146,11 +148,22 @@ int main( int argc, char **argv){
 				sv_t *inv = vector_get(variations[i],k);
 				if(sonic_is_gap(snc,snc->chromosome_names[i],
 							inv->AB.start1,inv->CD.end2)){
+
+					fprintf(logFile,"Gap ");
+					sv_fprint(logFile,i,inv);
 					#if DEVELOPMENT_
 					sv_fprint(logFile,i,vector_get(variations[i],k));
 					#endif
 					vector_remove(variations[i],k);
+
+				}else if(sonic_is_satellite(snc,snc->chromosome_names[i],inv->AB.start1,inv->CD.end1) ||
+				sonic_is_satellite(snc,snc->chromosome_names[i],inv->CD.start2,inv->CD.end2)){
+					fprintf(logFile,"Sat ");
+					sv_fprint(logFile,i,inv);
+					
+					vector_remove(variations[i],k);
 				}
+		
 			}
 			vector_defragment(variations[i]);
 		}
@@ -294,7 +307,7 @@ int main( int argc, char **argv){
 			printf("Component Size %zu\n",garbage->size);
 			int iteration_no = 0;
 			while(garbage_graph->number_of_items > 2){
-				if(garbage->size < initial_size /3){break;}
+				if(garbage->size < initial_size /4){break;}
 
 				clique_t *c = clique_find_clique(garbage_graph,garbage,0,QCLIQUE_LAMBDA,QCLIQUE_GAMMA);
 

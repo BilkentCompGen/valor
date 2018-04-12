@@ -32,8 +32,8 @@ extern double CLONE_STD_DEV;
 #define DUP_MIN_DIST 100000
 #define VALOR_MOBILE_ELEMENTS "Alu:L1:SVA:HERV"
 /*************GRAPH PROPERTIES****************************/
-#define QCLIQUE_LAMBDA 0.5
-#define QCLIQUE_GAMMA 0.55
+#define QCLIQUE_LAMBDA 0.4
+#define QCLIQUE_GAMMA 0.4
 #define QCLIQUE_TABU 20
 #define MAX_INVERSIONS_IN_GRAPH 52500
 /***************INFER CLONES******************/

@@ -5,7 +5,7 @@
 #include "sonic.h"
 #include "hashtable.h"
 
-#define INITIAL_ARRAY_SIZE 100000
+#define INITIAL_ARRAY_SIZE 500000
 
 
 
@@ -160,8 +160,6 @@ bam_vector_pack *read_10X_chr( bam_info* in_bam, char* bam_path, sonic *snc, int
 
 	int i;
 
-	vector_t *alt_reads = vector_init(sizeof(alt_read),INITIAL_ARRAY_SIZE);
-	alt_reads->rmv = free_alt_read;
 //	INIT chrname Lookup table
 	hashtable_t *chr_id_table = ht_init(48,sizeof(char *),sizeof(int));
 	chr_id_table->key_cmp = sstrcmp;
@@ -256,7 +254,6 @@ bam_vector_pack *read_10X_chr( bam_info* in_bam, char* bam_path, sonic *snc, int
 		skip:
 		return_value = bam_read1( (bam_file->fp).bgzf, bam_alignment);
 	}
-	vector_free(alt_reads);
 //	bam_destroy1(bam_alignment);
 	return pack;
 }

@@ -116,7 +116,7 @@ void reverse_string( char* str);
 
 /* Misc. Utility */
 int compare_size_int( const void* p, const void* q);
-void print_quote( void);
+
 //int count_bed_lines(FILE *);
 int findChroIndex(ref_genome* ref, char* chroName);
 int isFF_RR(bam1_core_t bam_alignment_core);

@@ -54,7 +54,7 @@ int main( int argc, char **argv){
 
 	printf("Output Directory: "OUT_DIR"\n");
 	printf("Logfile name: "VALOR_LOG_FILE"\n");
-	print_quote();
+
 
 	logFile = safe_fopen(VALOR_LOG_FILE,"w");
 	fprintf( logFile, "#CreationDate=%d.%d.%d\n\n",

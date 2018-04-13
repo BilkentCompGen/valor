@@ -8,7 +8,7 @@
 #include <htslib/hts.h>
 
 #include "common.h"
-#include "quotes.h"
+
 
 // Track memory usage
 long long memUsage = 0;
@@ -75,16 +75,6 @@ void print_error( char* msg)
 	exit( EXIT_COMMON);
 }
 
-void print_quote( void)
-{
-	/* print a quote by the Doctor */
-
-	int quotenum;
-
-	srand(time(NULL));
-	quotenum = rand() % NUM_QUOTES;
-	fprintf( stderr, "\n\t%s\n\n", quotes[quotenum]);
-}
 
 FILE* safe_fopen( char* path, char* mode)
 {

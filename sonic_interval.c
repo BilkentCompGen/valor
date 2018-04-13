@@ -175,6 +175,10 @@ int sonic_is_satellite(sonic *this_sonic, const char *this_chromosome, int pos_s
   if (is_satellite != NULL)
     return 1;
 
+  is_satellite = strstr(this_interval->repeat_item->repeat_type, "Satel");
+  if (is_satellite != NULL)
+    return 1;
+
   return 0;
     
   

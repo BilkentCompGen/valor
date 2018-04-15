@@ -33,11 +33,30 @@ Type:
 Running VALOR
 ==============
 
-	valor input.bam snc.sonic
+Required Parameters:
 
-	More command-line to be implemented ( Those can be changed from valorconfig.h for now)
+	-i, --input [BAM files]        : Input files in sorted BAM format.
+	
+	-o, --out   [output folder]    : Folder to put stuff in
+        
+	-s, --sonic  [sonic file]      : Sonic file. Check: https://github.com/calkan/sonic.
+        
+	-f, --svs_to_find   [sv type]: Among INV,DUP,IDUP. Multi SV discovery not implemented.
 
+Optional Parameters:
+      
+	-l, --log_file [logfile name]: default is valor.log
+	
+Help Parameters:
+        
+	-v, --version                  : Print version and exit.
+        
+	-h, --help                     : Print help screen and exit.
 
+	
+Example:
+	
+	valor -i input.bam -s hg19.sonic -o folder_name -f DUP
 
 SONIC file (annotations container)
 ==================================
@@ -64,7 +83,7 @@ OUTPUT FORMAT
 in [OUTPUT_DIR]/predicted_inversions.bedpe
 
 ```bed
-Chromosome-name BP1-start BP1-end Chromosome-name BP2-start BP2-end SV_TYPE 10XG-Support Read_Pair_Support
+Chromosome-name BP1-start BP1-end Chromosome-name BP2-start BP2-end SV_TYPE 10XG-Support Read_Pair_Support Molecule_Depth
 ```
 * Read pair Support: Number of read-pairs that support these breakpoints
 * 10XG Support: Number of 10XG Molecule-pairs that support these breakpoints

@@ -51,7 +51,7 @@ Help Parameters:
         
 	-v, --version                  : Print version and exit.
         
-	-h, --help                     : Print this help screen and exit.
+	-h, --help                     : Print help screen and exit.
 
 	
 Example:

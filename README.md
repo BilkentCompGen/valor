@@ -1,7 +1,7 @@
 VALOR
 ======
 
-Discover inversions using long range information
+VAriation with LOng Range
 
 Requirements
 ============
@@ -17,9 +17,6 @@ Fetching VALOR
 
 Compilation
 ===========
-
-
-	Change SV_TO_FIND variable in the make file to find different variants	
 
 Type:
 	
@@ -64,12 +61,11 @@ SONIC file (annotations container)
 SONIC files are available under https://github.com/BilkentCompGen/sonic-prebuilt/
 
  * human_g1k_v37.sonic: SONIC file for Human Reference Genome GRCh37 (1000 Genomes Project version)
- 	* Also download the reference genome at: ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/human_g1k_v37.fasta.gz. 
- * ucsc_hg19.sonic: SONIC file for the human reference genome, UCSC version build hg19.
-	* Also download the reference genome at: http://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/chromFa.tar.gz. Deflate the tar archive and concatenate all chromosomes into a single FASTA file.
- * GRCh38.sonic: SONIC file for the human reference genome build 38.
-	* Also download the reference genome at: http://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.chromFa.tar.gz. Deflate the tar archive and concatenate all chromosomes into a single FASTA file.
 
+ * ucsc_hg19.sonic: SONIC file for the human reference genome, UCSC version build hg19.
+
+ * GRCh38.sonic: SONIC file for the human reference genome build 38.
+	
 Make sure that the same reference was used to align the reads beforehand (BAM file) and to create the SONIC file. The SONIC files and the reference FASTA files linked above are compatible.
 
 Building the SONIC file

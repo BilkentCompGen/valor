@@ -58,11 +58,13 @@ int main( int argc, char **argv){
 
 	timeinfo = localtime( &rawtime);
 
+
 	printf("\n\nVALOR: Variation with LOng Range\n");
 	printf("Version: %s\n", VALOR_VERSION);
 	printf("Build Date: %s\n",BUILD_DATE);
 	printf("Output Directory: %s\n",params->outprefix);
 	printf("Logfile name: %s\n", params->logfile);
+
 
 	sonic *snc = sonic_load(params->sonic_file);
 	printf("Reading Bam file: %s\n", bamname);

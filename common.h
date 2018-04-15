@@ -96,7 +96,8 @@ void reverse_string( char* str);
 
 /* Misc. Utility */
 int compare_size_int( const void* p, const void* q);
-//int count_bed_lines(FILE *);
+
+
 
 
 // Memory allocation/tracking functions

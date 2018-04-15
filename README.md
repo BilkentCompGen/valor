@@ -68,7 +68,7 @@ SONIC files are available under https://github.com/BilkentCompGen/sonic-prebuilt
 	
 Make sure that the same reference was used to align the reads beforehand (BAM file) and to create the SONIC file. The SONIC files and the reference FASTA files linked above are compatible.
 
-Building the SONIC file
+Building a new SONIC file
 =======================
 
 Please refer to the SONIC development repository: https://github.com/calkan/sonic/

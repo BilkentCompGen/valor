@@ -26,7 +26,9 @@ $(EXECUTABLE): $(OBJECTS)
 clean:
 	rm -f $(EXECUTABLE) *.o *~
 
-libs:
+sonic/sonic.c:
+	git clone https://github.com/calkan/sonic.git sonic/
+libs: sonic/sonic.c
 	make -C htslib
 	make -C sonic
 install:

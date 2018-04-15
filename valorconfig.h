@@ -1,8 +1,8 @@
 #ifndef __VALORCONFIG
 #define __VALORCONFIG
 
-#ifndef VALOR_LOG_FILE
-#define VALOR_LOG_FILE "valor.log"
+#ifndef VALOR_DEFAULT_LOG_FILE
+#define VALOR_DEFAULT_LOG_FILE "valor.log"
 #endif
 #define READ_LENGTH  88 // length of each pair end
 #define MAX_FRAG_SIZE  1000 // max segment size (distance between paired end reads)
@@ -17,14 +17,14 @@ extern double CLONE_STD_DEV;
 //#define CLONE_MIN (CLONE_MEAN - 3 * CLONE_STD_DEV)
 #define CLONE_MAX_DIST 300000000
 #define CLONE_MIN_DIST 0 
-#define MOLECULE_BIN_SIZE 5000
+#define MOLECULE_BIN_SIZE 20000
 /*************INVERSION INFORMATION****************************/
 #define INV_MIN_SIZE  80000 // 500K
 #define INV_MAX_SIZE  10000000 // 10M
 #define INV_GAP  CLONE_MEAN
-#define INV_OVERLAP (-CLONE_MEAN) // 1 molecule size
+#define INV_OVERLAP (-CLONE_MEAN/2) // 1 molecule size
 /*************DUPLICATION INFORMION****************************/
-#define DUP_OVERLAP (-CLONE_MEAN)
+#define DUP_OVERLAP (-CLONE_MEAN/2)
 #define DUP_GAP CLONE_MEAN
 #define DUP_MIN_SIZE CLONE_MEAN //1000
 #define DUP_MAX_SIZE 7000000
@@ -32,10 +32,10 @@ extern double CLONE_STD_DEV;
 #define DUP_MIN_DIST 100000
 #define VALOR_MOBILE_ELEMENTS "Alu:L1:SVA:HERV"
 /*************GRAPH PROPERTIES****************************/
-#define QCLIQUE_LAMBDA 0.4
-#define QCLIQUE_GAMMA 0.4
+#define QCLIQUE_LAMBDA 0.5
+#define QCLIQUE_GAMMA 0.55
 #define QCLIQUE_TABU 20
-#define MAX_INVERSIONS_IN_GRAPH 52500
+#define MAX_INVERSIONS_IN_GRAPH 81500
 /***************INFER CLONES******************/
 #define WINDOW_SIZE  (MAX_FRAG_SIZE) // min window size
 #define MIN_COVERAGE  0 // min coverage of window size

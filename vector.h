@@ -52,4 +52,5 @@ void vector_tabularasa(vector_t *vector);
 void vector_set_remove_function(vector_t *vector, void (*rmv)(void*));
 void vector_swap(vector_t *, size_t, size_t);
 void vector_shuffle(vector_t *, unsigned int seed);
+vector_t *dang_string_tokenize(const char *str, const char *delims);
 #endif

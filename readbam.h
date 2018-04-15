@@ -16,6 +16,18 @@ typedef struct __bam_vector_pack{
 }bam_vector_pack;
 
 
+
+typedef struct barcoded_read_pair{
+	unsigned int left : 31;
+	unsigned int l_or : 1;
+	unsigned int right :31;
+	unsigned int r_or :1;
+	unsigned long barcode :44;
+	int l_chr :8;
+	int r_chr :8;
+	unsigned int type :4;
+}barcoded_read_pair;
+
 typedef struct simple_interval{
 	int tid;
 	int start;
@@ -50,7 +62,6 @@ typedef struct _bam_info
         struct library_properties** libraries; /* each library_properties struct holds statistical/other info */
         int read_count;
 } bam_info;
-vector_t *dang_string_tokenize(const char *str, const  char *delimiter);
 bam_stats *calculate_bam_statistics(bam_info *, char *bam_path, int number_of_reads);
 bam_vector_pack *make_bam_vector_pack();
 int read_pcs_bam( bam_info* in_bam, char *bam_path, int pool_no, bam_vector_pack *pack);

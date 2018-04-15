@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
-
+#include <sys/stat.h>
 
 #include "common.h"
 #include "cmdline.h"
@@ -30,9 +30,13 @@ double CLONE_STD_DEV;
 
 int main( int argc, char **argv){
 
-	sv_type svs_to_find = SV_TO_FIND;
+	parameters * params = init_params();
+	if(parse_command_line(argc,argv,params)){
+		return 0;
+	}
+	sv_type svs_to_find =  params->svs_to_find;
 	bam_info *in_bams;
-	char *bamname = argv[1];
+	char *bamname = params->bam_file;;
 
 	int i,j,k;
 	time_t rawtime;
@@ -42,21 +46,28 @@ int main( int argc, char **argv){
 	vector_t **variations; //Vector of sv_t
 	vector_t **clusters;   //Vector of cluster_t
 
-	//TODO Take sonic as a parameter
 
-	//	sonic *snc = sonic_load("aux/ucsc_hg19.sonic");
-	sonic *snc = sonic_load(argv[2]);
-	FILE *outbedfile = fopen(OUT_DIR"/predicted_svs.bed","w+");
 
+
+	mkdir(params->outprefix, 0755 );
+	char *out_file_path = malloc((strlen("/predicted_svs.bedpe")+strlen(params->outprefix)+1)*sizeof(char));
+	sprintf(out_file_path,"%s/predicted_svs.bedpe",params->outprefix);
+	FILE *outbedfile = fopen(out_file_path,"w+");
+	
 	time( &rawtime);
 
 	timeinfo = localtime( &rawtime);
 
-	printf("Output Directory: "OUT_DIR"\n");
-	printf("Logfile name: "VALOR_LOG_FILE"\n");
-	print_quote();
+	printf("\n\nVALOR: Variation with LOng Range\n");
+	printf("Version: %s\n", VALOR_VERSION);
+	printf("Build Date: %s\n",BUILD_DATE);
+	printf("Output Directory: %s\n",params->outprefix);
+	printf("Logfile name: %s\n", params->logfile);
 
-	logFile = safe_fopen(VALOR_LOG_FILE,"w");
+	sonic *snc = sonic_load(params->sonic_file);
+	printf("Reading Bam file: %s\n", bamname);
+
+	logFile = safe_fopen(params->logfile,"w+");
 	fprintf( logFile, "#CreationDate=%d.%d.%d\n\n",
 			timeinfo->tm_year+1900, timeinfo->tm_mon+1, timeinfo->tm_mday); 
 
@@ -74,17 +85,19 @@ int main( int argc, char **argv){
 	clusters = getMem(sizeof(vector_t *) * snc->number_of_chromosomes);
 	int first_skipped = 0;
 	for( i = 0; i < 24 /*snc->number_of_chromosomes*/;i++){
-#if DEVELOPMENT_
-		char fileculname[255];
-		sprintf(fileculname,OUT_DIR"clusters%d.out",i+1);
-		FILE *filecul = fopen( fileculname,"w+");
-		if(filecul==NULL){ fprintf(stderr,"Could not open %s\n",fileculname); return -1;}
-#endif
+
 		CUR_CHR = i;
 		reads[i] = read_10X_chr(in_bams,bamname,snc,i,stats);
 		if(reads[i]->concordants->size == 0){
-			printf("No Reads for Chromosome %s to %s\r",
+			if(i-first_skipped==1){
+
+				printf("No Reads for Chromosome %s and %s\r",
 					snc->chromosome_names[first_skipped],snc->chromosome_names[i]);
+			}
+			else{
+				printf("No Reads for Chromosome %s to %s\r",		
+					snc->chromosome_names[first_skipped],snc->chromosome_names[i]);
+			}
 			continue;
 		}
 		printf("\nFinding Structural Variants in Chromosome %s\n",snc->chromosome_names[i]);
@@ -94,14 +107,16 @@ int main( int argc, char **argv){
 		short *depth_array = NULL;
 		double global_molecule_mean = 0;
 		double global_molecule_std = 0;
+		
+		printf("Recovering Split Molecules..\n");
 		regions[i] = recover_molecules(reads[i]->concordants);
-		if( svs_to_find == SV_INVERSION || svs_to_find == SV_DUPLICATION || svs_to_find == SV_INVERTED_DUPLICATION){
-			depth_array = make_molecule_depth_array(regions[i],snc,i);
-			global_molecule_mean = make_global_molecule_mean(depth_array,snc,i);
-			global_molecule_std = make_global_molecule_std_dev(depth_array,snc,i,global_molecule_mean);
-			global_molecule_std = MIN(global_molecule_std,global_molecule_mean/2);
-			printf("Global Molecule mean is: %lf\nGlobal Standard Deviation is: %lf\n",global_molecule_mean,global_molecule_std);
-		}
+
+		depth_array = make_molecule_depth_array(regions[i],snc,i);
+		global_molecule_mean = make_global_molecule_mean(depth_array,snc,i);
+		global_molecule_std = make_global_molecule_std_dev(depth_array,snc,i,global_molecule_mean);
+		global_molecule_std = MIN(global_molecule_std,global_molecule_mean/2);
+		printf("Global Molecule depth mean: %lf\nGlobal Molecule Depth Standard Deviation: %lf\n",global_molecule_mean,global_molecule_std);
+
 
 		filter_molecules(regions[i],snc,i);
 
@@ -116,10 +131,12 @@ int main( int argc, char **argv){
 
 		qsort(regions[i]->items,regions[i]->size,sizeof(void*),barcode_comp);  
 
-		printf("Chromosome %s\tClone Count %zu\tClone Mean %lf\tCLone Std %lf\n",snc->chromosome_names[i],regions[i]->size,CLONE_MEAN,CLONE_STD_DEV);
+		printf("Molecule Count: %zu\tMolecule Mean: %lf\tMolecule std-dev: %lf\n",regions[i]->size,CLONE_MEAN,CLONE_STD_DEV);
 
 		vector_t *split_molecules = discover_split_molecules(regions[i]);
 		vector_free(regions[i]);
+		
+		printf("Matching Split Molecules\n");
 		variations[i] = find_svs(split_molecules,svs_to_find);
 		vector_free(split_molecules);
 		printf("%zu candidate variations are made\n",variations[i]->size);
@@ -131,13 +148,7 @@ int main( int argc, char **argv){
 
 		for (k=0;k<variations[i]->size;k++){
 			sv_t *sv = vector_get(variations[i],k);
-			if(sv->supports[0] < 4 || sv->supports[1] < 4){
-				fprintf(logFile,"Sup ");
-				sv_fprint(logFile,i,sv);
-		
-				#if DEVELOPMENT_
-				fprintf(logFile,"removed\n");
-				#endif
+			if(sv->supports[0] < 3 || sv->supports[1] < 3){
 				vector_remove(variations[i],k);
 			}
 
@@ -148,9 +159,6 @@ int main( int argc, char **argv){
 				sv_t *inv = vector_get(variations[i],k);
 				if(sonic_is_gap(snc,snc->chromosome_names[i],
 							inv->AB.start1,inv->CD.end2)){
-
-					fprintf(logFile,"Gap ");
-					sv_fprint(logFile,i,inv);
 					#if DEVELOPMENT_
 					sv_fprint(logFile,i,vector_get(variations[i],k));
 					#endif
@@ -158,8 +166,6 @@ int main( int argc, char **argv){
 
 				}else if(sonic_is_satellite(snc,snc->chromosome_names[i],inv->AB.start1,inv->CD.end1) ||
 				sonic_is_satellite(snc,snc->chromosome_names[i],inv->CD.start2,inv->CD.end2)){
-					fprintf(logFile,"Sat ");
-					sv_fprint(logFile,i,inv);
 					
 					vector_remove(variations[i],k);
 				}
@@ -228,6 +234,22 @@ int main( int argc, char **argv){
 				
 			vector_defragment(variations[i]);
 		}
+		if( svs_to_find == SV_DELETION){
+			variations[i]->REMOVE_POLICY = REMP_LAZY;
+			for(k=0;k<variations[i]->size;k++){	
+				sv_t *del = vector_get(variations[i],k);
+				double depth = get_depth_region(depth_array,del->AB.end1,del->AB.start2);
+// depth/2 + depth/2 - 3/2 std
+				if(  depth > global_molecule_mean - global_molecule_std ){
+					vector_remove(variations[i],k);
+				}
+				if( sonic_is_gap(snc,snc->chromosome_names[i],del->AB.end1,del->AB.start2)){
+					vector_remove(variations[i],k);
+				}
+			}
+			vector_defragment(variations[i]);
+			variations[i]->REMOVE_POLICY = REMP_SORTED;
+		}
 		printf("%zu candidate variations are left after filtering\n",variations[i]->size);
 #if FILTER1XK //If number of variations are more than MAX_INVERSIONS_IN_GRAPH, do random selection
 		if(variations[i]->size > MAX_INVERSIONS_IN_GRAPH){
@@ -245,12 +267,7 @@ int main( int argc, char **argv){
 #endif
 
 		variations[i]->REMOVE_POLICY=REMP_SORTED;
-		FILE *fii = fopen(OUT_DIR"/fbed.bedpe","w+");
-		for(k=0;k<variations[i]->size;k++){
-			sv_t *sv = vector_get(variations[i],k);
-			sv_fprint(fii,i,sv);
-		}
-		fclose(fii);
+
 		graph_t *sv_graph = make_sv_graph(variations[i]);
 		printf("Finding Sv Clusters\n\n");
 		clusters[i] = vector_init(sizeof(sv_cluster),50);
@@ -304,7 +321,6 @@ int main( int argc, char **argv){
 */
 			if(garbage->size < 16){continue;}
 			graph_t *garbage_graph = sv_graph;//= make_sv_graph(garbage);
-			printf("Component Size %zu\n",garbage->size);
 			int iteration_no = 0;
 			while(garbage_graph->number_of_items > 2){
 				if(garbage->size < initial_size /4){break;}
@@ -322,10 +338,7 @@ int main( int argc, char **argv){
 					sv_cluster_destroy(svc_garbage);
 					continue;
 				}
-
-				printf("graph size :%zu\n",garbage_graph->number_of_items);
-				printf("Found a clique of size %zu, Fixing Graph Now\n",svc_garbage->items->size);
-				
+	
 
 				sv_graph_reset(garbage_graph);
 
@@ -339,6 +352,8 @@ int main( int argc, char **argv){
 //			vector_free(garbage);
 		//	graph_free(garbage_graph);
 		}
+
+		printf("Clustering is finished, found %zu variant clusters\n",clusters[i]->size);
 
 		vector_free(comps);
 /*
@@ -360,7 +375,7 @@ int main( int argc, char **argv){
 		}
 */
 		qsort(clusters[i]->items, clusters[i]->size, sizeof( void*), cluster_comp);
-		printf("Printing Clusters Now\n");
+		printf("Printing Variant calls\n");
 		for(j=0;j<clusters[i]->size;j++){
 			sv_cluster *svc = vector_get(clusters[i],j);
 
@@ -369,7 +384,7 @@ int main( int argc, char **argv){
 
 
 			double mean_depth = 0;
-			if(svs_to_find != SV_INVERSION){
+			if(svs_to_find == SV_DUPLICATION || svs_to_find == SV_INVERTED_DUPLICATION){
 				if(first->orientation == DUP_FORW_COPY){
 					mean_depth = get_depth_region(depth_array,svc->break_points->start1,svc->break_points->end1);
 				}else if(first->orientation == DUP_BACK_COPY){
@@ -394,25 +409,6 @@ int main( int argc, char **argv){
 			);
 		}
 		fflush(outbedfile);
-#if DEVELOPMENT_
-		for(j=0;j<clusters[i]->size;j++){
-			sv_cluster *svc = vector_get(clusters[i],j);
-
-			int is_dup =  sonic_is_segmental_duplication(snc,snc->chromosome_names[i],svc->break_points->start1,svc->break_points->end2);
-			int is_gap =  sonic_is_gap(snc,snc->chromosome_names[i],svc->break_points->start1,svc->break_points->end2);
-
-			fprintf(filecul,"Chromosome:%s\nCluster Size: %zu\nMM Support:%d\nPP Support:%d\nBreakpoints: %d\t%d\t%d\t%d\t%s\t%s\t\n",
-					snc->chromosome_names[i], svc->items->size, svc->supports[1], svc->supports[0],svc->break_points->start1,
-					svc->break_points->end1,svc->break_points->start2,svc->break_points->end2
-					,is_dup?"On SegDup":"",is_gap?"On Gap":"");
-			for(k=0;k<svc->items->size;k++){
-				fprintf(filecul,"\t");
-				sv_fprint(filecul,i,vector_get(svc->items,k));
-			}
-		}
-
-		fclose(filecul);
-#endif
 		free(depth_array);
 		destroy_bams(reads[i]);
 		vector_free(variations[i]);

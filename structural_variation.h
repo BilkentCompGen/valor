@@ -5,11 +5,6 @@
 #include "interval10X.h"
 #include "readbam.h"
 
-typedef enum SV_TYPE{
-	SV_INVERSION,
-	SV_DUPLICATION,
-	SV_INVERTED_DUPLICATION
-}sv_type;
 
 typedef interval_pair splitmolecule_t;
 
@@ -26,7 +21,7 @@ typedef struct sv{
 	_Bool inactive;
 }sv_t;
 
-#define DUP_BACK_COPY 3
+#define DUP_BACK_COPY 2
 #define DUP_FORW_COPY 1
 #define SPCL_VECTOR_GET(V,I) ((splitmolecule_t *)vector_get((V),(I)))
 

@@ -8,63 +8,32 @@
 #include <htslib/hts.h>
 
 #include "common.h"
-#include "quotes.h"
 
 // Track memory usage
 long long memUsage = 0;
 
-void init_params( parameters** params)
-{
-	int i;
-	/* initialize parameters */
-	*params = ( parameters*) getMem( sizeof( parameters));
-	( *params)->ref_genome = NULL;
-	( *params)->sonic = NULL;
-	( *params)->reps = NULL;
-	( *params)->dups = NULL;
-	( *params)->bam_files = NULL;
-	( *params)->bam_list_path = NULL;
-	( *params)->outprefix = NULL;
-	( *params)->bam_file_list = ( char**) getMem( sizeof( char*) * MAX_BAMS);
-	( *params)->gaps = NULL;
-	( *params)->mei = NULL;
-	( *params)->force_read_length = 0;
-	( *params)->run_vh = 0; 
-	( *params)->run_rd = 0;
-	( *params)->run_ns = 0;
-	( *params)->run_sr = 0;
-	( *params)->threads = 1;
-	( *params)->num_bams = 0;
-	( *params)->skip_fastq = 0;
-	( *params)->skip_sort = 0;
-	( *params)->skip_remap = 0;
+parameters *init_params(void){
 
-	for( i = 0; i < MAX_BAMS; i++)
-	{
-		(*params)->bam_file_list[i] = NULL;
-	}
+	/* initialize parameters */
+	parameters *params =  getMem( sizeof( parameters));
+
+	params->sonic_file = NULL;
+	params->logfile = NULL;
+	params->svs_to_find = 0;
+	params->low_mem = 0;
+	(params)->outprefix = NULL;
+	(params)->bam_file = NULL;
+	(params)->threads = 1;
+	return params;
 }
 
 void print_params( parameters* params)
 {
-	int i;
 	printf("\n");
-	for( i = 0; i < params->num_bams; i++)
-	{
-		printf( "%-30s%s\n","BAM input:",params->bam_file_list[i]);
-		fprintf( logFile,"%-30s%s\n","BAM input:",params->bam_file_list[i]);
-	}
-	printf( "%-30s%s\n","Reference genome:", params->ref_genome);
-	printf( "%-30s%s\n","Repeat coordinates:", params->reps);
-	printf( "%-30s%s\n","Duplication coorinates:", params->dups);
-	printf( "%-30s%s\n","Assembly Gap coordinates:", params->gaps);
-	printf( "%-30s%s\n","Mobile Elements:", params->mei);
 
-	fprintf( logFile, "%-30s%s\n","Reference genome:", params->ref_genome);
-	fprintf( logFile, "%-30s%s\n","Repeat coordinates:", params->reps);
-	fprintf( logFile, "%-30s%s\n","Duplication coorinates:", params->dups);
-	fprintf( logFile, "%-30s%s\n","Assembly Gap coordinates:", params->gaps);
-	fprintf( logFile, "%-30s%s\n","Mobile Elements:", params->mei);
+	printf( "%-30s%s\n","BAM input:",params->bam_file);
+	fprintf( logFile,"%-30s%s\n","BAM input:",params->bam_file);
+
 }
 
 void print_error( char* msg)
@@ -75,16 +44,6 @@ void print_error( char* msg)
 	exit( EXIT_COMMON);
 }
 
-void print_quote( void)
-{
-	/* print a quote by the Doctor */
-
-	int quotenum;
-
-	srand(time(NULL));
-	quotenum = rand() % NUM_QUOTES;
-	fprintf( stderr, "\n\t%s\n\n", quotes[quotenum]);
-}
 
 FILE* safe_fopen( char* path, char* mode)
 {
@@ -141,75 +100,6 @@ int is_proper( int flag)
 	return 0;
 }
 
-
-
-int is_discordant( bam1_core_t bam_alignment_core, int min, int max)
-{
-	int flag = bam_alignment_core.flag;
-
-	if( ( flag & BAM_FPAIRED) == 0) 
-	{
-		/* Read is single-end. Skip this by calling it concordant */
-		return RPSEND;
-	}
-
-	if( ( flag & BAM_FUNMAP) != 0)  // c.a.
-	{
-		/* Read unmapped; Orphan or OEA */
-		return RPUNMAPPED;
-	}
-
-	if( ( flag & BAM_FMUNMAP) != 0) // c.a.
-	{
-		/* Mate unmapped; Orphan or OEA */
-		return RPUNMAPPED;
-	}
-
-	if( ( flag & BAM_FREVERSE) != 0 && ( flag & BAM_FMREVERSE) != 0)
-	{
-		/* -- orientation = inversion */
-		return RPINV;
-	}
-
-	if( ( flag & BAM_FREVERSE) == 0 && ( flag & BAM_FMREVERSE) == 0)
-	{
-		/* ++ orientation = inversion */
-		return RPINV;
-	}
-
-	if( bam_alignment_core.pos <= bam_alignment_core.mpos) // c.a.
-	{
-		/* Read is placed BEFORE its mate */
-		if( ( flag & BAM_FREVERSE) != 0 && ( flag & BAM_FMREVERSE) == 0)
-		{
-			/* -+ orientation = tandem duplication */
-			return RPTDUP;
-		}
-	}
-	else
-	{
-		/* Read is placed AFTER its mate */
-		if( ( flag & BAM_FREVERSE) == 0 && ( flag & BAM_FMREVERSE) != 0)
-		{
-			/* +- orientation = tandem duplication */
-			return RPTDUP;
-		}
-	}
-
-	/* Passed all of the above. proper pair, both mapped, in +- orientation. Now check the isize */
-	if( abs(bam_alignment_core.isize) < min) // c.a.
-	{
-		/* Deletion or Insertion */
-		return RPINS;
-	}
-	else if(abs(bam_alignment_core.isize) > max)
-	{
-		return RPDEL;
-	}
-
-	/* All passed. Read is concordant */
-	return RPCONC;
-}
 
 
 int is_alt_concordant( int p1, int p2, int flag, char strand1, char strand2, int min, int max){
@@ -431,8 +321,6 @@ void qual_to_ascii( char* qual)
 	}
 }
 
-/* Even safer than strncpy as it dynamically allocates space for the string if
- there hasn't been already */
 void set_str( char** target, char* source)
 {
 	if( *target != NULL)
@@ -467,24 +355,6 @@ void reverse_string( char* str)
 	}
 }
 
-int compare_size_int( const void* p, const void* q)
-{
-	int i = *( const int*) p;
-	int j = *( const int*) q;
-
-	if( i < j)
-	{
-		return -1;
-	}
-	else if( i == j)
-	{
-		return 0;
-	}
-	else
-	{
-		return 1;
-	}
-}
 
 void* getMem( size_t size)
 {
@@ -526,40 +396,39 @@ double getMemUsage()
 	return memUsage / 1048576.0;
 }
 
-/*
-int count_bed_lines(FILE *bed_file)
-{
-	int number_of_lines;
-	char line[MAX_LENGTH];
-	char *return_value;
-
-	number_of_lines = 0;
-	while (!feof(bed_file)){
-		return_value = fgets(line, MAX_LENGTH, bed_file);
-		if (feof(bed_file))
-			break;
-		if (line[0] != 0)
-			number_of_lines++;
-	}
-
-	return number_of_lines;
-}
-*/
-int findChroIndex(ref_genome* ref, char* chroName)
-{
-	int i;
-	for(i=0;i<ref->chrom_count;i++)
-	{
-		if(!strcmp(chroName, ref->chrom_names[i]))
-			return i;
-	}
-	return -1;
-}
-
-
 int chr_atoi(char *chromosome){
         if(chromosome[3] > 58){//Some magic number which is between chromosome numbers and letters
                 return chromosome[3]-66;
         }
         return atoi(&chromosome[3])-1;
 }
+
+// DUP,IDUP,DEL,TRA,INV
+sv_type atosv(char *str){
+	if(strcmp(str,"ALL")==0){
+		fprintf(stderr,"Not Implemented\n");
+		exit(-1);
+		return -1;
+	}
+	if(strcmp(str,"INV")==0){
+		return SV_INVERSION;
+	}	
+	if(strcmp(str,"DUP")==0){
+		return SV_DUPLICATION;
+	}	
+	if(strcmp(str,"IDUP")==0){
+		return SV_INVERTED_DUPLICATION;
+	}
+	if(strcmp(str,"DEL")==0){
+		fprintf(stderr,"Not Implemented\n");
+		exit(-1);
+		return SV_DELETION;
+	}
+	if(strcmp(str,"TRA")==0){
+		fprintf(stderr,"Not Implemented\n");
+		exit(-1);
+		return SV_TRANSLOCATION;
+	}
+	return 0;
+}
+

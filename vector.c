@@ -268,3 +268,31 @@ int vector_test(int argc, char **argv){
 void vector_set_remove_function(vector_t *vector, void (*rmv)(void *)){
 	vector->rmv = rmv;
 }
+
+
+
+vector_t *dang_string_tokenize(const char *str, const  char *delimiters){
+        vector_t *tokens = vector_init(VECTOR_VARIABLE_SIZE,8);
+
+        if(str == NULL){ return tokens;}
+        size_t str_size = strlen(str);
+        if(delimiters == NULL || delimiters[0] == 0){
+                char * dummy = malloc(str_size*sizeof(char)+1);
+                strcpy(dummy,str);
+                vector_soft_put(tokens,dummy);
+                return tokens;
+        }
+        size_t prev = 0;
+        size_t index = 0;
+        while(prev < str_size){
+                index = strcspn(str+prev,delimiters);
+                char *dummy = malloc((index + 1) * sizeof(char));
+                memcpy(dummy,str+prev,index);
+                dummy[index] = 0;
+                vector_soft_put(tokens,dummy);
+                prev+=(1+index);
+        }
+        vector_zip(tokens);
+        return tokens;
+}
+

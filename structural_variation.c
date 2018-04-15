@@ -12,6 +12,10 @@ const char *sv_type_name(sv_type type){
 			return "duplication";
 		case SV_INVERTED_DUPLICATION:
 			return "inverted-duplication";
+		case SV_DELETION:
+			return "deletion";
+		case SV_TRANSLOCATION:
+			return "translocation";
 		default:
 			return "unknown";
 	}
@@ -389,6 +393,12 @@ int duplication_overlaps(sv_t *i1, sv_t *i2){
 			MIN(i2->AB.end2,i2->CD.start2),MAX(i2->AB.end2,i2->CD.start2)
 			},CLONE_MEAN);
 }
+
+int deletion_overlaps(sv_t *i1, sv_t *i2){
+	return interval_pair_overlaps(
+		&(i1->AB),&(i2->AB)
+		,CLONE_MEAN);
+}
 //Assumes i1 and i2 are same type SV
 int sv_overlaps(sv_t *i1, sv_t *i2){
 	switch(i1->type){
@@ -398,6 +408,8 @@ int sv_overlaps(sv_t *i1, sv_t *i2){
 			return duplication_overlaps(i1,i2);
 		case SV_INVERTED_DUPLICATION:
 			return duplication_overlaps(i1,i2);
+		case SV_DELETION:
+			return deletion_overlaps(i1,i2);
 		default:
 			fprintf(stderr,"Unknown SV type ordinal %d\n",i1->type);
 			VALOR_LOG("Unknown SV type ordinal %d\n",i1->type);
@@ -480,7 +492,6 @@ graph_t *make_sv_graph(vector_t *svs){
 	g->hf = &sv_hf;
 	g->key_cmp = &_svcmp;
 	int i,j;
-	printf("Adding Nodes\n");
 	for(i=0;i<svs->size;i++){
 		graph_put_node(g,vector_get(svs,i));
 	}
@@ -507,7 +518,7 @@ vector_t *discover_split_molecules(vector_t *regions){
 	vector_t *smolecules = vector_init(sizeof(splitmolecule_t),SCL_INIT_LIMIT);
 	interval_10X *ii;
 	interval_10X *ij;
-	printf("Discoverng Split Molecules...\n\n");
+
 	for(i=0;i<regions->size;i++){
 		for(j=i+1;j<regions->size;j++){
 			ii = vector_get(regions,i);
@@ -538,11 +549,13 @@ vector_t *find_svs(vector_t *split_molecules, sv_type type){
 
 	splitmolecule_t *AB;
 	splitmolecule_t *CD;
-
-	printf("Discovering SV's of type %s\n\n", sv_type_name(type));
-
 	for(i=0;i<split_molecules->size;i++){
 		AB = vector_get(split_molecules,i);
+		if(type == SV_DELETION){
+			sv_t *tmp = sv_init(AB,NULL,type);
+			vector_soft_put(svs,tmp);
+			continue;
+		}
 		for(j=0;j<split_molecules->size;j++){
 			if(i==j){continue;}
 			CD = vector_get(split_molecules,j);
@@ -598,6 +611,38 @@ size_t scl_binary_search(vector_t *intervals, splitmolecule_t *key){
 	}
 	return mid;
 }
+
+
+void update_deletion_supports(vector_t *dels, vector_t *pm_reads){
+	int i,j;
+	int pm_support;
+	int midAB;
+
+	qsort(pm_reads->items,pm_reads->size,sizeof(interval_discordant *),interval_pair_comp);
+
+	for(i=0;i<dels->size;i++){
+		pm_support = 0;
+		midAB = scl_binary_search(pm_reads,&(SV_VECTOR_GET(dels,i)->AB));
+
+		for(j=midAB;j<pm_reads->size;j++){
+			if(interval_pair_overlaps(&(SV_VECTOR_GET(dels,i)->AB),vector_get(pm_reads,j),CLONE_MEAN)){
+				pm_support++;				
+			}
+			if(SV_VECTOR_GET(dels,i)->AB.end1 < IDIS_VECTOR_GET(pm_reads,j)->start1){
+				break;
+			}
+			if(pm_support > MAX_SUPPORT){ break;}	
+		}
+
+
+
+		SV_VECTOR_GET(dels,i)->supports[1] = pm_support;
+		SV_VECTOR_GET(dels,i)->supports[0] = pm_support;
+	}
+
+}
+
+
 
 void update_duplication_supports(vector_t *dups, vector_t *pm_reads, vector_t *mp_reads){
 	int i,j;
@@ -753,6 +798,9 @@ void update_sv_supports(vector_t *svs, bam_vector_pack *reads  ,sv_type type){
 		case SV_INVERTED_DUPLICATION:
 			update_duplication_supports(svs,reads->pp_discordants,reads->mm_discordants);
 			break;
+		case SV_DELETION:
+			update_deletion_supports(svs,reads->pm_discordants);
+			break;
 		default:
 			fprintf(stderr,"Unknown SV type ordinal %d\n",type);
 			VALOR_LOG("Unknown SV type ordinal %d\n",type);
@@ -803,11 +851,23 @@ splitmolecule_t *inverted_duplication_reduce_breakpoints(sv_t *dup){
 
 	return sc;
 }
+
+splitmolecule_t *deletion_reduce_breakpoints(sv_t *sv){
+	splitmolecule_t *sc = getMem(sizeof(splitmolecule_t));
+	sc->start1 = sv->AB.start1;
+	sc->start2 = sv->AB.start2;
+	sc->end1 = sv->AB.end1;
+	sc->end2 = sv->AB.end2;
+	return sc;
+}
+
 splitmolecule_t *sv_reduce_breakpoints(sv_t *sv){
 	switch(sv->type){
 		case SV_INVERSION: return inversion_reduce_breakpoints(sv);
 		case SV_DUPLICATION: return duplication_reduce_breakpoints(sv);
+
 		case SV_INVERTED_DUPLICATION: return inverted_duplication_reduce_breakpoints(sv);
+		case SV_DELETION: return deletion_reduce_breakpoints(sv);
 		default: return NULL;
 	}
 }

@@ -147,6 +147,10 @@ int sonic_build(char *ref_genome, char *gaps, char *reps, char *dups, char *info
 
 sonic *sonic_load(char *sonic_file_name){
 
+  static sonic *this_sonic = NULL;
+  if(sonic_file_name == NULL){
+    return this_sonic;
+  }
   gzFile sonic_file;
   int sonic_magic;
   int return_value;
@@ -162,14 +166,12 @@ sonic *sonic_load(char *sonic_file_name){
      RepeatMasker out file entries
   */
 
-
   char strand;
   char repeat_type[MAX_LENGTH];
   char repeat_class[MAX_LENGTH];
   int repeat_type_length;
   int repeat_class_length;
   int repeat_start, repeat_end;
-  sonic *this_sonic;
 
   time_t sonic_build_time;
   struct tm *sonic_ptm;

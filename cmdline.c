@@ -130,7 +130,7 @@ void print_help( void)
 	fprintf( stdout, "\t-s, --sonic  [sonic file]      : Sonic file. Check: https://github.com/calkan/sonic.\n");
 	fprintf( stdout, "\t-f, --svs_to_find   [sv type]: Among INV,DUP,IDUP. Multi SV discovery not implemented.\n");
 	fprintf( stdout, "Optional Parameters:\n");
-	fprintf( stdout, "\t-t, --threads   [Number of threads to run VALOR]: Not Implemented, default is 1\n");
+	fprintf( stdout, "\t-t, --threads   [Number of threads to run VALOR]: default is 1\n");
 	fprintf( stdout, "\t-m, --low_mem	[Use disk to reduce memory usage]: Not Implemented\n");
 	fprintf( stdout, "\t-l, --log_file [logfile name]: default is valor.log\n");
 	fprintf( stdout, "Help Parameters:\n");

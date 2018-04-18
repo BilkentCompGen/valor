@@ -21,12 +21,11 @@
 #include "sonic/sonic.h"
 #include "graph.h"
 #include "progress.h"
+#include <omp.h>
 int CUR_CHR = -1;
 FILE *logFile = NULL;
 double CLONE_MEAN;
 double CLONE_STD_DEV;
-
-
 
 int main( int argc, char **argv){
 
@@ -34,8 +33,11 @@ int main( int argc, char **argv){
 	if(parse_command_line(argc,argv,params)){
 		return 0;
 	}
+	#ifdef _OPENMP
+	omp_set_num_threads(params->threads);
+	#endif
 	sv_type svs_to_find =  params->svs_to_find;
-	bam_info *in_bams;
+
 	char *bamname = params->bam_file;;
 
 	int i,j,k;
@@ -69,11 +71,10 @@ int main( int argc, char **argv){
 	sonic *snc = sonic_load(params->sonic_file);
 	printf("Reading Bam file: %s\n", bamname);
 
+	bam_info *in_bams = get_bam_info(snc);
 	logFile = safe_fopen(params->logfile,"w+");
 	fprintf( logFile, "#CreationDate=%d.%d.%d\n\n",
 			timeinfo->tm_year+1900, timeinfo->tm_mon+1, timeinfo->tm_mday); 
-
-	in_bams = (bam_info *) getMem( sizeof(bam_info));
 	in_bams->sample_name = NULL;
 
 
@@ -91,33 +92,25 @@ int main( int argc, char **argv){
 		CUR_CHR = i;
 		reads[i] = read_10X_chr(in_bams,bamname,snc,i,stats);
 		if(reads[i]->concordants->size == 0){
-			if(i-first_skipped==1){
-
-				printf("No Reads for Chromosome %s and %s\r",
-					snc->chromosome_names[first_skipped],snc->chromosome_names[i]);
-			}
-			else{
-				printf("No Reads for Chromosome %s to %s\r",		
-					snc->chromosome_names[first_skipped],snc->chromosome_names[i]);
-			}
+			printf("No Reads for Chromosome %s %s %s\r",
+				snc->chromosome_names[first_skipped],
+				(i-first_skipped==1?"and":"to"),
+				snc->chromosome_names[i]);
 			continue;
 		}
 		printf("\nFinding Structural Variants in Chromosome %s\n",snc->chromosome_names[i]);
 		first_skipped = i+1;
-//		calculate_GC_histogram(in_bams, snc, i);
 
-		short *depth_array = NULL;
-		double global_molecule_mean = 0;
-		double global_molecule_std = 0;
-		
 		printf("Recovering Split Molecules..\n");
 		regions[i] = recover_molecules(reads[i]->concordants);
 
-		depth_array = make_molecule_depth_array(regions[i],snc,i);
-		global_molecule_mean = make_global_molecule_mean(depth_array,snc,i);
-		global_molecule_std = make_global_molecule_std_dev(depth_array,snc,i,global_molecule_mean);
-		global_molecule_std = MIN(global_molecule_std,global_molecule_mean/2);
-		printf("Global Molecule depth mean: %lf\nGlobal Molecule Depth Standard Deviation: %lf\n",global_molecule_mean,global_molecule_std);
+		in_bams->depths[i] = make_molecule_depth_array(regions[i],snc,i);
+		
+		in_bams->depth_mean[i] = make_global_molecule_mean(in_bams->depths[i],snc,i);
+		in_bams->depth_std[i] = make_global_molecule_std_dev(in_bams->depths[i],snc,i,in_bams->depth_mean[i]);
+		in_bams->depth_std[i] = MIN(in_bams->depth_std[i],in_bams->depth_mean[i]/2);
+		printf("Global Molecule depth mean: %lf\nGlobal Molecule Depth Standard Deviation: %lf\n",
+		in_bams->depth_mean[i],in_bams->depth_std[i]);
 
 
 		filter_molecules(regions[i],snc,i);
@@ -147,111 +140,8 @@ int main( int argc, char **argv){
 				svs_to_find);
 		variations[i]->REMOVE_POLICY = REMP_LAZY;
 
+		vector_filter(variations[i],sv_is_proper);
 
-		for (k=0;k<variations[i]->size;k++){
-			sv_t *sv = vector_get(variations[i],k);
-			if(sv->supports[0] < 3 || sv->supports[1] < 3){
-				vector_remove(variations[i],k);
-			}
-
-		}
-		vector_defragment(variations[i]);
-		if( svs_to_find == SV_INVERSION){
-			for(k=0;k< variations[i]->size;k++){
-				sv_t *inv = vector_get(variations[i],k);
-				if(sonic_is_gap(snc,snc->chromosome_names[i],
-							inv->AB.start1,inv->CD.end2)){
-					#if DEVELOPMENT_
-					sv_fprint(logFile,i,vector_get(variations[i],k));
-					#endif
-					vector_remove(variations[i],k);
-
-				}else if(sonic_is_satellite(snc,snc->chromosome_names[i],inv->AB.start1,inv->CD.end1) ||
-				sonic_is_satellite(snc,snc->chromosome_names[i],inv->CD.start2,inv->CD.end2)){
-					
-					vector_remove(variations[i],k);
-				}
-		
-			}
-			vector_defragment(variations[i]);
-		}
-		if( svs_to_find == SV_DUPLICATION ||  svs_to_find == SV_INVERTED_DUPLICATION){
-			for(k=0;k<variations[i]->size;k++){	
-				sv_t *dup = vector_get(variations[i],k);
-				int start = 0,end = 0,target_start = 0,target_end =0;
-				if(dup->orientation == DUP_FORW_COPY){
-
-					target_start = dup->AB.start2;
-					target_end = dup->CD.end2;
-					if(svs_to_find == SV_DUPLICATION){
-						start = dup->AB.start1;
-						end = dup->CD.end1;
-					}
-					else if(svs_to_find == SV_INVERTED_DUPLICATION){
-						start = dup->CD.start1;
-						end = dup->AB.end1;
-
-					}
-				}else if(dup->orientation == DUP_BACK_COPY){
-
-					if(svs_to_find == SV_DUPLICATION){
-						start = dup->AB.start2;
-						end = dup->CD.end2;
-					}else if(svs_to_find == SV_INVERTED_DUPLICATION){
-						start = dup->CD.start2;
-						end = dup->AB.end2;
-					}
-					target_start = dup->AB.start1;
-					target_end = dup->CD.end1;
-				}
-				if(target_start > target_end){
-					int temp = target_start;
-					target_start = target_end;
-					target_end = temp;
-				}
-				sonic_repeat *rep = sonic_is_mobile_element(snc,snc->chromosome_names[i],start,end,VALOR_MOBILE_ELEMENTS);
-				if(rep!=NULL){
-					int rep_start = MAX(rep->repeat_start,start);
-					int rep_end = MIN(rep->repeat_end,end);
-					if ( rep_end - rep_start < 0.6 * (end-start)){
-						rep=NULL;
-					}
-				}
-				int is_ref_dup_source = sonic_is_segmental_duplication(snc,snc->chromosome_names[i],start,end);
-				int is_ref_dup_target = sonic_is_segmental_duplication(snc,snc->chromosome_names[i],target_start,target_end);
-
-				int is_ref_gap_source = sonic_is_gap(snc,snc->chromosome_names[i],start,end);
-				int is_ref_gap_target = sonic_is_gap(snc,snc->chromosome_names[i],target_start,target_end);
-				int is_ref_sat_source = sonic_is_satellite(snc,snc->chromosome_names[i],start,end);
-				int is_ref_sat_target = sonic_is_satellite(snc,snc->chromosome_names[i],target_start,target_end);	
-				int does_cnv_support_dup = get_depth_region(depth_array,start,end) > global_molecule_mean + 1 * global_molecule_std;
-				if( (is_ref_dup_source && is_ref_dup_target) || !does_cnv_support_dup   || is_ref_gap_source || is_ref_gap_target || is_ref_sat_source || is_ref_sat_target){
-					#if DEVELOPMENT_
-					fprintf(logFile,"%d %d %d %d %d %lf\n",does_cnv_support_dup, is_ref_dup_source, is_ref_dup_target, start, end, get_depth_region(depth_array,start,end));
-					sv_fprint(logFile,i,vector_get(variations[i],k));
-					#endif
-					vector_remove(variations[i],k);
-				}
-			}
-				
-			vector_defragment(variations[i]);
-		}
-		if( svs_to_find == SV_DELETION){
-			variations[i]->REMOVE_POLICY = REMP_LAZY;
-			for(k=0;k<variations[i]->size;k++){	
-				sv_t *del = vector_get(variations[i],k);
-				double depth = get_depth_region(depth_array,del->AB.end1,del->AB.start2);
-// depth/2 + depth/2 - 3/2 std
-				if(  depth > global_molecule_mean - global_molecule_std ){
-					vector_remove(variations[i],k);
-				}
-				if( sonic_is_gap(snc,snc->chromosome_names[i],del->AB.end1,del->AB.start2)){
-					vector_remove(variations[i],k);
-				}
-			}
-			vector_defragment(variations[i]);
-			variations[i]->REMOVE_POLICY = REMP_SORTED;
-		}
 		printf("%zu candidate variations are left after filtering\n",variations[i]->size);
 #if FILTER1XK //If number of variations are more than MAX_INVERSIONS_IN_GRAPH, do random selection
 		if(variations[i]->size > MAX_INVERSIONS_IN_GRAPH){
@@ -388,13 +278,13 @@ int main( int argc, char **argv){
 			double mean_depth = 0;
 			if(svs_to_find == SV_DUPLICATION || svs_to_find == SV_INVERTED_DUPLICATION){
 				if(first->orientation == DUP_FORW_COPY){
-					mean_depth = get_depth_region(depth_array,svc->break_points->start1,svc->break_points->end1);
+					mean_depth = get_depth_region(in_bams->depths[i],svc->break_points->start1,svc->break_points->end1);
 				}else if(first->orientation == DUP_BACK_COPY){
-					mean_depth = get_depth_region(depth_array,svc->break_points->start1,svc->break_points->end1);
+					mean_depth = get_depth_region(in_bams->depths[i],svc->break_points->start1,svc->break_points->end1);
 				}
-				if(mean_depth < global_molecule_mean + 1.25 * global_molecule_std){ continue;}
+				if(mean_depth < in_bams->depth_mean[i] + 1.25 * in_bams->depth_std[i]){ continue;}
 			}else{
-				mean_depth = get_depth_region(depth_array,first->AB.end1,first->CD.start1)/2 + get_depth_region(depth_array,first->AB.end2,first->CD.start2)/2;
+				mean_depth = get_depth_region(in_bams->depths[i],first->AB.end1,first->CD.start1)/2 + get_depth_region(in_bams->depths[i],first->AB.end2,first->CD.start2)/2;
 			}
 
 			fprintf(outbedfile,"%s\t%d\t%d\t%s\t%d\t%d\t%s\t%zu\t%d\t%lf\n",
@@ -411,17 +301,22 @@ int main( int argc, char **argv){
 			);
 		}
 		fflush(outbedfile);
-		free(depth_array);
 		destroy_bams(reads[i]);
 		vector_free(variations[i]);
 		vector_free(clusters[i]);
 		graph_free(sv_graph);
 
 
+		free(in_bams->depths[i]);
 		//		free(in_bams->read_depth[i]);
 	}
 	printf("\n");
 
+	for(i=0;i<snc->number_of_chromosomes;i++){
+
+	}
+	free(in_bams->depth_mean);
+	free(in_bams->depth_std);
 	freeMem(in_bams, sizeof(bam_info));
 
 	freeMem(clusters, sizeof(vector_t *) * snc->number_of_chromosomes);

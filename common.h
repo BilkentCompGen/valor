@@ -4,7 +4,8 @@
 #include <stdio.h>
 #include <htslib/sam.h>
 #include <htslib/hts.h>
-#include <zlib.h>
+//#include <zlib.h>
+#include <omp.h>
 #include "valorconfig.h"
 #define MAX(a,b) ((a)>(b)?(a):(b)) 
 #define MIN(a,b) ((a)<(b)?(a):(b))
@@ -77,7 +78,6 @@ void print_params( parameters*);
  files safely */
 void print_error( char*);
 FILE* safe_fopen( char* path, char* mode);
-gzFile safe_fopen_gz( char* path, char* mode);
 htsFile* safe_hts_open( char* path, char* mode);
 
 /* General BAM processing functions */

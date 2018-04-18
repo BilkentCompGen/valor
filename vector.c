@@ -1,6 +1,5 @@
 #include "vector.h"
 
-
 void vector_execute_for_all(vector_t *v, void (*foo)(void *)){
         int i;
         for(i=0;i<v->size;i++){
@@ -17,6 +16,32 @@ vector_t *vector_execute_for_all_and_save(vector_t *v, void *(*foo)(void *)){
         return rt;
 }
 
+void vector_filter(vector_t *vector, int (*check)(void *)){
+	int i;
+	int prev_policy = vector->REMOVE_POLICY;
+	vector->REMOVE_POLICY = REMP_LAZY;
+	#pragma omp parallel for	
+	for(i=0;i<vector->size;i++){
+		if(!check(vector_get(vector,i))){
+			vector_remove(vector,i);
+		}
+	}
+	vector_defragment(vector);
+	vector->REMOVE_POLICY = prev_policy;
+}
+
+vector_t *vector_select(vector_t *vector, int (*check)(void *)){
+	int i;
+	vector_t *selected = vector_init(vector->item_sizeof,vector->size);
+	for(i=0;i<vector->size;i++){
+		if(check(vector_get(vector,i))){
+			vector_put(selected,vector_get(vector,i));
+		}
+	}
+	vector_zip(selected);
+	return selected;
+}
+
 vector_t *vector_init(size_t item_sizeof, size_t initial_limit){
 	vector_t *new_vector = (vector_t *) getMem( sizeof(vector_t));
 	new_vector->item_sizeof = item_sizeof;
@@ -31,7 +56,6 @@ vector_t *vector_init(size_t item_sizeof, size_t initial_limit){
 }
 
 void vector_tabularasa(vector_t *vector){
-
 	int i;
 	for(i=0;i<vector->size;i++){
 		vector->items[i] = NULL;
@@ -70,7 +94,6 @@ void vector_update_remove_policy(vector_t *vector, int policy){
 int vector_contains(vector_t *vector, void *item){
 	int i;
 	for(i=0;i<vector->size;i++){
-		if(vector->items[i] == NULL){continue;}
 		if(memcmp(vector->items[i], item,vector->item_sizeof)==0){
 			return i;
 		}
@@ -104,7 +127,6 @@ int vector_defragment(vector_t *vector){
 		}
 		if(i!=j){
 			vector->items[j]=vector->items[i];
-	//		vector->items[i]=NULL;
 		}
 	}
 	vector->fragmental=0;
@@ -215,55 +237,7 @@ void vector_free( void *v){
 	freeMem(vector,sizeof(vector_t));
 }
 
-void vector_swap(vector_t *vec, size_t i1, size_t i2){
-	void *tmp = vec->items[i1];
-	vec->items[i1] = vec->items[i2];
-	vec->items[i2] = tmp;
-}
 
-void vector_shuffle(vector_t *vec, unsigned int seed){
-	size_t i;
-	srand(seed);
-	for( i=0;i<vec->size;i++){
-		size_t i1 = rand() % vec->size;
-		vector_swap(vec,i,i1);
-	}
-}
-
-
-
-int vector_test(int argc, char **argv){
-	vector_t *v2 = vector_init(sizeof(int),4);
-	int i,j;
-	for(j=0;j<10;j++){
-//		vector_put(vector,&i);
-		vector_put(v2,&j);
-	}
-	v2->REMOVE_POLICY = REMP_LAZY;
-
-	printf("Vector Size is %zu\n",v2->size);
-	vector_remove(v2,3);
-	vector_remove(v2,7);
-	vector_remove(v2,8);
-	i=-26;
-
-
-	vector_insert(v2,&i,7);
-	vector_defragment(v2);
-
-	for(i=0;i<v2->size;i++){
-		printf("%d, ",*(int *)vector_get(v2,i));
-	}
-	printf("\n");
-
-	printf("Vector Size is %zu\n",v2->size);
-	for(i=0;i<15;i++){
-		printf("Contains: %d -> %d\n",i,vector_contains(v2,&i));
-//		printf("%d - %d\n",*((int**)*(void**)v2)[i],v2->items[i]);
-	}
-	vector_free(v2);
-	return 0;
-}
 
 void vector_set_remove_function(vector_t *vector, void (*rmv)(void *)){
 	vector->rmv = rmv;

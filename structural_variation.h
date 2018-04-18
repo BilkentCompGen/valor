@@ -12,13 +12,13 @@ typedef struct sv{
 	splitmolecule_t AB;
 	splitmolecule_t CD;
 //	double depths[2];
-	int supports[2];
-	int tabu;
+	unsigned char supports[2];
+	short tabu;
 	int dv;
 	sv_type type;
-	char orientation;
-	_Bool covered;
-	_Bool inactive;
+	unsigned char orientation :2;
+	unsigned char  covered :1;
+	unsigned char inactive :1;
 }sv_t;
 
 #define DUP_BACK_COPY 2
@@ -40,6 +40,8 @@ graph_t *make_sv_graph(vector_t *svs);
 sv_t *sv_init(splitmolecule_t *,splitmolecule_t *,sv_type);
 
 
+
+int sv_is_proper(void /*sv_t*/ *sv);
 void sv_destroy(void/*sv_t*/ *dup);
 splitmolecule_t *sv_reduce_breakpoints(sv_t*);
 vector_t *discover_split_molecules(vector_t *regions);

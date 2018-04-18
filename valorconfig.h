@@ -23,6 +23,7 @@ extern double CLONE_STD_DEV;
 #define INV_MAX_SIZE  10000000 // 10M
 #define INV_GAP  CLONE_MEAN
 #define INV_OVERLAP (-CLONE_MEAN/2) // 1 molecule size
+#define INVERSION_MIN_REQUIRED_SUPPORT 4
 /*************DUPLICATION INFORMION****************************/
 #define DUP_OVERLAP (-CLONE_MEAN/2)
 #define DUP_GAP CLONE_MEAN
@@ -31,6 +32,11 @@ extern double CLONE_STD_DEV;
 #define DUP_MAX_DIST 10000000
 #define DUP_MIN_DIST 100000
 #define VALOR_MOBILE_ELEMENTS "Alu:L1:SVA:HERV"
+
+#define DUPLICATION_MIN_REQUIRED_SUPPORT 4
+/*************DELETION INFORMATION****************************/
+#define DELETION_MIN_REQUIRED_SUPPORT 4
+
 /*************GRAPH PROPERTIES****************************/
 #define QCLIQUE_LAMBDA 0.5
 #define QCLIQUE_GAMMA 0.55

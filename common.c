@@ -61,20 +61,7 @@ FILE* safe_fopen( char* path, char* mode)
 	return file;
 }
 
-gzFile safe_fopen_gz( char* path, char* mode)
-{
-	/* Safe file open. Try to open a file; exit if file does not exist */
-	gzFile file;
-	char err[500];
 
-	file = gzopen( path, mode);  
-	if( !file)
-	{
-		sprintf( err, "[VALOR INPUT ERROR] Unable to open file %s in %s mode.", path, mode[0]=='w' ? "write" : "read");
-		print_error( err);		
-	}
-	return file;
-}
 
 htsFile* safe_hts_open( char* path, char* mode)
 {

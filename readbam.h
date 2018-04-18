@@ -60,8 +60,13 @@ typedef struct _bam_info
         char* sample_name; /* name of the sample, parsed from SM in the BAM header */
         int num_libraries; /* number of libraries, counted from the RG tags in the BAM header */
         struct library_properties** libraries; /* each library_properties struct holds statistical/other info */
-        int read_count;
+        short **depths;
+	double *depth_mean;
+	double *depth_std;
+	int read_count;
 } bam_info;
+
+bam_info *get_bam_info(sonic *);
 bam_stats *calculate_bam_statistics(bam_info *, char *bam_path, int number_of_reads);
 bam_vector_pack *make_bam_vector_pack();
 int read_pcs_bam( bam_info* in_bam, char *bam_path, int pool_no, bam_vector_pack *pack);

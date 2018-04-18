@@ -2,7 +2,8 @@
 #include "structural_variation.h"
 #include <stdio.h>
 #include "progress.h"
-
+#include "sonic/sonic.h"
+#include "cnv.h"
 
 const char *sv_type_name(sv_type type){
 	switch(type){
@@ -545,28 +546,80 @@ vector_t *discover_split_molecules(vector_t *regions){
 
 vector_t *find_svs(vector_t *split_molecules, sv_type type){
 	int i,j;
-	vector_t *svs = vector_init(sizeof(sv_t),SCL_INIT_LIMIT);
+	vector_t *svs;
 
-	splitmolecule_t *AB;
-	splitmolecule_t *CD;
-	for(i=0;i<split_molecules->size;i++){
-		AB = vector_get(split_molecules,i);
-		if(type == SV_DELETION){
-			sv_t *tmp = sv_init(AB,NULL,type);
-			vector_soft_put(svs,tmp);
-			continue;
-		}
-		for(j=0;j<split_molecules->size;j++){
-			if(i==j){continue;}
-			CD = vector_get(split_molecules,j);
-			char orient = splitmolecule_indicates_sv(AB,CD,type);
-			if(orient){
-				sv_t *tmp = sv_init(AB,CD,type);
-				tmp->orientation = orient;
+
+	int num_threads = 1;
+
+#ifdef _OPENMP
+	num_threads =  omp_get_num_threads();
+#endif
+	if(num_threads == 1){
+
+		svs = vector_init(sizeof(sv_t),SCL_INIT_LIMIT);
+		splitmolecule_t *AB;
+		splitmolecule_t *CD;
+
+		for(i=0;i<split_molecules->size;i++){
+			AB = vector_get(split_molecules,i);
+			if(type == SV_DELETION){
+				sv_t *tmp = sv_init(AB,NULL,type);
 				vector_soft_put(svs,tmp);
+				continue;
+			}
+			for(j=0;j<split_molecules->size;j++){
+				if(i==j){continue;}
+				CD = vector_get(split_molecules,j);
+				char orient = splitmolecule_indicates_sv(AB,CD,type);
+				if(orient){
+					sv_t *tmp = sv_init(AB,CD,type);
+					tmp->orientation = orient;
+					vector_soft_put(svs,tmp);
+				}
 			}
 		}
 	}
+	else{
+
+		vector_t **osvs = malloc(sizeof(vector_t *) * num_threads);
+		for(i=0;i < num_threads;i++){
+			osvs[i]=vector_init(sizeof(sv_t),SCL_INIT_LIMIT);
+		}
+
+		#pragma omp parallel for
+		for(i=0;i<split_molecules->size;i++){
+			splitmolecule_t *AB = vector_get(split_molecules,i);
+			if(type == SV_DELETION){
+				sv_t *tmp = sv_init(AB,NULL,type);
+				vector_soft_put(osvs[omp_get_thread_num()],tmp);
+				continue;
+			}
+			for(j=0;j<split_molecules->size;j++){
+				if(i==j){continue;}
+				splitmolecule_t *CD = vector_get(split_molecules,j);
+				char orient = splitmolecule_indicates_sv(AB,CD,type);
+				if(orient){
+					sv_t *tmp = sv_init(AB,CD,type);
+					tmp->orientation = orient;
+					vector_soft_put(osvs[omp_get_thread_num()],tmp);
+				}
+			}
+		}
+		size_t vsize = 0;
+		for(i=0;i<num_threads;i++){
+			vsize+=osvs[i]->size;
+		}
+		svs = vector_init(sizeof(sv_t),vsize);
+		for(i=0;i<num_threads;i++){
+			for(j=0;j<osvs[i]->size;j++){
+				vector_soft_put(svs,vector_get(osvs[i],j));
+			}
+			vector_tabularasa(osvs[i]);
+			vector_free(osvs[i]);
+		}
+		free(osvs);
+	}
+
 	return svs;
 }
 
@@ -871,6 +924,77 @@ splitmolecule_t *sv_reduce_breakpoints(sv_t *sv){
 		default: return NULL;
 	}
 }
+
+int sv_is_proper(void *vsv){
+	sv_t *sv = vsv;
+	sonic *snc = sonic_load(NULL);
+	bam_info *in_bams = get_bam_info(snc);
+	if( 	sonic_is_satellite(snc,snc->chromosome_names[CUR_CHR],sv->AB.start1,sv->CD.end1) ||
+		sonic_is_satellite(snc,snc->chromosome_names[CUR_CHR],sv->AB.start2,sv->CD.end2)){
+		return 0;
+	}
+
+	int start,end,target_start,target_end;
+	switch(sv->type){
+	case SV_INVERSION:
+		return 	(sv->supports[0]>INVERSION_MIN_REQUIRED_SUPPORT && sv->supports[1]>INVERSION_MIN_REQUIRED_SUPPORT)&&(!sonic_is_gap(snc,snc->chromosome_names[CUR_CHR],sv->AB.start1,sv->CD.end2));
+	case SV_DELETION:
+		return get_depth_region(in_bams->depths[CUR_CHR],sv->AB.end1,sv->AB.start2)>in_bams->depth_mean[CUR_CHR] - in_bams->depth_std[CUR_CHR] &&(sv->supports[0] > DELETION_MIN_REQUIRED_SUPPORT) &&(!sonic_is_gap(snc,snc->chromosome_names[CUR_CHR],sv->AB.end1,sv->AB.start2));
+	break;
+	case SV_TRANSLOCATION:
+	//TODO
+	break;
+	case SV_DUPLICATION:
+		if(sv->supports[0]<DUPLICATION_MIN_REQUIRED_SUPPORT || sv->supports[1]<DUPLICATION_MIN_REQUIRED_SUPPORT){
+			return 0;
+		}
+		if(sv->orientation ==DUP_FORW_COPY){
+			target_start = sv->AB.start2;
+			target_end = sv->CD.end2;
+			start = sv->AB.start1;
+			end = sv->CD.end1;
+		}else if(sv->orientation == DUP_BACK_COPY){
+			target_start = sv->AB.start1;
+			target_end = sv->CD.end1;
+			start = sv->AB.start2;
+			end = sv->CD.end2;
+		}
+	break;
+	case SV_INVERTED_DUPLICATION:
+		if(sv->supports[0]<DUPLICATION_MIN_REQUIRED_SUPPORT || sv->supports[1]<DUPLICATION_MIN_REQUIRED_SUPPORT){
+			return 0;
+		}
+		if(sv->orientation ==DUP_FORW_COPY){
+			target_start = sv->AB.start2;
+			target_end = sv->CD.end2;
+			start = sv->CD.start1;
+			end = sv->AB.end1;
+		}else if(sv->orientation == DUP_BACK_COPY){
+			target_start = sv->AB.start1;
+			target_end = sv->CD.end1;
+			start = sv->CD.start2;
+			end = sv->AB.end2;
+		}	
+	break;
+	}
+//Handle Duplications
+//
+	if(target_start > target_end){
+		int temp = target_start;
+		target_start = target_end;
+		target_end = temp;
+	}
+	int is_ref_dup_source = sonic_is_segmental_duplication(snc,snc->chromosome_names[CUR_CHR],start,end);
+	int is_ref_dup_target = sonic_is_segmental_duplication(snc,snc->chromosome_names[CUR_CHR],target_start,target_end);
+
+	int is_ref_gap_source = sonic_is_gap(snc,snc->chromosome_names[CUR_CHR],start,end);
+	int is_ref_gap_target = sonic_is_gap(snc,snc->chromosome_names[CUR_CHR],target_start,target_end);
+	int is_ref_sat_source = sonic_is_satellite(snc,snc->chromosome_names[CUR_CHR],start,end);
+	int is_ref_sat_target = sonic_is_satellite(snc,snc->chromosome_names[CUR_CHR],target_start,target_end);
+	int does_cnv_support_dup = get_depth_region(in_bams->depths[CUR_CHR],start,end) > in_bams->depth_mean[CUR_CHR] + 1 * in_bams->depth_std[CUR_CHR];
+	return !((is_ref_dup_source && is_ref_dup_target) || !does_cnv_support_dup   || is_ref_gap_source || is_ref_gap_target || is_ref_sat_source || is_ref_sat_target);
+}
+
 splitmolecule_t *splitmolecule_copy(splitmolecule_t *scl){
 	splitmolecule_t *ncl = getMem(sizeof(splitmolecule_t));
 

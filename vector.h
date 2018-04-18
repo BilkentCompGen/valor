@@ -6,6 +6,7 @@
  *	NULL init array
  *	insert and defragment functions
  */
+#include <omp.h>
 #include "common.h"
 #include <stdlib.h>
 #include <string.h>
@@ -13,18 +14,15 @@
 #define REMP_SORTED 0
 #define REMP_FAST 1
 #define REMP_LAZY 2
-
-#define VECTOR_VARIABLE_SIZE 0
 typedef struct __vector_t{
 	void **items;
 	size_t item_sizeof;
 	size_t limit;
 	size_t size;
-	char REMOVE_POLICY;
+	int REMOVE_POLICY;
 	int fragmental;
 	void (*rmv)(void *);
 } vector_t;
-
 vector_t *vector_execute_for_all_and_save(vector_t *v, void *(*foo)(void *));
 void vector_execute_for_all(vector_t *v, void (*foo)(void *));
 typedef void (*foo_gen_no_ret)(void *);
@@ -33,6 +31,11 @@ typedef void *(*foo_gen_wi_ret)(void *);
                 foo_gen_no_ret:vector_execute_for_all,\
                 foo_gen_wi_ret:vector_execute_for_all_and_save\
                         )((V),(FOO))
+#define VECTOR_VARIABLE_SIZE 0
+
+void vector_filter(vector_t *,int (*check)(void *));
+vector_t *vector_select(vector_t *,int (*check)(void *));
+
 
 vector_t *vector_init(size_t item_sizeof, size_t initial_limit);
 int vector_put(vector_t *vector, void* item);
@@ -50,7 +53,6 @@ void vector_zip(vector_t *vector);
 void vector_clear(vector_t *vector);
 void vector_tabularasa(vector_t *vector);
 void vector_set_remove_function(vector_t *vector, void (*rmv)(void*));
-void vector_swap(vector_t *, size_t, size_t);
-void vector_shuffle(vector_t *, unsigned int seed);
 vector_t *dang_string_tokenize(const char *str, const char *delims);
+
 #endif

@@ -9,6 +9,18 @@
 
 
 
+bam_info *get_bam_info(sonic *snc){
+	static bam_info *info = NULL;
+	if(info == NULL){ 
+		info = malloc(sizeof(bam_info));
+		info->depths = malloc(sizeof(short *) *snc->number_of_chromosomes);
+		info->depth_mean = malloc(sizeof( double) * snc->number_of_chromosomes);
+		info->depth_std = malloc(sizeof( double) * snc->number_of_chromosomes);
+	}
+	return info;
+}
+
+
 int altcomp(const void *v1, const void *v2){
 
 	alt_read *r1 = *(void **)v1;

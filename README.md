@@ -1,7 +1,7 @@
 VALOR
 ======
 
-VAriation with LOng Range
+VAriation with LOng Range information
 
 Requirements
 ============
@@ -13,7 +13,7 @@ Requirements
 Fetching VALOR
 ===============
 
-	git clone git@github.com:BilkentCompGen/valor.git --recursive
+	git clone https://github.com/BilkentCompGen/valor.git --recursive
 
 Compilation
 ===========

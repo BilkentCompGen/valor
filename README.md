@@ -83,3 +83,23 @@ Chromosome-name BP1-start BP1-end Chromosome-name BP2-start BP2-end SV_TYPE 10XG
 ```
 * Read pair Support: Number of read-pairs that support these breakpoints
 * 10XG Support: Number of 10XG Molecule-pairs that support these breakpoints
+
+Docker Usage
+============
+
+To build a valor Docker image
+
+```
+cd docker
+docker build . -t valor:latest
+```
+
+Your image named "valor" should be ready. You can run valor using this image by
+
+```
+docker run --user=$UID -v /path/to/inputs:/input -v /path/to/outputdir:/output valor [args]
+```
+
+- ```[args]``` are usual arguments you would pass to valor executable. Be careful about mapping. You need to specify folders respective to container directory structure.
+- You need to map host machine input and output directory to responding volume directories inside the container. These options are specified by '-v' argment.
+- Docker works with root user by default. "--user" option saves your outputs.

@@ -2,18 +2,18 @@
  * a region is a mapped interval from the input bed file
  */
 public class Region extends DNAInterval {
-	public int pool;
+	public String pool;
 	public double size;
 	/*
 	 * constructor
 	 */
-	public Region (String chromosome, int start, int end, double size, int pool)
+	public Region (String chromosome, int start, int end, double size, String pool)
 	{
 		super(chromosome, start, end);
 		this.pool = pool;
 		this.size = size;
 	}
-	public Region (String chromosome, int start, int end, int pool)
+	public Region (String chromosome, int start, int end, String pool)
 	{
 		super(chromosome, start, end);
 		this.pool = pool;
@@ -30,7 +30,7 @@ public class Region extends DNAInterval {
 			// if they come from the same chromosome
 			(r1.chromosome.equals(r2.chromosome)) &&
 			// if they come from the same pool
-			(r1.pool == r2.pool) &&
+			(r1.pool.equals(r2.pool)) &&
 			// they should be smaller than normal
 			//(r1.size <= Config.CLONE_SIZE) &&
 			//(r2.size <= Config.CLONE_SIZE) &&

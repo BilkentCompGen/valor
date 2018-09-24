@@ -38,7 +38,7 @@ Required Parameters:
         
 	-s, --sonic  [sonic file]      : Sonic file. Check: https://github.com/calkan/sonic.
         
-	-f, --svs_to_find   [sv type]: Among INV,DUP,IDUP. Multi SV discovery not implemented.
+	-f, --svs_to_find   [sv type]: Among INV,DUP,IDUP.
 
 Optional Parameters:
       

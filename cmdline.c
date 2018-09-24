@@ -132,7 +132,7 @@ void print_help( void)
 	fprintf( stdout, "\t-i, --input [BAM files]        : Input files in sorted BAM format.\n");
 	fprintf( stdout, "\t-o, --out   [output folder]    : Folder to put stuff in\n");
 	fprintf( stdout, "\t-s, --sonic  [sonic file]      : Sonic file. Check: https://github.com/calkan/sonic.\n");
-	fprintf( stdout, "\t-f, --svs_to_find   [sv type]: Among INV,DUP,IDUP. Multi SV discovery not implemented.\n");
+	fprintf( stdout, "\t-f, --svs_to_find   [sv type]: Comma separated list of Sv's (i.e. INV,DUP,IDUP)\n");
 	fprintf( stdout, "Optional Parameters:\n");
 	fprintf( stdout, "\t-t, --threads   [Number of threads to run VALOR]: default is 1\n");
 	fprintf( stdout, "\t-m, --low_mem	[Use disk to reduce memory usage]: Not Implemented\n");

@@ -34,7 +34,7 @@ Required Parameters:
 
 	-i, --input [BAM files]        : Input files in sorted BAM format.
 	
-	-o, --out   [output folder]    : Folder to put stuff in
+	-o, --out   [output folder]    : Folder to put results and temporary files in
         
 	-s, --sonic  [sonic file]      : Sonic file. Check: https://github.com/calkan/sonic.
         
@@ -42,7 +42,7 @@ Required Parameters:
 
 Optional Parameters:
       
-	-l, --log_file [logfile name]: default is valor.log
+	-l, --log_file [logfile name]: default is [output folder]/valor.log
 	
 Help Parameters:
         

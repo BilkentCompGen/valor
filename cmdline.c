@@ -81,7 +81,7 @@ int parse_command_line( int argc, char** argv, parameters* params)
 			break;
 
 			case 'v':
-				fprintf( stderr, "\nVALOR: VAriation with LOng Range.\n");
+				fprintf( stderr, "\nVALOR: VAriation using LOng Range information.\n");
 				fprintf( stderr, "Version %s\n\tLast update: %s, build date: %s\n\n", VALOR_VERSION, VALOR_UPDATE, BUILD_DATE);
 				return -1;
 			break; 

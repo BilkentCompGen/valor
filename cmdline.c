@@ -94,7 +94,7 @@ int parse_command_line( int argc, char** argv, parameters* params)
 	/* check if outprefix is given */
 	if( params->outprefix == NULL)
 	{
-		fprintf( stderr, "[VALOR CMDLINE ERROR] Please enter the output file name prefix using the --out option.\n");
+		fprintf( stderr, "[VALOR CMDLINE ERROR] Please enter the output directory name prefix using the --out option.\n");
 		ret |=RETURN_ERROR;
 	}
 	
@@ -113,14 +113,18 @@ int parse_command_line( int argc, char** argv, parameters* params)
 		ret|= RETURN_ERROR;
 	}
 	if( params->logfile == NULL){
-		params->logfile = VALOR_DEFAULT_LOG_FILE;
+	        char *tmp_logfilename = (char *) malloc(sizeof(char *) * (strlen(VALOR_DEFAULT_LOG_FILE)+strlen(params->outprefix)+2));
+		sprintf( tmp_logfilename, "%s/%s", params->outprefix, VALOR_DEFAULT_LOG_FILE);
+		set_str( &( params->logfile), tmp_logfilename);
+		free( tmp_logfilename);
+		//		params->logfile = VALOR_DEFAULT_LOG_FILE;
 	}
 	return ret;
 }
 
 void print_help( void)
 {  
-	fprintf( stdout, "\nVALOR: VAriation with LOng Range\n");
+	fprintf( stdout, "\nVALOR: VAriation using LOng Range information.\n");
 
 	fprintf( stdout, "Version %s\n\tLast update: %s, build date: %s\n\n", VALOR_VERSION, VALOR_UPDATE, BUILD_DATE);	
 	fprintf( stdout, "Required Parameters:\n");

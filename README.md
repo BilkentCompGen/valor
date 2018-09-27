@@ -1,7 +1,7 @@
 VALOR
 ======
 
-VAriation with LOng Range
+VAriation with LOng Range information
 
 Requirements
 ============
@@ -13,7 +13,7 @@ Requirements
 Fetching VALOR
 ===============
 
-	git clone git@github.com:BilkentCompGen/valor.git --recursive
+	git clone https://github.com/BilkentCompGen/valor.git --recursive
 
 Compilation
 ===========
@@ -34,15 +34,15 @@ Required Parameters:
 
 	-i, --input [BAM files]        : Input files in sorted BAM format.
 	
-	-o, --out   [output folder]    : Folder to put stuff in
+	-o, --out   [output folder]    : Folder to put results and temporary files in
         
 	-s, --sonic  [sonic file]      : Sonic file. Check: https://github.com/calkan/sonic.
         
-	-f, --svs_to_find   [sv type]: Among INV,DUP,IDUP. Multi SV discovery not implemented.
+	-f, --svs_to_find   [sv type]: Comma separated list of Sv's (i.e. INV,DUP,IDUP)
 
 Optional Parameters:
       
-	-l, --log_file [logfile name]: default is valor.log
+	-l, --log_file [logfile name]: default is [output folder]/valor.log
 	
 Help Parameters:
         
@@ -83,3 +83,23 @@ Chromosome-name BP1-start BP1-end Chromosome-name BP2-start BP2-end SV_TYPE 10XG
 ```
 * Read pair Support: Number of read-pairs that support these breakpoints
 * 10XG Support: Number of 10XG Molecule-pairs that support these breakpoints
+
+Docker Usage
+============
+
+To build a valor Docker image
+
+```
+cd docker
+docker build . -t valor:latest
+```
+
+Your image named "valor" should be ready. You can run valor using this image by
+
+```
+docker run --user=$UID -v /path/to/inputs:/input -v /path/to/outputdir:/output valor [args]
+```
+
+- ```[args]``` are usual arguments you would pass to valor executable. Be careful about mapping. You need to specify folders respective to container directory structure.
+- You need to map host machine input and output directory to responding volume directories inside the container. These options are specified by '-v' argment.
+- Docker works with root user by default. "--user" option saves your outputs.

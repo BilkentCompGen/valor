@@ -85,7 +85,7 @@ int parse_command_line( int argc, char** argv, parameters* params)
 				params->chromosome_count = atoi(optarg);
 			break;
 			case 'v':
-				fprintf( stderr, "\nVALOR: VAriation with LOng Range.\n");
+				fprintf( stderr, "\nVALOR: VAriation using LOng Range information.\n");
 				fprintf( stderr, "Version %s\n\tLast update: %s, build date: %s\n\n", VALOR_VERSION, VALOR_UPDATE, BUILD_DATE);
 				return -1;
 			break; 
@@ -122,14 +122,13 @@ int parse_command_line( int argc, char** argv, parameters* params)
 		sprintf( tmp_logfilename, "%s/%s", params->outprefix, VALOR_DEFAULT_LOG_FILE);
 		set_str( &( params->logfile), tmp_logfilename);
 		free( tmp_logfilename);
-
 	}
 	return ret;
 }
 
 void print_help( void)
 {  
-	fprintf( stdout, "\nVALOR: VAriation with LOng Range\n");
+	fprintf( stdout, "\nVALOR: VAriation using LOng Range information.\n");
 
 	fprintf( stdout, "Version %s\n\tLast update: %s, build date: %s\n\n", VALOR_VERSION, VALOR_UPDATE, BUILD_DATE);	
 	fprintf( stdout, "Required Parameters:\n");
@@ -137,6 +136,7 @@ void print_help( void)
 	fprintf( stdout, "\t-i, --input [BAM files]        : Input files in sorted BAM format.\n");
 	fprintf( stdout, "\t-o, --out   [output folder]    : Folder to put stuff in\n");
 	fprintf( stdout, "\t-s, --sonic  [sonic file]      : Sonic file. Check: https://github.com/calkan/sonic.\n");
+
 	fprintf( stdout, "\t-f, --svs_to_find   [sv type]: Comma separated list of SV types (i.e. DUP,IDUP,INV).\n");
 	fprintf( stdout, "Optional Parameters:\n");
 

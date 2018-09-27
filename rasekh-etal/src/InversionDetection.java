@@ -23,33 +23,8 @@ public class InversionDetection {
 	public static String chromosome;
 	public static String readFilenamePlusPlus;	
 	public static String readFilenameMinusMinus;
-	public static String clusterOutputDir;
-	public static String poolOutputDir;
 
 	public static void main(String[] args) throws Exception {
-		// FIXING IS NOT SUPPORTED, IT WAS USED FOR MRFAST DIVET FILE
-		/*if (!(args.length <= 8 && args.length >= 5) || (args.length == 2 && args[1].equals("fix")))
-		{
-			explain(1);
-		}*/
-		
-		// PROGRAM CODE
-		/*****************
-		 * read from file
-		 * if the flag is fixFile then fix the file and exit
-		 */
-		/*if (args.length == 2 && args[1].equals("fix"))
-		{
-			if (InputOutput.fix(regionFilename))
-			{
-				System.out.println("File fixed, run again to detect the structural variations with parameters ");
-				explain(0);
-			}
-			else
-			{
-				System.exit(1);
-			}
-		}*/
 
 		/******************************/
 		Config.print();
@@ -59,8 +34,6 @@ public class InversionDetection {
 		chromosome = args[1];
 		readFilenamePlusPlus = args[2];	
 		readFilenameMinusMinus = args[3];
-		clusterOutputDir = args[4];
-		poolOutputDir = args[5];
 		/******************************/
 		ArrayList<Inversion> allInversions = new ArrayList<Inversion>();
 		ArrayList<ArrayList<InversionCluster>> allClusterList = new ArrayList<ArrayList<InversionCluster>>();
@@ -83,8 +56,7 @@ public class InversionDetection {
 		System.out.println("ALL INVERSIONS: " + allInversions.size());
 		System.out.println("***************************************");
 		System.out.println("Writing data to files...");
-		IOTools.writePoolBeds(allInversions, poolOutputDir);
-		IOTools.writeClustersByChrom(allClusterList, clusterOutputDir);
+		IOTools.writeClusters(allClusterList);
 		System.out.println("***************************************");
 		System.out.println("Done!");
 		System.gc();
@@ -100,16 +72,15 @@ public class InversionDetection {
 		ArrayList<InversionCluster> clusterList = new ArrayList<InversionCluster>();
 		ArrayList<PairedDNAInterval> minusMinusReads, plusPlusReads; //, plusMinusReads, deletionList;
 		System.out.println(chromosome);
-		// read support information from reads and deletion bed file
-		//System.out.println("Reading deletions on " + chromosome + "...");
-		//deletionList = InputOutput.readBedFile(deletionFilename, chromosome);
+
 		System.out.println("Reading reads on " + chromosome + "...");
 		minusMinusReads = IOTools.readBedFile(readFilenameMinusMinus, 
 				 								  chromosome);
 		plusPlusReads = IOTools.readBedFile (readFilenamePlusPlus, 
 				 								 chromosome);
-		System.out.println("#(++)\t" + minusMinusReads.size());
-		System.out.println("#(--)\t" + plusPlusReads.size());
+		System.out.println("#(++)\t" + plusPlusReads.size());
+        System.out.println("#(--)\t" + minusMinusReads.size());
+		
 		//plusMinusReads = InputOutput.readBedFile(readFilenamePlusMinus.substring(0, readFilenamePlusMinus.lastIndexOf(".")) + chromosome.substring(3) + ".bed", 
 		//										 chromosome);
 		System.out.println("***************************************");
@@ -214,134 +185,7 @@ public class InversionDetection {
 		}
 		return splitCloneList;
 	}
-	/*
-	 * 
-	 */
-	/*public static ArrayList<Cluster> createClusters (ArrayList<SplitClone> splitClones)
-	{
-		// VARIABLES
-	    ArrayList <Cluster> clusterList, optimizedClusterList;
-		boolean allCovered;
-		int max, newSplitClones;
-		Cluster clu;
-		clusterList = new ArrayList<Cluster>();
-		// sort the splirClones according to support in decreasing order
-		Collections.sort(splitClones, new Comparator<SplitClone>() {
-			@Override public int compare(SplitClone sc1, SplitClone sc2) {
-			    return (int) (Math.min(sc2.minusMinusSupport , sc2.minusMinusSupport) - Math.min(sc1.minusMinusSupport , sc1.minusMinusSupport));
-			}
-		});
-		//System.out.println("Creating the clusters...");
-		try {
-			
-			for (SplitClone node : splitClones)
-			{
-				clusterList.add(new Cluster(node));
-			}
-			// for each splitCLone try to add it to as many as clusters we can
-			for (SplitClone sc : splitClones)
-			{
-				int size = clusterList.size();
-				for (int i = 0; i < size; i++)
-				{
-					clu = clusterList.get(i);
-					if (clu.isCompatible(sc))
-					{
-						// just add it
-						clu.addSplitClone(sc);
-					}
-					else if (clu.canPartition(sc))
-					{
-						// if we can partition then do
-						clusterList.add(clu.partition(sc));
-					}
-				}
-			}
-			
-			// merge as much as possible
-			for (int i = 0; i < clusterList.size(); i++)
-			{
-				for (int j = i+1; j < clusterList.size(); j++)
-				{
-					if (clusterList.get(i).merge(clusterList.get(j)))
-					{
-						clusterList.remove(j);
-						j--;
-					}
-				}
-			}
-			// start set cover optimization
-			optimizedClusterList = new ArrayList<Cluster>();
-			allCovered = false;
-			while (!clusterList.isEmpty() && !allCovered)
-			{
-				// find the next best cluster
-				clu = clusterList.get(0);
-				max = 0;
-				for (int i = 0; i < clusterList.size(); i++)
-				{
-					newSplitClones = clusterList.get(i).optimizedSize();
-					if (newSplitClones == 0)
-					{
-						clusterList.remove(i);
-						i--;
-					}
-					else if (newSplitClones > max)
-					{
-						max = newSplitClones;
-						clu = clusterList.get(i);
-					}
-				}
-				if (max == 0)
-				{
-					// no further improvements can be made, actually a no more clusters left
-					break;
-				}
-				else
-				{
-					// add this best cluster to our optimized cluster list
-					optimizedClusterList.add(clu);
-					// update the covered split clones
-					clu.cover();
-					// remove the alternative clusters (they either overlap in the begining or the end)
-					for (int i = 0; i < clusterList.size(); i++)
-					{
-						if (clu.breakPoint.isAlternate(clusterList.get(i).breakPoint))
-						{
-							// remove it from cluster list
-							// clu should be removed too
-							clusterList.get(i).cover();
-							clusterList.remove(i);
-							i--;
-						}
-					}
-				}
-				// update allCovered to check if we should continue
-				allCovered = true;
-				for (int i = 0; i < splitClones.size(); i++)
-				{
-					if (!splitClones.get(i).covered)
-					{
-						allCovered = false;
-						break;
-					}
-					else
-					{
-						splitClones.remove(i);
-						i--;
-					}
-				}
-			}
-		} catch (Exception e)
-		{
-			e.printStackTrace();
-			return null;
-		}
-		return optimizedClusterList;
-	}*/
-	/*
-	 * 
-	 */
+
 	public static void explain(int status)
 	{
 		System.out.println("1) To fix file enter 2 args: regionFilename*  \"fix\"*");
@@ -378,7 +222,7 @@ public class InversionDetection {
 		for (Inversion inv : inversions)
 		{
 			inv.setReadSupport(plusPlus, minusMinus);//, plusMinus);
-			//clu.setDelCount(deletions);
+
 		}
 	}
 	public static void updateClusterSupport(ArrayList<InversionCluster> clusters, 

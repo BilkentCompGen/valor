@@ -1,5 +1,9 @@
 VALOR_VERSION := "2.1"
-VALOR_UPDATE := "27 Sept 2018"
+
+
+VALOR_UPDATE := "24 Sep 2018"
+
+
 VALOR_DEBUG := 0
 LIVE_PROG := 0
 BUILD_DATE := "$(shell date)"

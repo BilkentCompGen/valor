@@ -5,12 +5,12 @@ public class Config {
     public static final int FRAG_SIZE = 1000; // max segment size (distance between paired end reads)
 
     /**************CLONE INFORMATION**************************/
-    public static final int CLONE_MEAN = 150000;
-    public static final int CLONE_STD_DEV = 40000;
+    public static final int CLONE_MEAN = 50000;
+    public static final int CLONE_STD_DEV = 10000;
     public static final int CLONE_MAX = CLONE_MEAN + 3 * CLONE_STD_DEV;
     public static final int CLONE_MIN = CLONE_MEAN - 3 * CLONE_STD_DEV; 
     /*************INVERSION INFORMATION****************************/
-    public static final int INV_MIN_SIZE = 500000; // 500K
+    public static final int INV_MIN_SIZE = 40000; // 500K
     public static final int INV_MAX_SIZE = 10000000; // 10M
     public static final int INV_GAP = CLONE_MEAN;
     public static final int INV_OVERLAP = -1 * CLONE_MEAN; // 1 clone size

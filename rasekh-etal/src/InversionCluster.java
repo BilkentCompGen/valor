@@ -88,11 +88,10 @@ public class InversionCluster {
 	 */
 	public String toString()
 	{
-		String a =   this.breakPoint + "\t";
-		a += "Q" + this.CLIQUE_SIZE + "\t" +
-				"++" + this.plusPlusSupport + "\t" +
-				"--" + this.minusMinusSupport + "\t";
-		return a;
+        return(this.breakPoint + "\t"+
+               this.CLIQUE_SIZE + "\t" +
+			   this.plusPlusSupport + "\t" +
+			   this.minusMinusSupport + "\t");
 
 
 	}

@@ -20,6 +20,9 @@ int interval_comp(const void *v1,const void *v2){
         return 0;
 }
 
+int in_range(int a, int b, int range){
+    return (a-range<b) && (a+range >b);
+}
 
 //Probably this will achieve a stability by using interval_comp in case of equality
 int barcode_comp(const void *v1, const void *v2){

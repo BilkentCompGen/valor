@@ -1,5 +1,40 @@
 #include "vector.h"
 
+
+vector_t *vector_dot_prod(vector_t *v1, vector_t *v2, void *(*foo)(void *, void *)){
+	if( v1->size != v2->size){ return NULL;}
+	vector_t *v3 = vector_init(VECTOR_VARIABLE_SIZE, v1->size);
+	int i;
+	for(i=0;i<v1->size;i++){
+		vector_soft_put(v3,foo(vector_get(v1,i),vector_get(v2,i)));
+	}
+	return v3;
+}
+
+vector_t *vector_x_prod(vector_t *v1, vector_t *v2, void *(*foo)(void *, void *)){
+	int i,j;
+
+	vector_t *v3 = vector_init(VECTOR_VARIABLE_SIZE, v1->size * v2->size);
+	for(i=0;i<v1->size;i++){
+		for(j=0;j<v2->size;j++){
+			void *value = foo(vector_get(v1,i),vector_get(v2,j));
+			if(value==NULL){continue;}
+			vector_soft_put(v3,value);
+		}
+	}
+	return v3;
+}
+
+void *vector_reduce(vector_t *v1, void *(*foo)(void * sum, void * val)){
+	int i;
+	void *sum = NULL;
+	for(i=0;i<v1->size;i++){
+		sum = foo(sum,vector_get(v1,i));
+	}
+	return sum;
+}
+
+
 void vector_execute_for_all(vector_t *v, void (*foo)(void *)){
         int i;
         for(i=0;i<v->size;i++){

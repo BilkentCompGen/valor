@@ -2,6 +2,26 @@
 #include <assert.h>
 
 
+void graph_print(graph_t *g, FILE *fptr){
+	hashtable_t *h = ht_init(g->size, g->key_size, sizeof(int));
+	adjlist_t *adj = graph_to_al(g);
+	int i,j;
+	for(i=0;i<adj->size;i++){
+		int *val = ht_put(h,al_get_value(adj,i));
+		*val = i;
+	}
+	for(i=0;i<adj->size;i++){
+		vector_t *nei = al_get_edges(adj,i);
+		int *a = ht_get_value(h,al_get_value(adj,i));
+		for(j=0;j<nei->size;j++){
+			void **ptr = vector_get(nei,j);
+			int *b = ht_get_value(h,*ptr);
+			fprintf(fptr,"%d %d\n",*a,*b);
+		}
+	}
+	ht_free(h);
+}
+
 graph_t *graph_init(size_t init_size, size_t node_size){
         graph_t *new_graph = ht_init(init_size, node_size, sizeof(vector_t));
         new_graph->val_rmv = &vector_free;

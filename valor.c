@@ -15,6 +15,7 @@
 #include "interval10X.h"
 #include "structural_variation.h"
 #include "vector.h"
+#include "bitset.h"
 #include "clique.h"
 #include "cluster.h"
 #include "cnv.h"
@@ -55,7 +56,7 @@ int main( int argc, char **argv){
 	char *out_file_path = malloc((strlen("/predicted_svs.bedpe")+strlen(params->outprefix)+1)*sizeof(char));
 	sprintf(out_file_path,"%s/predicted_svs.bedpe",params->outprefix);
 	FILE *outbedfile = fopen(out_file_path,"w+");
-	
+	free(out_file_path);
 	time( &rawtime);
 
 	timeinfo = localtime( &rawtime);
@@ -71,8 +72,16 @@ int main( int argc, char **argv){
 	sonic *snc = sonic_load(params->sonic_file);
 	printf("Reading Bam file: %s\n", bamname);
 
+	char *logfile_path = malloc((strlen(params->logfile)+strlen(params->outprefix)+2)*sizeof(char));            
+	sprintf(logfile_path,"%s/%s",params->outprefix,params->logfile);                                            
+	logFile = safe_fopen(logfile_path,"w+");                                                                    
+free(logfile_path);                                                                                         
+	char *molecule_bed_path = malloc((strlen(params->outprefix) + strlen("/molecules.bed") + 1) * sizeof(char));
+	sprintf(molecule_bed_path,"%s/molecules.bed",params->outprefix);                                            
+//////                                                                                                        
+//
 	bam_info *in_bams = get_bam_info(snc);
-	logFile = safe_fopen(params->logfile,"w+");
+
 	fprintf( logFile, "#CreationDate=%d.%d.%d\n\n",
 			timeinfo->tm_year+1900, timeinfo->tm_mon+1, timeinfo->tm_mday); 
 	in_bams->sample_name = NULL;
@@ -87,41 +96,56 @@ int main( int argc, char **argv){
 	variations = getMem(sizeof(vector_t *) * snc->number_of_chromosomes);
 	clusters = getMem(sizeof(vector_t *) * snc->number_of_chromosomes);
 	int first_skipped = 0;
-	for( i = 0; i < 24 /*snc->number_of_chromosomes*/;i++){
+	for( i = 0; i < params->chromosome_count ;i++){
 
 		CUR_CHR = i;
 		reads[i] = read_10X_chr(in_bams,bamname,snc,i,stats);
 		if(reads[i]->concordants->size == 0){
-			printf("No Reads for Chromosome %s %s %s\r",
+			destroy_bams(reads[i]);
+			printf("No Reads for Chromosome %s %s %s.\r",
 				snc->chromosome_names[first_skipped],
 				(i-first_skipped==1?"and":"to"),
 				snc->chromosome_names[i]);
 			continue;
 		}
+		bit_set_set_bit(get_bam_info(NULL)->chro_bs,i,1);
 		printf("\nFinding Structural Variants in Chromosome %s\n",snc->chromosome_names[i]);
 		first_skipped = i+1;
 
 		printf("Recovering Split Molecules..\n");
 		regions[i] = recover_molecules(reads[i]->concordants);
 
+		if(params->svs_to_find & SV_TRANSLOCATION){
+			append_molecules_to_bed(regions[i],molecule_bed_path);
+		}
 		in_bams->depths[i] = make_molecule_depth_array(regions[i],snc,i);
-		
+
+		FILE *fff = fopen("depths.out","w+");
+		for(k=0;k<snc->chromosome_lengths[i]/MOLECULE_BIN_SIZE;k++){
+			fprintf(fff,"%d\n",in_bams->depths[i][k]);
+		}
+
+		fclose(fff);	
+
+
 		in_bams->depth_mean[i] = make_global_molecule_mean(in_bams->depths[i],snc,i);
 		in_bams->depth_std[i] = make_global_molecule_std_dev(in_bams->depths[i],snc,i,in_bams->depth_mean[i]);
 		in_bams->depth_std[i] = MIN(in_bams->depth_std[i],in_bams->depth_mean[i]/2);
 		printf("Global Molecule depth mean: %lf\nGlobal Molecule Depth Standard Deviation: %lf\n",
 		in_bams->depth_mean[i],in_bams->depth_std[i]);
 
-
+		VALOR_LOG("chr: %s\nMolecule mean depth: %lf\nMolecule std-dev depth: %lf\n", snc->chromosome_names[i], in_bams->depth_mean[i], in_bams->depth_std[i]);
+		VALOR_LOG("Initial molecule count: %zu\n",regions[i]->size);
 		filter_molecules(regions[i],snc,i);
 
+		VALOR_LOG("Filtered molecule count: %zu\n",regions[i]->size);
 		qsort(regions[i]->items,regions[i]->size,sizeof(void*),interval_start_comp);  
 		groups = group_overlapping_molecules(regions[i]);
 		groups->rmv = &vector_free;
 
 		CLONE_MEAN = molecule_mean(regions[i]);
 		CLONE_STD_DEV = molecule_group_std(groups,CLONE_MEAN);
-
+		VALOR_LOG("Molecule size mean: %lf\nMolecule size std-dev: %lf\n", CLONE_MEAN, CLONE_STD_DEV);
 		vector_free(groups);
 
 		qsort(regions[i]->items,regions[i]->size,sizeof(void*),barcode_comp);  
@@ -130,17 +154,23 @@ int main( int argc, char **argv){
 
 		vector_t *split_molecules = discover_split_molecules(regions[i]);
 		vector_free(regions[i]);
-		
+	 		
+		VALOR_LOG("Split molecule candidate count: %zu\n",split_molecules->size);
+	
 		printf("Matching Split Molecules\n");
 		variations[i] = find_svs(split_molecules,svs_to_find);
+
+		VALOR_LOG("Matched split molecule pair count: %zu\n", variations[i]->size);
+
 		vector_free(split_molecules);
 		printf("%zu candidate variations are made\n",variations[i]->size);
-		update_sv_supports(variations[i],
-				reads[i],
-				svs_to_find);
+		update_sv_supports_b(variations[i],
+				reads[i]);
 		variations[i]->REMOVE_POLICY = REMP_LAZY;
 
 		vector_filter(variations[i],sv_is_proper);
+
+		VALOR_LOG("Structural variation candidate count: %zu\n",variations[i]->size);
 
 		printf("%zu candidate variations are left after filtering\n",variations[i]->size);
 #if FILTER1XK //If number of variations are more than MAX_INVERSIONS_IN_GRAPH, do random selection
@@ -161,6 +191,12 @@ int main( int argc, char **argv){
 		variations[i]->REMOVE_POLICY=REMP_SORTED;
 
 		graph_t *sv_graph = make_sv_graph(variations[i]);
+		/*
+		fff = fopen("sv_graph_out.out","w+");
+		graph_print(sv_graph,fff);
+		fclose(fff);
+
+		*/
 		printf("Finding Sv Clusters\n\n");
 		clusters[i] = vector_init(sizeof(sv_cluster),50);
 		vector_set_remove_function(clusters[i],&sv_cluster_destroy);
@@ -177,41 +213,8 @@ int main( int argc, char **argv){
 			vector_t *garbage = vector_get(comps,k);
 			size_t initial_size = garbage->size;
 			qsort(garbage->items, garbage->size, sizeof(sv_t *),&sv_comp);
-
-/*
-			if(comp->size < 16){break;}
-			printf("\rCurrent Component Size %zu\t\t\t\t\n",comp->size);
-			sv_cluster *svc = getMem(sizeof(sv_cluster));
-			svc->items = vector_init(sizeof(sv_t),comp->size);
-			VALOR_LOG("Cluster %d\n",k);
-			sv_t *sv_to_add = (sv_t *)vector_get(comp,0);
-
-
-
-			svc->supports[0] = sv_to_add->supports[0];
-			svc->supports[1] = sv_to_add->supports[1];
-
-			svc->break_points = sv_reduce_breakpoints(sv_to_add);	
-			splitmolecule_t *scl_tmp;
-			vector_t *garbage = vector_init(sizeof(sv_t),16);
-			int ccc = 0;
-			for(j=1;j<comp->size;j++){
-
-				sv_to_add = (sv_t *)vector_get(comp,j);
-				scl_tmp = sv_reduce_breakpoints(sv_to_add);
-				if(!interval_pair_overlaps(svc->break_points,scl_tmp,CLONE_MEAN)){printf("\rCant Overlap %d items",++ccc);fflush(stdout);vector_put(garbage,sv_to_add);continue;}
-				interval_pair_intersect(svc->break_points,scl_tmp);
-				sv_fprint(logFile,i,sv_to_add);
-				vector_put(svc->items, sv_to_add);
-				svc->supports[0]+=sv_to_add->supports[0];
-				svc->supports[1]+=sv_to_add->supports[1];
-				splitmolecule_destroy(scl_tmp);
-			}
-			printf("\n");
-			vector_put(clusters[i],svc);
-//Now Explore Non Overlapping SV's
-*/
-			if(garbage->size < 16){continue;}
+			sv_type _type = ((sv_t *)vector_get(garbage,0))->type;
+			if(garbage->size < what_is_min_cluster_size(_type)){continue;}
 			graph_t *garbage_graph = sv_graph;//= make_sv_graph(garbage);
 			int iteration_no = 0;
 			while(garbage_graph->number_of_items > 2){
@@ -224,7 +227,7 @@ int main( int argc, char **argv){
 				clique_free(c);
 				
 				if(svc_garbage==NULL){break;}
-				if(svc_garbage->items->size < 16){
+				if(svc_garbage->items->size < what_is_min_cluster_size(_type)){
 					sv_graph_reset(garbage_graph);
 					sv_cluster_graph_fix(svc_garbage,garbage,sv_graph);
 					sv_cluster_destroy(svc_garbage);
@@ -238,7 +241,7 @@ int main( int argc, char **argv){
 
 
 
-				vector_put(clusters[i],svc_garbage);
+				vector_soft_put(clusters[i],svc_garbage);
 				iteration_no++;
 			}
 //			vector_free(garbage);
@@ -248,42 +251,30 @@ int main( int argc, char **argv){
 		printf("Clustering is finished, found %zu variant clusters\n",clusters[i]->size);
 
 		vector_free(comps);
-/*
 
-		while(sv_graph->number_of_items > 0){
-			clique_t *c = clique_find_clique(sv_graph,0,QCLIQUE_LAMBDA,QCLIQUE_GAMMA);
-			if(c==NULL||c->v_prime<=0 || c->items->size < 4){clique_free(c);break;}
-			sv_cluster *svc = sv_cluster_make(c);
-			clique_free(c);
-			if(svc->items->size < 1){sv_cluster_graph_fix(svc,sv_graph);sv_cluster_destroy(svc);continue;}
-			if(svc==NULL){break;}
-
-			printf("Found a clique of size %zu, Fixing Graph Now\n",svc->items->size);
-			sv_cluster_graph_fix(svc,sv_graph);
-
-			//	graph_trim(sv_graph);
-
-			vector_put(clusters[i],svc);
-		}
-*/
 		qsort(clusters[i]->items, clusters[i]->size, sizeof( void*), cluster_comp);
-		printf("Printing Variant calls\n");
+		printf("Printing variant calls\n");
 		for(j=0;j<clusters[i]->size;j++){
 			sv_cluster *svc = vector_get(clusters[i],j);
 
-			if(svc->items->size < 16){continue;}
+
 			sv_t *first = vector_get(svc->items,0);
+			if(svc->items->size < what_is_min_cluster_size(first->type)){continue;}
 
 
 			double mean_depth = 0;
-			if(svs_to_find == SV_DUPLICATION || svs_to_find == SV_INVERTED_DUPLICATION){
+			if(first->type == SV_DUPLICATION || first->type == SV_INVERTED_DUPLICATION){
 				if(first->orientation == DUP_FORW_COPY){
 					mean_depth = get_depth_region(in_bams->depths[i],svc->break_points->start1,svc->break_points->end1);
 				}else if(first->orientation == DUP_BACK_COPY){
 					mean_depth = get_depth_region(in_bams->depths[i],svc->break_points->start1,svc->break_points->end1);
 				}
-				if(mean_depth < in_bams->depth_mean[i] + 1.25 * in_bams->depth_std[i]){ continue;}
-			}else{
+
+				if(mean_depth < 1.5 * in_bams->depth_mean[i]){ continue;}
+				//if(mean_depth < in_bams->depth_mean[i] + 1.25 * in_bams->depth_std[i]){ continue;}
+			}else if (first->type == SV_DELETION){
+				mean_depth = get_depth_region(in_bams->depths[i],first->AB.end1, first->AB.start2);
+			}else {
 				mean_depth = get_depth_region(in_bams->depths[i],first->AB.end1,first->CD.start1)/2 + get_depth_region(in_bams->depths[i],first->AB.end2,first->CD.start2)/2;
 			}
 
@@ -294,31 +285,52 @@ int main( int argc, char **argv){
 					snc->chromosome_names[i],
 					svc->break_points->start2,
 					svc->break_points->end2,
-					sv_type_name(svs_to_find),
+					sv_type_name(first->type),
 					svc->items->size,
 					svc->supports[0]+svc->supports[1],
 					mean_depth       
 			);
 		}
+
 		fflush(outbedfile);
-		destroy_bams(reads[i]);
+
+		if(!(svs_to_find & SV_TRANSLOCATION)){
+			destroy_bams(reads[i]);
+			free(in_bams->depths[i]);
+		}
 		vector_free(variations[i]);
 		vector_free(clusters[i]);
 		graph_free(sv_graph);
 
-
-		free(in_bams->depths[i]);
-		//		free(in_bams->read_depth[i]);
+		printf("Reading next chromosome\n");
 	}
 	printf("\n");
 
-	for(i=0;i<snc->number_of_chromosomes;i++){
+	if(svs_to_find & SV_TRANSLOCATION){
+		printf("Looking for translocations.\n");
+		printf("Reading from temp molecule file.\n");
+		vector_t **molecules = read_molecules_from_bed(molecule_bed_path);
+		vector_t *variants = find_interchromosomal_events(molecules,reads);
+		for(k=0;k<variants->size;k++){
+			vector_t *sub_vec = vector_get(variants,k);
+			for(i=0;i<sub_vec->size;i++){
+				ic_sv_bed_print(outbedfile,vector_get(sub_vec,i));
+			}
+		}
 
+		vector_free(variants);
+		for(k=0;k<snc->number_of_chromosomes;k++){
+			vector_free(molecules[k]);
+		}
+		free(molecules);	
 	}
+
+	free(molecule_bed_path);
+	free(in_bams->depths);
 	free(in_bams->depth_mean);
 	free(in_bams->depth_std);
 	freeMem(in_bams, sizeof(bam_info));
-
+	free(stats);
 	freeMem(clusters, sizeof(vector_t *) * snc->number_of_chromosomes);
 	freeMem(variations,sizeof(vector_t *) * snc->number_of_chromosomes);
 	free(regions);
@@ -326,6 +338,6 @@ int main( int argc, char **argv){
 	free_sonic(snc);
 	fclose(logFile);
 	fclose(outbedfile);
+	free_params(params);
 	return 0;
 }
-

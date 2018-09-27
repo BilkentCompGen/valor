@@ -42,17 +42,21 @@
 #define RPMM	9
 #define RPTDUPPM 10
 #define RPTDUPMP 11
-#define RPTRA 12
+#define RPINTER 12
+
 // Track memory usage
 extern long long memUsage;
 extern FILE *logFile; //Defined in valor.c
 extern int CUR_CHR;
+
+#define SV_MAX_ID 16
 typedef enum SV_TYPE{
-        SV_INVERSION = 1,
-        SV_DUPLICATION = 2,
-        SV_INVERTED_DUPLICATION = 4,
-        SV_DELETION = 8,
-        SV_TRANSLOCATION = 16
+        SV_DELETION = 1,
+        SV_INVERSION = 2,
+        SV_DUPLICATION = 4,
+        SV_INVERTED_DUPLICATION = 8,
+        SV_TRANSLOCATION = 16,
+        SV_INVERTED_TRANSLOCATION = 32
 }sv_type;
 
 sv_type atosv(char *str);
@@ -66,12 +70,14 @@ typedef struct _params
 	sv_type svs_to_find;
 	unsigned int threads; 
 	_Bool low_mem;
-	 
+	int chromosome_count;	 
 } parameters;
 
 
 /* Parameter related VALOR functions */
+parameters *get_params(void);
 parameters *init_params(void);
+void free_params(void *);
 void print_params( parameters*);
 
 /* FILE opening and error printing functions. For opening regular and BAM/SAM
@@ -85,7 +91,7 @@ int is_proper( int flag);
 
 
 int is_alt_concordant( int p1, int p2, int flag, char s1, char s2, int min, int max);
-int is_concordant( bam1_core_t bam_alignment_core, int min, int max);
+int identify_read_alignment( bam1_core_t bam_alignment_core, int min, int max);
 char base_as_char( int base_as_int);
 char complement_char( char base);
 void qual_to_ascii( char* qual);
@@ -108,6 +114,6 @@ double getMemUsage();
 
 #define VALOR_LOG(...) fprintf(logFile,__VA_ARGS__)
 
-
+int what_is_min_cluster_size(sv_type type);
 int chr_atoi(char *chromosome);
 #endif

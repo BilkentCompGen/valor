@@ -135,7 +135,7 @@ clique_t *clique_init(float lambda, float gamma, sv_t *node, size_t gsize){
 	clique_t *new_clique = getMem(sizeof(clique_t));
 	new_clique->items = vector_init(sizeof(sv_t*),INITIAL_CLIQUE_COUNT);
 	new_clique->check_set = set_init( gsize*2, sizeof(sv_t *));
-	new_clique->check_set->key_cmp = &_svcmp;
+	new_clique->check_set->key_cmp = &sv_compd;
 	new_clique->e_prime = 0;
 	new_clique->v_prime = 1;
 	new_clique->lambda = lambda;

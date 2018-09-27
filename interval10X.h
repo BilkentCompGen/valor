@@ -29,6 +29,7 @@ int interval_overlaps( interval_10X *interval, interval_10X *that, int relaxatio
 
 int interval_distance( interval_10X *interval, interval_10X *that);
 
+int in_range(int point1, int point2, int range);
 
 interval_10X *interval_intersect(interval_10X* interval, interval_10X *that);
 

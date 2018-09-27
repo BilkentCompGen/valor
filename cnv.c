@@ -10,7 +10,20 @@ double get_depth_region(short *depths, int start, int end){
 	for( i = floor(start/MOLECULE_BIN_SIZE);i<ceil(end/MOLECULE_BIN_SIZE);i++){
 		sum+=depths[i];
 	}
-	return sum / ceil((end-start)/MOLECULE_BIN_SIZE);
+	return sum / ceil((1.0*end-start)/MOLECULE_BIN_SIZE);
+}
+
+double get_depth_deviation(short *depths, int start, int end){
+	if( end <start){ return get_depth_deviation(depths,end,start);}
+    double mean = get_depth_region(depths,start,end);
+
+    int i;
+    double sum = 0;
+    
+    for(i= floor(start/MOLECULE_BIN_SIZE);i<ceil(end/MOLECULE_BIN_SIZE);i++){
+        sum+=((depths[i]-mean) * (depths[i]-mean));
+    }
+    return sqrt(sum/ceil((1.0*end-start)/MOLECULE_BIN_SIZE));
 }
 
 int cmp_short(const void *a, const void *b){
@@ -171,7 +184,7 @@ double make_global_molecule_std_dev(short *depths, sonic *snc, int chr, double m
 }
 
 short *make_molecule_depth_array(vector_t *regions, sonic *snc, int chr){
-	long bin_count = snc->chromosome_lengths[chr] / MOLECULE_BIN_SIZE;
+	long bin_count = 1+snc->chromosome_lengths[chr] / MOLECULE_BIN_SIZE;
 	short *depths = malloc(sizeof(short) * bin_count);
 	int i, j;
 

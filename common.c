@@ -12,15 +12,31 @@
 // Track memory usage
 long long memUsage = 0;
 
+
+void free_params(void /*parameters*/ *vp){
+	parameters *p = vp;
+	free(p->sonic_file);
+	free(p->logfile);
+	free(p->outprefix);
+	free(p->bam_file);
+	free(p);
+}
+
+parameters *get_params(void){
+	static parameters *params = NULL;
+	if(params == NULL){ params = malloc(sizeof(parameters));}
+	return params;
+}
 parameters *init_params(void){
 
 	/* initialize parameters */
-	parameters *params =  getMem( sizeof( parameters));
+	parameters *params =  get_params();
 
 	params->sonic_file = NULL;
 	params->logfile = NULL;
 	params->svs_to_find = 0;
 	params->low_mem = 0;
+	params->chromosome_count = 24;
 	(params)->outprefix = NULL;
 	(params)->bam_file = NULL;
 	(params)->threads = 1;
@@ -163,10 +179,9 @@ int is_alt_concordant( int p1, int p2, int flag, char strand1, char strand2, int
 	return RPCONC;
 }
 
-
-
-int is_concordant( bam1_core_t bam_alignment_core, int min, int max)
+int identify_read_alignment( bam1_core_t bam_alignment_core, int min, int max)
 {
+
 	int flag = bam_alignment_core.flag;
 
 	if( ( flag & BAM_FPAIRED) == 0)
@@ -193,6 +208,9 @@ int is_concordant( bam1_core_t bam_alignment_core, int min, int max)
 		return RPUNMAPPED;
 	}
 
+	if(bam_alignment_core.tid != bam_alignment_core.mtid){
+		return RPINTER;
+	}
 	if( ( flag & BAM_FREVERSE) != 0 && ( flag & BAM_FMREVERSE) != 0)
 	{
 		/* -- orientation = inversion */
@@ -390,10 +408,25 @@ int chr_atoi(char *chromosome){
         return atoi(&chromosome[3])-1;
 }
 
+
+int what_is_min_cluster_size(sv_type type){
+	switch(type){
+		case SV_DELETION:
+			return DELETION_MIN_CLUSTER_SIZE;
+		case SV_INVERSION:
+			return INVERSION_MIN_CLUSTER_SIZE;
+		case SV_DUPLICATION:
+		case SV_INVERTED_DUPLICATION:
+			return DUPLICATION_MIN_CLUSTER_SIZE;
+		default:
+			return -1;
+	}
+}
+
 // DUP,IDUP,DEL,TRA,INV
 sv_type atosv(char *str){
 	if(strcmp(str,"ALL")==0){
-		fprintf(stderr,"Not Implemented\n");
+		fprintf(stderr,"\"%s\" - Not Implemented\n",str);
 		exit(-1);
 		return -1;
 	}
@@ -407,12 +440,12 @@ sv_type atosv(char *str){
 		return SV_INVERTED_DUPLICATION;
 	}
 	if(strcmp(str,"DEL")==0){
-		fprintf(stderr,"Not Implemented\n");
+		fprintf(stderr,"\"%s\" - Not Implemented\n",str);
 		exit(-1);
 		return SV_DELETION;
 	}
 	if(strcmp(str,"TRA")==0){
-		fprintf(stderr,"Not Implemented\n");
+		fprintf(stderr,"\"%s\" - Not Implemented\n",str);
 		exit(-1);
 		return SV_TRANSLOCATION;
 	}

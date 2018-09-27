@@ -16,6 +16,7 @@ bam_info *get_bam_info(sonic *snc){
 		info->depths = malloc(sizeof(short *) *snc->number_of_chromosomes);
 		info->depth_mean = malloc(sizeof( double) * snc->number_of_chromosomes);
 		info->depth_std = malloc(sizeof( double) * snc->number_of_chromosomes);
+		info->chro_bs = bit_set_init(snc->number_of_chromosomes);;
 	}
 	return info;
 }
@@ -64,6 +65,11 @@ bam_vector_pack *make_bam_vector_pack(){
 	new_pack->mp_discordants=vector_init(sizeof(interval_discordant),
 		INITIAL_ARRAY_SIZE);
 ;
+
+	new_pack->inter_pm = vector_init(sizeof(barcoded_read_pair),INITIAL_ARRAY_SIZE);
+	new_pack->inter_mm = vector_init(sizeof(barcoded_read_pair),INITIAL_ARRAY_SIZE);
+	new_pack->inter_pp = vector_init(sizeof(barcoded_read_pair),INITIAL_ARRAY_SIZE);
+	new_pack->inter_mp = vector_init(sizeof(barcoded_read_pair),INITIAL_ARRAY_SIZE);
 	return new_pack;
 
 }
@@ -146,19 +152,6 @@ void free_alt_read(void *vread){
 
 bam_vector_pack *read_10X_chr( bam_info* in_bam, char* bam_path, sonic *snc, int chr, bam_stats *statistics){
 
-	int i;
-
-//	INIT chrname Lookup table
-	hashtable_t *chr_id_table = ht_init(48,sizeof(char *),sizeof(int));
-	chr_id_table->key_cmp = sstrcmp;
-	chr_id_table->hf = SuperFastStringHash;
-	for(i=0;i<snc->number_of_chromosomes;i++){
-		int *val = ht_soft_put(chr_id_table,snc->chromosome_names[i]);
-		*val = i;
-	}	
-//
-
-
 	double frag_min = MAX(0, statistics->read_length_mean - 3 * statistics->read_length_std_dev);
 	double frag_max = statistics->read_length_mean + 3 * statistics->read_length_std_dev;
 	static htsFile *bam_file = NULL;
@@ -192,17 +185,17 @@ bam_vector_pack *read_10X_chr( bam_info* in_bam, char* bam_path, sonic *snc, int
 		if(bam_alignment_core->tid==-1) goto skip; //Skip invalid reads
 		if(bam_alignment_core->tid >= snc->number_of_chromosomes) goto skip;
 		if( bam_alignment_core->pos == -1) goto skip;
-		if( bam_alignment_core->isize < 0) goto skip;
+//		if( bam_alignment_core->isize < 0) goto skip;
 		if( bam_alignment_core->mpos == -1) goto skip;
 		unsigned char * b_text =  bam_aux_get(bam_alignment,"BX");
 
 
 		unsigned long barcode = encode_ten_x_barcode(b_text);
 
-		if(barcode==-1){goto skip;}
-		if(bam_alignment_core->tid!=bam_alignment_core->mtid) goto skip;
 
-		int ccval = (is_concordant(*bam_alignment_core, frag_min, frag_max));
+//		if(bam_alignment_core->tid!=bam_alignment_core->mtid) goto skip;
+
+		int ccval = ( identify_read_alignment(*bam_alignment_core, frag_min, frag_max));
 		int start1,end1,start2,end2;
 		
 		start1 = MIN(bam_alignment_core->mpos,bam_alignment_core->pos);
@@ -214,10 +207,12 @@ bam_vector_pack *read_10X_chr( bam_info* in_bam, char* bam_path, sonic *snc, int
 
 		in_bam->read_count+=2;
 
+		vector_t *target = NULL;
 
 		if( bam_alignment_core->qual < MIN_QUAL) goto skip;
 		switch(ccval){
 		case RPCONC:
+			if(barcode==-1){goto skip;}
 			vector_put(pack->concordants,
 				&(interval_10X){start1,end2,barcode}
 				);
@@ -238,7 +233,32 @@ bam_vector_pack *read_10X_chr( bam_info* in_bam, char* bam_path, sonic *snc, int
 		case RPTDUPMP:
 			vector_put(pack->mp_discordants,&(interval_discordant){start1,end1,start2,end2,barcode});
 		break;
+		case RPINTER:
 
+			if((bam_alignment_core->flag & BAM_FREVERSE)){
+				if((bam_alignment_core->flag & BAM_FMREVERSE)){
+					target = pack->inter_mm;
+				}else{
+					target =  pack->inter_mp;
+				}
+
+			}else{
+				if((bam_alignment_core->flag & BAM_FMREVERSE)){
+					target = pack->inter_pm;
+				}else{
+					target = pack->inter_pp;
+				}
+			}
+			vector_put(target,&(barcoded_read_pair){
+				.left = bam_alignment_core->pos,
+				.l_or = (bam_alignment_core->flag & BAM_FREVERSE),
+				.right = bam_alignment_core->mpos,
+				.r_or = (bam_alignment_core->flag & BAM_FMREVERSE),
+				.barcode = barcode,
+				.l_chr = bam_alignment_core->tid,
+				.r_chr = bam_alignment_core->mtid
+			});
+		break;		
 		default:
 		break;
 
@@ -362,7 +382,7 @@ bam_vector_pack **read_10X_bam_RP( bam_info* in_bam, char* bam_path, sonic *snc)
 			
 		}else{
 
-			int ccval = (is_concordant(*bam_alignment_core, frag_min, frag_max));
+			int ccval = ( identify_read_alignment(*bam_alignment_core, frag_min, frag_max));
 			int start1,end1,start2,end2;
 			
 			start1 = MIN(bam_alignment_core->mpos,bam_alignment_core->pos);
@@ -586,7 +606,7 @@ bam_vector_pack **read_10X_bam( bam_info* in_bam, char* bam_path, sonic *snc){
 
 			if(bam_alignment_core->tid!=bam_alignment_core->mtid) goto skip;
 
-			int ccval = (is_concordant(*bam_alignment_core, frag_min, frag_max));
+			int ccval = ( identify_read_alignment(*bam_alignment_core, frag_min, frag_max));
 			int start1,end1,start2,end2;
 			
 			start1 = MIN(bam_alignment_core->mpos,bam_alignment_core->pos);

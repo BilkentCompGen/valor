@@ -1,4 +1,4 @@
-#ifndef __VALOR
-#define __VALOR
+#ifndef VALOR__
+#define VALOR__
 
 #endif

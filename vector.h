@@ -14,6 +14,9 @@
 #define REMP_SORTED 0
 #define REMP_FAST 1
 #define REMP_LAZY 2
+
+
+#define VECTOR_VARIABLE_SIZE 0
 typedef struct __vector_t{
 	void **items;
 	size_t item_sizeof;
@@ -31,7 +34,11 @@ typedef void *(*foo_gen_wi_ret)(void *);
                 foo_gen_no_ret:vector_execute_for_all,\
                 foo_gen_wi_ret:vector_execute_for_all_and_save\
                         )((V),(FOO))
-#define VECTOR_VARIABLE_SIZE 0
+
+
+vector_t *vector_dot_prod(vector_t *, vector_t *, void *(*foo)(void *, void *));
+vector_t *vector_x_prod(vector_t *, vector_t *, void *(*foo)(void *, void *));
+void *vector_reduce(vector_t *, void *(*foo)(void *, void *));
 
 void vector_filter(vector_t *,int (*check)(void *));
 vector_t *vector_select(vector_t *,int (*check)(void *));

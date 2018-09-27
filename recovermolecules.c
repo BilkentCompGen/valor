@@ -10,9 +10,50 @@
 #include "vector.h"
 
 #define PROGRESS_DISTANCE 5001
-#define RX_N90_THRESHOLD 4
+#define RX_N90_THRESHOLD 2
 //What should be the initial size for each array?
 #define INITIAL_ARRAY_SIZE 650
+
+
+vector_t **read_molecules_from_bed(char *filename){
+        sonic *snc = sonic_load(NULL);
+        vector_t **molecules = malloc(sizeof(vector_t) *snc->number_of_chromosomes);
+        int i;
+        for(i=0;i<snc->number_of_chromosomes;i++){
+                molecules[i] = vector_init(sizeof(interval_10X),INITIAL_ARRAY_SIZE);
+        }
+
+        FILE *bedptr = fopen(filename,"r");
+        if(bedptr == NULL){
+                fprintf(stderr,"Can't read from %s!\n",filename);
+                exit(-1);
+        }
+        int chr,start,end;
+        unsigned long barcode;
+        int scan_no;
+        scan_no = fscanf(bedptr,"%d\t%d\t%d\t%lu",&chr,&start,&end,&barcode);
+        while(scan_no != -1){
+                vector_put(molecules[chr],&(interval_10X){start,end,barcode});
+                scan_no = fscanf(bedptr,"%d\t%d\t%d\t%lu",&chr,&start,&end,&barcode);
+        }
+        fclose(bedptr);
+        return molecules;
+}
+
+void append_molecules_to_bed(vector_t *mols, char *filename){
+	FILE *fptr = fopen(filename,"a+");
+	if(fptr==NULL){
+		fprintf(stderr,"Can't write to %s!\n",filename);
+		exit(-1);
+	}
+	int i;
+	
+	for(i=0;i<mols->size;i++){
+		interval_10X *val = vector_get(mols,i);
+		fprintf(fptr,"%d\t%d\t%d\t%lu\n",CUR_CHR,val->start,val->end,val->barcode);
+	}
+	fclose(fptr);
+}
 
 //Assumes sorted barcodes
 void filter_molecules( vector_t *mols, sonic *snc, int chr){
@@ -23,10 +64,15 @@ void filter_molecules( vector_t *mols, sonic *snc, int chr){
 	for(i=0;i<mols->size;i++){
 		interval_10X *ival = vector_get(mols,i);
 		if(
+#if VALOR_FILTER_GAP
 			sonic_is_gap(snc,snc->chromosome_names[chr]
 				,ival->start,ival->end) ||
+#endif
+#if VALOR_FILTER_SAT
 			sonic_is_satellite(snc,snc->chromosome_names[chr]
-				,ival->start,ival->end)){
+				,ival->start,ival->end) ||
+#endif
+			0){
 			vector_remove(mols,i);
 			continue;
 		}
@@ -49,7 +95,9 @@ void filter_molecules( vector_t *mols, sonic *snc, int chr){
 	}
 
 	vector_defragment(mols);
+	mols->REMOVE_POLICY = REMP_SORTED;
 }
+
 vector_t *recover_molecules( vector_t *vector){
 
 	vector_t *regions = vector_init(sizeof(interval_10X),INITIAL_ARRAY_SIZE);
@@ -58,9 +106,6 @@ vector_t *recover_molecules( vector_t *vector){
 	printf("Sorting the DNA Intervals\n");
 	qsort(vector->items, vector->size, sizeof(void *),barcode_comp);
 	int i;
-
-	printf("Done\n");
-
 	int iter = 0;
 	double covered;
 	printf("Recovering Molecules\n");
@@ -86,28 +131,35 @@ vector_t *recover_molecules( vector_t *vector){
 		merger.end = I10X_VECTOR_GET(vector,iter)->end;
 		merger.barcode = current_barcode;
 		covered = 180;
+		int read_count = 1;
 		for(i=iter+1;i<look_ahead;i++){
 			if( I10X_VECTOR_GET(vector,i)->start - merger.end < EXTENSION || merger.start + MOLECULE_EXT >  I10X_VECTOR_GET(vector,i)->start  ){
 				merger.end = I10X_VECTOR_GET(vector,i)->end;
 				covered+= 180; //interval_size(vector_get(vec tor,i));
+				read_count++;
 			}
 			else{
-				if( covered / interval_size(&merger) > MIN_COVERAGE &&
+				if( read_count >= MIN_REQUIRED_READS_IN_MOLECULE &&
+						covered / interval_size(&merger) > MIN_COVERAGE &&
 						covered / interval_size(&merger) < MAX_COVERAGE
 						&& interval_size(&merger) > CLONE_MIN){
+					
 					vector_put(regions,&merger);
 					vector_put(coverages,&covered);
 				}
 				merger.start = I10X_VECTOR_GET(vector,i)->start;
 				merger.end = I10X_VECTOR_GET(vector,i)->end;
 				covered = 180;
+				read_count = 1;
 			}
 		}
-		if( covered / interval_size(&merger) > MIN_COVERAGE &&
+		if( read_count >= MIN_REQUIRED_READS_IN_MOLECULE &&
+			covered / interval_size(&merger) > MIN_COVERAGE &&
 				covered / interval_size(&merger) < MAX_COVERAGE
 				&& interval_size(&merger) > CLONE_MIN){
 			vector_put(regions,&merger);
 			vector_put(coverages,&covered);
+
 		}
 		iter = look_ahead;
 
@@ -115,7 +167,6 @@ vector_t *recover_molecules( vector_t *vector){
 
 	}
 	update_progress(iter,vector->size);		
-	printf("\rDone\n");
 
 	//	qsort(regions->items,regions->size,sizeof(void*),interval_start_comp);
 #if VALOR_DEBUG

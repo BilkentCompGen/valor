@@ -32,6 +32,7 @@ void graph_trim(graph_t *g);
 
 int graph_remove_node(graph_t *g, void *item, int hard);
 
+void graph_print(graph_t *g,FILE *);
 int graph_have_node(graph_t *g, void *item);
 int graph_have_node_wcmp(graph_t *g, void *item, int (*cmp)(const void *, const void *));
 vector_t *graph_get_edges(graph_t *g, void *item);

@@ -19,6 +19,7 @@ sv_type parse_svs(char * optt){
 	for(i=0;i<sv_strings->size;i++){
 		sv_to_find|=atosv(vector_get(sv_strings,i));
 	}
+	vector_free(sv_strings);
 	return sv_to_find;
 }
 
@@ -35,6 +36,7 @@ int parse_command_line( int argc, char** argv, parameters* params)
 		{"svs_to_find", required_argument,0,'f'},
 		{"low_mem", no_argument,	 0, 'm'},
 		{"log_file", required_argument,	 0, 'l'},
+		{"contig_count", required_argument,	 0, 'c'},
 		{0        , 0,                   0,  0 }
 	};
   
@@ -45,7 +47,7 @@ int parse_command_line( int argc, char** argv, parameters* params)
 	}
  	int o;
 	int index;
-	while( ( o = getopt_long( argc, argv, "i:s:t:hvo:f:ml:", long_options, &index)) != -1)
+	while( ( o = getopt_long( argc, argv, "i:s:t:hvo:f:ml:c:", long_options, &index)) != -1)
 	{
 		switch( o)
 		{
@@ -79,7 +81,9 @@ int parse_command_line( int argc, char** argv, parameters* params)
 				print_help();
 				return -1;
 			break;
-
+			case 'c':
+				params->chromosome_count = atoi(optarg);
+			break;
 			case 'v':
 				fprintf( stderr, "\nVALOR: VAriation with LOng Range.\n");
 				fprintf( stderr, "Version %s\n\tLast update: %s, build date: %s\n\n", VALOR_VERSION, VALOR_UPDATE, BUILD_DATE);
@@ -94,7 +98,7 @@ int parse_command_line( int argc, char** argv, parameters* params)
 	/* check if outprefix is given */
 	if( params->outprefix == NULL)
 	{
-		fprintf( stderr, "[VALOR CMDLINE ERROR] Please enter the output file name prefix using the --out option.\n");
+		fprintf( stderr, "[VALOR CMDLINE ERROR] Please enter the output directory name prefix using the --out option.\n");
 		ret |=RETURN_ERROR;
 	}
 	
@@ -111,9 +115,14 @@ int parse_command_line( int argc, char** argv, parameters* params)
 	if( params->sonic_file == NULL){
 		fprintf( stderr, "[VALOR CMDLINE ERROR] Please enter the sonic file path using the -s or --sonic option.\n");
 		ret|= RETURN_ERROR;
+	
 	}
 	if( params->logfile == NULL){
-		params->logfile = VALOR_DEFAULT_LOG_FILE;
+	        char *tmp_logfilename = (char *) malloc(sizeof(char *) * (strlen(VALOR_DEFAULT_LOG_FILE)+strlen(params->outprefix)+2));
+		sprintf( tmp_logfilename, "%s/%s", params->outprefix, VALOR_DEFAULT_LOG_FILE);
+		set_str( &( params->logfile), tmp_logfilename);
+		free( tmp_logfilename);
+
 	}
 	return ret;
 }
@@ -128,8 +137,10 @@ void print_help( void)
 	fprintf( stdout, "\t-i, --input [BAM files]        : Input files in sorted BAM format.\n");
 	fprintf( stdout, "\t-o, --out   [output folder]    : Folder to put stuff in\n");
 	fprintf( stdout, "\t-s, --sonic  [sonic file]      : Sonic file. Check: https://github.com/calkan/sonic.\n");
-	fprintf( stdout, "\t-f, --svs_to_find   [sv type]: Among INV,DUP,IDUP. Multi SV discovery not implemented.\n");
+	fprintf( stdout, "\t-f, --svs_to_find   [sv type]: Comma separated list of SV types (i.e. DUP,IDUP,INV).\n");
 	fprintf( stdout, "Optional Parameters:\n");
+
+	fprintf( stdout, "\t-c, --contig_count   [Number of contigs to run VALOR (First N contigs in sorted BAM) ]: default is 24 (Male Human)\n");
 	fprintf( stdout, "\t-t, --threads   [Number of threads to run VALOR]: default is 1\n");
 	fprintf( stdout, "\t-m, --low_mem	[Use disk to reduce memory usage]: Not Implemented\n");
 	fprintf( stdout, "\t-l, --log_file [logfile name]: default is valor.log\n");

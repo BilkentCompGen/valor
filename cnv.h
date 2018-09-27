@@ -6,7 +6,9 @@
 #include <float.h>
 #include "valorconfig.h"
 #include "readbam.h"
+
 double get_depth_region(short *depth, int start, int end);
+double get_depth_deviation(short *depth, int start, int end);
 double make_global_molecule_mean(short *depths, sonic *snc,int chr);
 double make_global_molecule_std_dev(short *depths, sonic *snc, int chr, double mean);
 short *make_molecule_depth_array(vector_t *regions, sonic *, int chr);

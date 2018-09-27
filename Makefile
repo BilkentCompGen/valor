@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 VALOR_VERSION := "2.1"
 
 
@@ -15,11 +16,23 @@ SOURCES =  valor.c cluster.c clique.c bitset.c hashtable.c statistics.c graph.c 
 OBJECTS = $(SOURCES:.c=.o)
 EXECUTABLE = valor
 INSTALLPATH = /usr/local/bin/
+=======
+CC=gcc
+CFLAGS = -O3 -g -Wall -Wextra -pedantic -Wwrite-strings
+LDFLAGS = -lz -lm -lpthread -Wall
+SOURCES = sonic.c sonic.h sonic_interval.c sonic_interval.h sonic_reference.c sonic_reference.h sonic_structures.h
+EXESOURCES = sonic_exe.c
+EXEFILE = sonic
+OBJECTS = $(SOURCES:.c=.o)
+EXECUTABLE = libsonic.a
+INSTALLPATH = /usr/local/lib
+>>>>>>> dab878aca4f5fcae0149d3cd1a62e38eb3187cb3
 
 
 all: $(SOURCES) $(EXECUTABLE)
 	rm -rf *.o
 
+<<<<<<< HEAD
 $(EXECUTABLE): $(OBJECTS)
 	$(CC) $(OBJECTS) $(OPT) -o $@ $(LDFLAGS)
 
@@ -36,4 +49,17 @@ libs: sonic/sonic.c
 	make -C sonic
 install:
 	cp $(EXECUTABLE) $(INSTALLPATH)
+=======
+exe: $(EXESOURCES) $(EXECUTABLE)
+	$(CC) $(EXESOURCES) $(EXECUTABLE) $(LDFLAGS) -o $(EXEFILE)
+
+$(EXECUTABLE): $(OBJECTS) 
+	ar -rc $(EXECUTABLE)  $(OBJECTS) 
+
+.c.o:
+	$(CC) -c $(CFLAGS) $< -o $@
+
+clean: 
+	rm -f $(EXECUTABLE) *.o *~ 
+>>>>>>> dab878aca4f5fcae0149d3cd1a62e38eb3187cb3
 

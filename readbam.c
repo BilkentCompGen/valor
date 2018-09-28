@@ -123,7 +123,7 @@ bam_stats *calculate_bam_statistics( bam_info* in_bam, char* bam_path, int numbe
 	bam_hdr_destroy(bam_header);
 	bam_destroy1(bam_alignment);
 	if(hts_close(bam_file)){
-		fprintf(stderr,"Error closing Bam file\n");
+		fprintf(stderr,"Error closing BAM file\n");
 	}
 	vector_free(read_vec);
 	return statistics;
@@ -491,7 +491,7 @@ bam_vector_pack **read_10X_bam_RP( bam_info* in_bam, char* bam_path, sonic *snc)
 	free(statistics);
 	vector_free(alt_reads);
 	if(hts_close(bam_file)){
-		fprintf(stderr,"Error closing Bam file\n");
+		fprintf(stderr,"Error closing BAM file\n");
 	}
 	
 	bam_hdr_destroy(bam_header);
@@ -715,7 +715,7 @@ bam_vector_pack **read_10X_bam( bam_info* in_bam, char* bam_path, sonic *snc){
 	free(statistics);
 	vector_free(alt_reads);
 	if(hts_close(bam_file)){
-		fprintf(stderr,"Error closing Bam file\n");
+		fprintf(stderr,"Error closing BAM file\n");
 	}
 	
 	bam_hdr_destroy(bam_header);

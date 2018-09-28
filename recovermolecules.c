@@ -108,7 +108,7 @@ vector_t *recover_molecules( vector_t *vector){
 	int i;
 	int iter = 0;
 	double covered;
-	printf("Recovering Molecules\n");
+	printf("Recovering molecules\n");
 
 	update_progress(iter,vector->size);	
 

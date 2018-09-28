@@ -70,7 +70,7 @@ int main( int argc, char **argv){
 
 
 	sonic *snc = sonic_load(params->sonic_file);
-	printf("Reading Bam file: %s\n", bamname);
+	printf("Reading BAM file: %s\n", bamname);
 
 	char *logfile_path = malloc((strlen(params->logfile)+strlen(params->outprefix)+2)*sizeof(char));            
 	sprintf(logfile_path,"%s/%s",params->outprefix,params->logfile);                                            
@@ -102,17 +102,17 @@ free(logfile_path);
 		reads[i] = read_10X_chr(in_bams,bamname,snc,i,stats);
 		if(reads[i]->concordants->size == 0){
 			destroy_bams(reads[i]);
-			printf("No Reads for Chromosome %s %s %s.\r",
+			printf("No reads for chromosome %s %s %s.\r",
 				snc->chromosome_names[first_skipped],
 				(i-first_skipped==1?"and":"to"),
 				snc->chromosome_names[i]);
 			continue;
 		}
 		bit_set_set_bit(get_bam_info(NULL)->chro_bs,i,1);
-		printf("\nFinding Structural Variants in Chromosome %s\n",snc->chromosome_names[i]);
+		printf("\nFinding structural variants in chromosome %s\n",snc->chromosome_names[i]);
 		first_skipped = i+1;
 
-		printf("Recovering Split Molecules..\n");
+		printf("Recovering split molecules..\n");
 		regions[i] = recover_molecules(reads[i]->concordants);
 
 		if(params->svs_to_find & SV_TRANSLOCATION){
@@ -131,10 +131,10 @@ free(logfile_path);
 		in_bams->depth_mean[i] = make_global_molecule_mean(in_bams->depths[i],snc,i);
 		in_bams->depth_std[i] = make_global_molecule_std_dev(in_bams->depths[i],snc,i,in_bams->depth_mean[i]);
 		in_bams->depth_std[i] = MIN(in_bams->depth_std[i],in_bams->depth_mean[i]/2);
-		printf("Global Molecule depth mean: %lf\nGlobal Molecule Depth Standard Deviation: %lf\n",
+		printf("Global molecule depth mean: %lf\nGlobal molecule depth standard deviation: %lf\n",
 		in_bams->depth_mean[i],in_bams->depth_std[i]);
 
-		VALOR_LOG("chr: %s\nMolecule mean depth: %lf\nMolecule std-dev depth: %lf\n", snc->chromosome_names[i], in_bams->depth_mean[i], in_bams->depth_std[i]);
+		VALOR_LOG("chr: %s\nmolecule mean depth: %lf\nmolecule std-dev depth: %lf\n", snc->chromosome_names[i], in_bams->depth_mean[i], in_bams->depth_std[i]);
 		VALOR_LOG("Initial molecule count: %zu\n",regions[i]->size);
 		filter_molecules(regions[i],snc,i);
 
@@ -150,14 +150,14 @@ free(logfile_path);
 
 		qsort(regions[i]->items,regions[i]->size,sizeof(void*),barcode_comp);  
 
-		printf("Molecule Count: %zu\tMolecule Mean: %lf\tMolecule std-dev: %lf\n",regions[i]->size,CLONE_MEAN,CLONE_STD_DEV);
+		printf("Molecule Count: %zu\tMolecule mean: %lf\tMolecule std-dev: %lf\n",regions[i]->size,CLONE_MEAN,CLONE_STD_DEV);
 
 		vector_t *split_molecules = discover_split_molecules(regions[i]);
 		vector_free(regions[i]);
 	 		
 		VALOR_LOG("Split molecule candidate count: %zu\n",split_molecules->size);
 	
-		printf("Matching Split Molecules\n");
+		printf("Matching split molecules\n");
 		variations[i] = find_svs(split_molecules,svs_to_find);
 
 		VALOR_LOG("Matched split molecule pair count: %zu\n", variations[i]->size);
@@ -197,7 +197,7 @@ free(logfile_path);
 		fclose(fff);
 
 		*/
-		printf("Finding Sv Clusters\n\n");
+		printf("Finding SV Clusters\n\n");
 		clusters[i] = vector_init(sizeof(sv_cluster),50);
 		vector_set_remove_function(clusters[i],&sv_cluster_destroy);
 

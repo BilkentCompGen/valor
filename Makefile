@@ -1,8 +1,6 @@
 VALOR_VERSION := "2.1"
 
-
 VALOR_UPDATE := "24 Sep 2018"
-
 
 VALOR_DEBUG := 0
 LIVE_PROG := 0
@@ -15,7 +13,6 @@ SOURCES =  valor.c cluster.c clique.c bitset.c hashtable.c statistics.c graph.c 
 OBJECTS = $(SOURCES:.c=.o)
 EXECUTABLE = valor
 INSTALLPATH = /usr/local/bin/
-
 
 all: $(SOURCES) $(EXECUTABLE)
 	rm -rf *.o
@@ -36,4 +33,3 @@ libs: sonic/sonic.c
 	make -C sonic
 install:
 	cp $(EXECUTABLE) $(INSTALLPATH)
-

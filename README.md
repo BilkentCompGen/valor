@@ -38,7 +38,7 @@ Required Parameters:
         
 	-s, --sonic  [sonic file]      : Sonic file. Check: https://github.com/calkan/sonic.
         
-	-f, --svs_to_find   [sv type]: Comma separated list of Sv's (i.e. INV,DUP,IDUP)
+	-f, --svs_to_find   [sv type]  : Comma separated list of SVs (i.e. INV,DUP,IDUP)
 
 Optional Parameters:
       

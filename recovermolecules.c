@@ -168,16 +168,6 @@ vector_t *recover_molecules( vector_t *vector){
 	}
 	update_progress(iter,vector->size);		
 
-	//	qsort(regions->items,regions->size,sizeof(void*),interval_start_comp);
-#if VALOR_DEBUG
-	FILE *write_ptr = fopen(OUT_DIR"/inferredmolecules.out","w+");
-	for( i = 0; i < regions->size;i++){
-		double *ccp = vector_get(coverages,i);
-		fprintf(write_ptr,"%d\t%d\t%d\t%lu\t%lf\n",CUR_CHR,I10X_VECTOR_GET(regions,i)->start,I10X_VECTOR_GET(regions,i)->end,I10X_VECTOR_GET(regions,i)->barcode,*ccp);
-	}
-
-	fclose(write_ptr);
-#endif
 	vector_free(coverages);
 
 

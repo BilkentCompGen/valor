@@ -730,5 +730,10 @@ void destroy_bams(bam_vector_pack *reads){
 	vector_free(reads->mm_discordants);
 	vector_free(reads->pm_discordants);
 	vector_free(reads->mp_discordants);
+
+	vector_free(reads->inter_pm);
+	vector_free(reads->inter_mp);
+	vector_free(reads->inter_pp);
+	vector_free(reads->inter_mm);
 	free(reads);
 }

@@ -72,10 +72,8 @@ int main( int argc, char **argv){
 	sonic *snc = sonic_load(params->sonic_file);
 	printf("Reading Bam file: %s\n", bamname);
 
-	char *logfile_path = malloc((strlen(params->logfile)+strlen(params->outprefix)+2)*sizeof(char));            
-	sprintf(logfile_path,"%s/%s",params->outprefix,params->logfile);                                            
-	logFile = safe_fopen(logfile_path,"w+");                                                                    
-free(logfile_path);                                                                                         
+	logFile = safe_fopen(params->logfile,"w+");                                                                    
+
 	char *molecule_bed_path = malloc((strlen(params->outprefix) + strlen("/molecules.bed") + 1) * sizeof(char));
 	sprintf(molecule_bed_path,"%s/molecules.bed",params->outprefix);                                            
 //////                                                                                                        
@@ -119,14 +117,6 @@ free(logfile_path);
 			append_molecules_to_bed(regions[i],molecule_bed_path);
 		}
 		in_bams->depths[i] = make_molecule_depth_array(regions[i],snc,i);
-
-		FILE *fff = fopen("depths.out","w+");
-		for(k=0;k<snc->chromosome_lengths[i]/MOLECULE_BIN_SIZE;k++){
-			fprintf(fff,"%d\n",in_bams->depths[i][k]);
-		}
-
-		fclose(fff);	
-
 
 		in_bams->depth_mean[i] = make_global_molecule_mean(in_bams->depths[i],snc,i);
 		in_bams->depth_std[i] = make_global_molecule_std_dev(in_bams->depths[i],snc,i,in_bams->depth_mean[i]);
@@ -294,7 +284,7 @@ free(logfile_path);
 
 		fflush(outbedfile);
 
-		if(!(svs_to_find & SV_TRANSLOCATION)){
+		if((svs_to_find & SV_TRANSLOCATION) == 0){
 			destroy_bams(reads[i]);
 			free(in_bams->depths[i]);
 		}
@@ -329,6 +319,7 @@ free(logfile_path);
 	free(in_bams->depths);
 	free(in_bams->depth_mean);
 	free(in_bams->depth_std);
+	bit_set_free(in_bams->chro_bs);
 	freeMem(in_bams, sizeof(bam_info));
 	free(stats);
 	freeMem(clusters, sizeof(vector_t *) * snc->number_of_chromosomes);

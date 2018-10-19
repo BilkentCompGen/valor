@@ -43,6 +43,7 @@ Required Parameters:
 Optional Parameters:
       
 	-l, --log_file [logfile name]: default is [output folder]/valor.log
+	-t, --threads [thread count]: sets number of threads to be used (default is 1)
 	
 Help Parameters:
         

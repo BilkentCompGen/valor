@@ -4,6 +4,9 @@
 #include "valorconfig.h"
 #include "sonic.h"
 #include "hashtable.h"
+#include "dna_4X_encoding.h"
+
+
 
 #define INITIAL_ARRAY_SIZE 500000
 
@@ -190,8 +193,8 @@ bam_vector_pack *read_10X_chr( bam_info* in_bam, char* bam_path, sonic *snc, int
 		unsigned char * b_text =  bam_aux_get(bam_alignment,"BX");
 
 
-		unsigned long barcode = encode_ten_x_barcode(b_text);
-
+//		unsigned long barcode = encode_ten_x_barcode(b_text);
+		unsigned long barcode = dna_fast_encode(b_text);
 
 //		if(bam_alignment_core->tid!=bam_alignment_core->mtid) goto skip;
 

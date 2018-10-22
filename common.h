@@ -69,8 +69,21 @@ typedef struct _params
 	char *logfile;
 	sv_type svs_to_find;
 	unsigned int threads; 
-	_Bool low_mem;
 	int chromosome_count;	 
+    int barcode_len;    //
+    int max_frag_size;  //
+    int max_support;
+    int sample_size;
+    int min_qual;
+
+    
+    double quasi_clique_lambda;
+    double quasi_clique_gamma;
+
+
+    _Bool filter_gap;  //
+    _Bool filter_satellite; //
+	_Bool low_mem;
 } parameters;
 
 

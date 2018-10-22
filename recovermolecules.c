@@ -8,6 +8,7 @@
 #include "valorconfig.h"
 #include "interval10X.h"
 #include "vector.h"
+#include "common.h"
 
 #define PROGRESS_DISTANCE 5001
 #define RX_N90_THRESHOLD 2
@@ -60,19 +61,18 @@ void filter_molecules( vector_t *mols, sonic *snc, int chr){
 	unsigned long current_barcode;		
 	int i;
 	mols->REMOVE_POLICY = REMP_LAZY;
-
+    parameters *params = get_params();
 	for(i=0;i<mols->size;i++){
 		interval_10X *ival = vector_get(mols,i);
 		if(
-#if VALOR_FILTER_GAP
+            (params->filter_gap &&
 			sonic_is_gap(snc,snc->chromosome_names[chr]
-				,ival->start,ival->end) ||
-#endif
-#if VALOR_FILTER_SAT
+				,ival->start,ival->end)) ||
+            (params->filter_satellite &&
 			sonic_is_satellite(snc,snc->chromosome_names[chr]
-				,ival->start,ival->end) ||
-#endif
-			0){
+				,ival->start,ival->end))
+            )
+        {
 			vector_remove(mols,i);
 			continue;
 		}

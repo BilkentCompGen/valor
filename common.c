@@ -40,7 +40,19 @@ parameters *init_params(void){
 	(params)->outprefix = NULL;
 	(params)->bam_file = NULL;
 	(params)->threads = 1;
-	return params;
+	params->quasi_clique_lambda = QCLIQUE_LAMBDA;
+    params->quasi_clique_gamma = QCLIQUE_GAMMA;
+    params->min_qual = MIN_QUAL;
+    params->barcode_len = BARCODE_LEN;
+    params->sample_size = READ_SAMPLE_SIZE;
+    params->max_support = MAX_SUPPORT;
+    params->max_frag_size = MAX_FRAG_SIZE;
+    params->filter_gap = VALOR_FILTER_GAP;        //true
+    params->filter_satellite = VALOR_FILTER_SAT;   //true
+
+
+
+    return params;
 }
 
 void print_params( parameters* params)

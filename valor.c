@@ -210,7 +210,7 @@ int main( int argc, char **argv){
             while(garbage_graph->number_of_items > 2){
                 if(garbage->size < initial_size /4){break;}
 
-                clique_t *c = clique_find_clique(garbage_graph,garbage,0,QCLIQUE_LAMBDA,QCLIQUE_GAMMA);
+                clique_t *c = clique_find_clique(garbage_graph,garbage,0,params->quasi_clique_lambda,params->quasi_clique_gamma);
 
                 if(c==NULL||c->v_prime<=0){clique_free(c);break;}
                 sv_cluster *svc_garbage = sv_cluster_make(c);

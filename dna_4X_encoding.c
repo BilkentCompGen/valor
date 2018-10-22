@@ -1,8 +1,10 @@
 #include "dna_4X_encoding.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-unsigned char __dna_4x_encode(unsigned int barcode){
-	switch(barcode){
+#include "valorconfig.h"
+unsigned char __dna_4x_encode(unsigned int *barcode){
+	switch(*barcode){
 		case 1094795585:
 			return 0;
 		case 1128350017:
@@ -516,7 +518,7 @@ unsigned char __dna_4x_encode(unsigned int barcode){
 		case 1414812756:
 			return 255;
 		default:
-			fprintf(stderr,"Error DNA encoding!!\n");
+			fprintf(stderr,"Error DNA encoding: %d!!\n",*barcode);
 			return -1;
 	}
 }
@@ -524,16 +526,19 @@ unsigned char __dna_4x_encode(unsigned int barcode){
 unsigned long dna_fast_encode(unsigned char* barcode){
 
 	int i, len;
-	unsigned long next_digit, result;
+	unsigned char next_digit;
+    unsigned long result;
 
 	if (barcode == NULL){
 		return -1;
 	}
-	result = 0;
+    barcode++;
+    // printf("%s\n",barcode);
+    result = 0;
 	next_digit = 0;
-	len = strlen((char *)barcode);
+	len = BARCODE_LEN;//strlen((char *)barcode);
 	for (i = 0; i < len; i+=4){
-		next_digit = __dna_4x_encode(barcode+i);
+		next_digit = __dna_4x_encode((unsigned int *)(barcode+i));
 		result = result << 8;
 		result = result | next_digit;
 	}

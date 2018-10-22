@@ -4,10 +4,11 @@
 #ifndef VALOR_DEFAULT_LOG_FILE
 #define VALOR_DEFAULT_LOG_FILE "valor.log"
 #endif
-#define READ_LENGTH  88 // length of each pair end
+
 #define MAX_FRAG_SIZE  1000 // max segment size (distance between paired end reads)
 #define VALOR_FILTER_GAP 1
 #define VALOR_FILTER_SAT 1
+#define BARCODE_LEN 16
 /**************CLONE INFORMATION**************************/
 //#define CLONE_MEAN  30000
 //#define CLONE_STD_DEV 40000
@@ -43,7 +44,6 @@ extern double CLONE_STD_DEV;
 /*************GRAPH PROPERTIES****************************/
 #define QCLIQUE_LAMBDA 0.5
 #define QCLIQUE_GAMMA 0.6
-#define QCLIQUE_TABU 20
 #define MAX_INVERSIONS_IN_GRAPH 120500
 /************** MOLECULE RECOVERY******************/
 #define WINDOW_SIZE  (MAX_FRAG_SIZE) // min window size
@@ -54,7 +54,6 @@ extern double CLONE_STD_DEV;
 /*--------------READS---------------------*/
 #define MIN_QUAL 0
 #define MAX_ALTERNATIVE_CHECK_QUAL 8
-#define SLIDING_WINDOW  READ_LENGTH
 #define READ_SAMPLE_SIZE 1000000
 #define FILTER1XK 1
 #define MAX_SUPPORT 100

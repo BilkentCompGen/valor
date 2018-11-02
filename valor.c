@@ -49,12 +49,8 @@ int main( int argc, char **argv){
     vector_t **variations; //Vector of sv_t
     vector_t **clusters;   //Vector of cluster_t
 
-
-
-
-    mkdir(params->outprefix, 0755 );
-    char *out_file_path = malloc((strlen("/predicted_svs.bedpe")+strlen(params->outprefix)+1)*sizeof(char));
-    sprintf(out_file_path,"%s/predicted_svs.bedpe",params->outprefix);
+    char *out_file_path = malloc((strlen("-predicted_svs.bedpe")+strlen(params->outprefix)+1)*sizeof(char));
+    sprintf(out_file_path,"%s-predicted_svs.bedpe",params->outprefix);
     FILE *outbedfile = fopen(out_file_path,"w+");
     free(out_file_path);
     time( &rawtime);

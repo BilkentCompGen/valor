@@ -119,7 +119,7 @@ int parse_command_line( int argc, char** argv, parameters* params)
 	}
 	if( params->logfile == NULL){
 	        char *tmp_logfilename = (char *) malloc(sizeof(char *) * (strlen(VALOR_DEFAULT_LOG_FILE)+strlen(params->outprefix)+2));
-		sprintf( tmp_logfilename, "%s/%s", params->outprefix, VALOR_DEFAULT_LOG_FILE);
+		sprintf( tmp_logfilename, "%s-%s", params->outprefix, VALOR_DEFAULT_LOG_FILE);
 		set_str( &( params->logfile), tmp_logfilename);
 		free( tmp_logfilename);
 	}

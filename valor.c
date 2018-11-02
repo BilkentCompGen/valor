@@ -61,8 +61,8 @@ int main( int argc, char **argv){
     printf("\n\nVALOR: Variation with LOng Range\n");
     printf("Version: %s\n", VALOR_VERSION);
     printf("Build Date: %s\n",BUILD_DATE);
-    printf("Output Directory: %s\n",params->outprefix);
-    printf("Logfile name: %s\n", params->logfile);
+    printf("Output: %s-predicted_svs.bedpe\n",params->outprefix);
+    printf("Logfile: %s\n", params->logfile);
 
 
     sonic *snc = sonic_load(params->sonic_file);
@@ -70,8 +70,8 @@ int main( int argc, char **argv){
 
     logFile = safe_fopen(params->logfile,"w+");                                                                    
 
-    char *molecule_bed_path = malloc((strlen(params->outprefix) + strlen("/molecules.bed") + 1) * sizeof(char));
-    sprintf(molecule_bed_path,"%s/molecules.bed",params->outprefix);                                            
+    char *molecule_bed_path = malloc((strlen(params->outprefix) + strlen("-molecules.bed") + 1) * sizeof(char));
+    sprintf(molecule_bed_path,"%s-molecules.bed",params->outprefix);                                            
     //////                                                                                                        
     //
     bam_info *in_bams = get_bam_info(snc);

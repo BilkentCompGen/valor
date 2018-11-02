@@ -1288,7 +1288,6 @@ int sv_is_proper(void *vsv){
 	sonic *snc = sonic_load(NULL);
 	bam_info *in_bams = get_bam_info(NULL);
 	parameters *params = get_params();
-	int result = 0;
 	int start = -1;
 	int end = -1;
 	int target_start = -1;

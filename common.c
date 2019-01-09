@@ -452,8 +452,6 @@ sv_type atosv(char *str){
 		return SV_INVERTED_DUPLICATION;
 	}
 	if(strcmp(str,"DEL")==0){
-		fprintf(stderr,"\"%s\" - Not Implemented\n",str);
-		exit(-1);
 		return SV_DELETION;
 	}
 	if(strcmp(str,"TRA")==0){

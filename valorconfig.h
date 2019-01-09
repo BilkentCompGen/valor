@@ -4,7 +4,7 @@
 #ifndef VALOR_DEFAULT_LOG_FILE
 #define VALOR_DEFAULT_LOG_FILE "valor.log"
 #endif
-
+#include <stdio.h>
 #define MAX_FRAG_SIZE  1000 // max segment size (distance between paired end reads)
 #define VALOR_FILTER_GAP 1
 #define VALOR_FILTER_SAT 1
@@ -19,14 +19,14 @@ extern double CLONE_STD_DEV;
 #define CLONE_MIN 3 * MAX_FRAG_SIZE // (CLONE_MEAN - 3 * CLONE_STD_DEV)
 //#define CLONE_MIN (CLONE_MEAN - 3 * CLONE_STD_DEV)
 #define CLONE_MAX_DIST 3000000000
-#define CLONE_MIN_DIST 0 
-#define MOLECULE_BIN_SIZE 1000
+#define CLONE_MIN_DIST 70000 
+#define MOLECULE_BIN_SIZE 10000
 /*************INVERSION INFORMATION****************************/
 #define INV_MIN_SIZE  80000 // 80K
 #define INV_MAX_SIZE  10000000 // 10M
 #define INV_GAP  CLONE_MEAN
 #define INV_OVERLAP (-CLONE_MEAN/4) // 1 molecule size
-#define INVERSION_MIN_REQUIRED_SUPPORT 8
+#define INVERSION_MIN_REQUIRED_SUPPORT 3
 #define INVERSION_MIN_CLUSTER_SIZE 16
 /*************DUPLICATION INFORMION****************************/
 #define DUP_OVERLAP (-CLONE_MEAN/4)
@@ -37,7 +37,7 @@ extern double CLONE_STD_DEV;
 #define DUP_MIN_DIST 100000
 #define VALOR_MOBILE_ELEMENTS "Alu:L1:SVA:HERV"
 #define DUPLICATION_MIN_CLUSTER_SIZE 16
-#define DUPLICATION_MIN_REQUIRED_SUPPORT 8
+#define DUPLICATION_MIN_REQUIRED_SUPPORT 3
 /*************DELETION INFORMATION****************************/
 #define DELETION_MIN_REQUIRED_SUPPORT 3
 #define DELETION_MIN_CLUSTER_SIZE 4
@@ -52,7 +52,7 @@ extern double CLONE_STD_DEV;
 #define EXTENSION (10 * MAX_FRAG_SIZE) // extension wing
 #define MIN_REQUIRED_READS_IN_MOLECULE 8
 /*--------------READS---------------------*/
-#define MIN_QUAL 0
+#define MIN_QUAL 1
 #define MAX_ALTERNATIVE_CHECK_QUAL 8
 #define READ_SAMPLE_SIZE 1000000
 #define FILTER1XK 1
@@ -60,6 +60,6 @@ extern double CLONE_STD_DEV;
 #define ALTERNATIVE_MAPPING_BIT 256
 #define ALTERNATIVE_MAPPING_FLAG "SA"
 #define CHECK_ALTERNATIVE_MAPPINGS 0
-void printvalorconfig();
+void printvalorconfig(FILE *);
 
 #endif

@@ -69,7 +69,7 @@ int main( int argc, char **argv){
     printf("Reading BAM file: %s\n", bamname);
 
     logFile = safe_fopen(params->logfile,"w+");                                                                    
-
+    printvalorconfig(logFile);
     char *molecule_bed_path = malloc((strlen(params->outprefix) + strlen("-molecules.bed") + 1) * sizeof(char));
     sprintf(molecule_bed_path,"%s-molecules.bed",params->outprefix);                                            
     //////                                                                                                        

@@ -770,7 +770,7 @@ vector_t *find_svs(vector_t *split_molecules, sv_type type){
 		for(i=0;i<split_molecules->size;i++){
 			AB = vector_get(split_molecules,i);
 			if(type&SV_DELETION){
-				sv_t *tmp = sv_init(AB,NULL,type);
+				sv_t *tmp = sv_init(AB,NULL,SV_DELETION);
 				vector_soft_put(svs,tmp);
 			}
 			if(!(type & ( SV_INVERSION | SV_DUPLICATION | SV_INVERTED_DUPLICATION))){ continue;}

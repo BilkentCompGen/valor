@@ -13,6 +13,24 @@
 long long memUsage = 0;
 
 
+const char *sv_type_name(sv_type type){
+	switch(type){
+		case SV_INVERSION:
+			return "inversion";
+		case SV_DUPLICATION:
+			return "duplication";
+		case SV_INVERTED_DUPLICATION:
+			return "inverted-duplication";
+		case SV_DELETION:
+			return "deletion";
+		case SV_TRANSLOCATION:
+			return "translocation";
+		case SV_INVERTED_TRANSLOCATION:
+			return "inverted-translocation";
+		default:
+			return "unknown";
+	}
+}
 void free_params(void /*parameters*/ *vp){
 	parameters *p = vp;
 	free(p->sonic_file);

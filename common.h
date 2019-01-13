@@ -44,6 +44,7 @@
 #define RPTDUPMP 11
 #define RPINTER 12
 
+
 // Track memory usage
 extern long long memUsage;
 extern FILE *logFile; //Defined in valor.c
@@ -61,6 +62,7 @@ typedef enum SV_TYPE{
 
 sv_type atosv(char *str);
 
+const char *sv_type_name(sv_type);
 typedef struct _params
 {
 	char* bam_file; /* paths to comma separated input BAM files as a single string before being tokenized */

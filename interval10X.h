@@ -44,4 +44,18 @@ int interval_comp(const void *v1, const void *v2);
 int barcode_comp(const void *v1, const void *v2);
 
 int interval_pair_comp(const void *v1, const void *v2);
+
+
+
+//Distance for inversions
+int i_distance(int start1, int start2, int end1, int end2);
+
+
+//Distance for duplications
+int d_distance(int start1, int start2, int end1, int end2);
+
+int interval_outer_distance(interval_10X a, interval_10X b);
+
+int interval_inner_distance(interval_10X a, interval_10X b);
+
 #endif

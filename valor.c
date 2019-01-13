@@ -14,6 +14,7 @@
 #include "recovermolecules.h"
 #include "interval10X.h"
 #include "structural_variation.h"
+#include "interc_sv.h"
 #include "vector.h"
 #include "bitset.h"
 #include "clique.h"

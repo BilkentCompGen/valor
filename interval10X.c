@@ -43,6 +43,36 @@ int interval_pair_comp(const void *v1, const void *v2){
 	return p1->start1 - p2->start1;
 }
 
+
+//Distance for inversions
+int i_distance(int start1, int start2, int end1, int end2){
+	if(start1 < start2){
+		return i_distance(start2,start1,end2,end1);
+	}
+	return start1-end2;
+}
+
+//Distance for duplications
+int d_distance(int start1, int start2, int end1, int end2){
+	if(start1 < start2){
+		return d_distance(start2, start1, end2, end1);
+	}
+	return end1-start2;
+}
+
+int interval_outer_distance(interval_10X a, interval_10X b){
+	if( a.end > b.end){
+		return a.end - b.start;
+	}
+	return b.end - a.start;
+}
+int interval_inner_distance(interval_10X a, interval_10X b){
+	if( a.start < b.start){
+		return b.start - a.end;
+	}
+	return a.start - b.end;
+}
+
 //Fix this for varying length
 char *decode_ten_x_barcode( unsigned long barcode){
 	int i;

@@ -9,7 +9,7 @@ CC=gcc
 OPT=-O3
 CFLAGS = -fopenmp  -Wall  $(OPT) -I htslib -I vh -I sonic -DVALOR_VERSION=\"$(VALOR_VERSION)\" -DBUILD_DATE=\"$(BUILD_DATE)\" -DVALOR_UPDATE=\"$(VALOR_UPDATE)\" -DVALOR_DEBUG=$(VALOR_DEBUG) -DLIVE_PROGRESS=$(LIVE_PROG) 
 LDFLAGS = -fopenmp htslib/libhts.a -lz -lm -lpthread sonic/libsonic.a
-SOURCES =  valor.c cluster.c clique.c bitset.c hashtable.c statistics.c graph.c common.c vector.c set.c interval10X.c structural_variation.c cnv.c readbam.c readbed.c recovermolecules.c progress.c cmdline.c config.c valorconfig.c dna_4X_encoding.c
+SOURCES =  valor.c cluster.c clique.c bitset.c hashtable.c statistics.c graph.c common.c vector.c set.c interval10X.c structural_variation.c interc_sv.c cnv.c readbam.c readbed.c recovermolecules.c progress.c cmdline.c config.c valorconfig.c dna_4X_encoding.c
 OBJECTS = $(SOURCES:.c=.o)
 EXECUTABLE = valor
 INSTALLPATH = /usr/local/bin/

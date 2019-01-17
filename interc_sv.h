@@ -47,9 +47,9 @@ inter_split_molecule_t *inter_split_init(barcoded_read_pair *pair, interval_10X 
 
 int inter_split_indicates_translocation(inter_split_molecule_t s1, inter_split_molecule_t s2);
 
-ic_sv_t *inter_sv_init(inter_split_molecule_t *s1, inter_split_molecule_t *s2, sv_type type, int orient);
+ic_sv_t *inter_sv_init(inter_split_molecule_t *s1, inter_split_molecule_t *s2, splitmolecule_t *tra_del ,sv_type type, int orient);
 
-vector_t *find_direct_translocations(vector_t *sp1, vector_t *sp2);
+vector_t *find_direct_translocations(vector_t *sp1, vector_t *sp2, vector_t **molecules);
 int is_inter_chr_split(barcoded_read_pair *pair, interval_10X *a, interval_10X *b);
 
 

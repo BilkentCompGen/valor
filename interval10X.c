@@ -173,3 +173,63 @@ int interval_can_pair(interval_10X *i1, interval_10X *i2){
                 (i2->start - i1->end <= CLONE_MAX_DIST);
 }
 
+
+
+#define SCL_INIT_LIMIT 16
+
+
+vector_t *discover_split_molecules(vector_t *regions){
+	int i,j;
+	vector_t *smolecules = vector_init(sizeof(splitmolecule_t),SCL_INIT_LIMIT);
+	interval_10X *ii;
+	interval_10X *ij;
+
+	for(i=0;i<regions->size;i++){
+		for(j=i+1;j<regions->size;j++){
+			ii = vector_get(regions,i);
+			ij = vector_get(regions,j);
+			if( interval_can_pair(ii,ij)){
+				splitmolecule_t *new_molecule = splitmolecule_init(ii,ij);
+				vector_soft_put(smolecules,new_molecule);
+			}else if( interval_can_pair(ij,ii)){
+				splitmolecule_t *new_molecule = splitmolecule_init(ij,ii);
+				vector_soft_put(smolecules,new_molecule);
+			}
+			//	VALOR_LOG("%d-%d\t%d-%d\n",i,j,ii->barcode,ij->barcode);
+			if( ij->barcode != ii->barcode){
+				break;
+			}	
+		}
+
+	}
+
+	return smolecules;
+}
+
+
+splitmolecule_t *splitmolecule_copy(splitmolecule_t *scl){
+	splitmolecule_t *ncl = getMem(sizeof(splitmolecule_t));
+
+	ncl->start1 = scl->start1;
+	ncl->start2 = scl->start2;
+	ncl->end1 = scl->end1;
+	ncl->end2 = scl->end2;
+	ncl->barcode = scl->barcode;
+	return ncl;
+}
+void splitmolecule_destroy(splitmolecule_t *molecule){
+	free(molecule);
+}
+splitmolecule_t *splitmolecule_init(interval_10X *i1, interval_10X *i2){
+	if( i1->barcode != i2->barcode){
+		fprintf(stderr,"Can't create split molecule of different barcodes\n");
+		return NULL;
+	}
+	splitmolecule_t *new_molecule = malloc(sizeof(splitmolecule_t));
+	new_molecule->start1 = i1->start;
+	new_molecule->start2 = i2->start;
+	new_molecule->end1 = i1->end;
+	new_molecule->end2 = i2->end;
+	new_molecule->barcode = i1->barcode;
+	return new_molecule;
+}

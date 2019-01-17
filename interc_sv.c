@@ -1,6 +1,33 @@
 #include "interc_sv.h"
 
 
+#define SCL_INIT_LIMIT 400
+
+
+
+
+size_t split_molecule_binary_search(vector_t *splits, interval_10X key){
+	if(splits->size == 0){return -1;}
+	long first, last;
+	long mid = 0;
+	first =0;
+	last = splits->size - 1;
+
+	while( first < last){
+		mid = (first + last)/2;
+		if(((splitmolecule_t*)vector_get(splits,mid))->start1< key.start){
+			first = mid + 1;
+		}
+		else{
+			last = mid - 1;
+		}
+	}
+
+	while( mid >= 0 && key.start < ((splitmolecule_t*) vector_get(splits,mid))->start1){
+		mid--;
+	}
+	return mid +1;
+}
 // So that program can safely assume no NULL vectors.
 void filter_dangling_reads(vector_t *reads){
 	int i;
@@ -24,8 +51,9 @@ size_t barcode_binary_search(vector_t *mols, unsigned long key){
 	last = mols->size - 1;
 
 	while( first < last){
-		mid = (first + last)/2;
-		if(((interval_10X *)vector_get(mols,mid))->barcode < key){
+//		mid = (first + last)/2;
+        mid = (last - first)/2 + first;
+		if(((interval_10X*)vector_get(mols,mid))->barcode < key){
 			first = mid + 1;
 		}
 		else{
@@ -74,6 +102,7 @@ inter_split_molecule_t *inter_split_init(barcoded_read_pair *pair, interval_10X 
 
 int inter_split_indicates_translocation(inter_split_molecule_t s1, inter_split_molecule_t s2){
 	if( !(s1.chr1 == s2.chr1 && s1.chr2 == s2.chr2)){ return 0;}
+    if( s1.barcode == s2.barcode) {return 0;}
 
 	interval_10X A = (interval_10X){s1.start1,s1.end1,s1.barcode};  
 	interval_10X B = (interval_10X){s1.start2,s1.end2,s1.barcode};  
@@ -90,8 +119,9 @@ int inter_split_indicates_translocation(inter_split_molecule_t s1, inter_split_m
 	return 0; 
 }
 
-ic_sv_t *inter_sv_init(inter_split_molecule_t *s1, inter_split_molecule_t *s2, sv_type type, int orient){
-	ic_sv_t *new_i = malloc(sizeof(ic_sv_t));
+ic_sv_t *inter_sv_init(inter_split_molecule_t *a, inter_split_molecule_t *b, splitmolecule_t *tra_del, sv_type type, int orient){
+	if(orient == 0){ return NULL;}
+    ic_sv_t *new_i = malloc(sizeof(ic_sv_t));
 	memset(new_i,0,sizeof(ic_sv_t));
 	new_i->supports[0] = 1;//TODO fix this
 	new_i->supports[1] = 1;//TODO fix this
@@ -101,17 +131,69 @@ ic_sv_t *inter_sv_init(inter_split_molecule_t *s1, inter_split_molecule_t *s2, s
 	new_i->tabu = 0;
 	new_i->dv = 0;
 	new_i->inactive = 0;
-	new_i->AB=*s1;
-	new_i->CD=*s2;
-	new_i->EF=(splitmolecule_t){0,0,0,0,0L};
+	new_i->AB=*a;
+	new_i->CD=*b;
+	new_i->EF=*tra_del;
 	new_i->type=type;
-	//TODO assign chr's accordign to orientation.
-	new_i->chr_source = s1->chr1;
-	new_i->chr_target = s1->chr2;
+
+
+    if( orient == INTERC_FORW_COPY){
+        new_i->chr_source = MIN(a->chr1,a->chr2);
+        new_i->chr_target = MAX(a->chr1,a->chr2);
+    }else if(orient == INTERC_BACK_COPY){
+        new_i->chr_target = MIN(a->chr1,a->chr2);
+        new_i->chr_source = MAX(a->chr1,a->chr2);
+
+    }
+
 
 	return new_i;
 }
-vector_t *find_direct_translocations(vector_t *sp1, vector_t *sp2){
+
+splitmolecule_t *find_matching_split_molecule(vector_t **splits,inter_split_molecule_t *a, inter_split_molecule_t *b, int orient){    
+    
+	if(orient == 0){ return NULL;}
+    int src_chr; 
+    int tar_chr;
+
+    interval_10X deletion_interval = {0,0,0};
+    if( orient == INTERC_FORW_COPY){
+        src_chr = MIN(a->chr1,a->chr2);
+        tar_chr = MAX(a->chr1,a->chr2);
+        deletion_interval = (interval_10X){.start = a->end1,.end = b->start1,.barcode=0};
+    }else if(orient == INTERC_BACK_COPY){
+        tar_chr = MIN(a->chr1,a->chr2);
+        src_chr = MAX(a->chr1,a->chr2);
+        deletion_interval = (interval_10X){.start = a->end2,.end = b->start2,.barcode=0};
+
+    }else{
+        
+        fprintf(stderr, "Translocation orientation cannot be %d, terminating!!\n",orient);
+        exit(-1);
+        return NULL;
+    }
+
+
+    size_t pos = split_molecule_binary_search(splits[src_chr],deletion_interval);
+    if( pos == -1){
+        return NULL;
+    }
+
+    interval_pair *cand = vector_get(splits[src_chr],pos);
+    while( pos < splits[src_chr]->size && cand->start1 < deletion_interval.end){
+
+        if( cand->start1 + cand->end1 > 2 * deletion_interval.start && 
+                cand->start2 + cand->end2 < 2 * deletion_interval.end){
+    
+            return vector_get(splits[src_chr], pos);
+        }
+        pos++;
+        cand = vector_get(splits[src_chr],pos);
+    }
+    return NULL;
+}
+
+vector_t *find_direct_translocations(vector_t *sp1, vector_t *sp2, vector_t **molecules){
 	vector_t *tlocs = vector_init(sizeof(ic_sv_t),512);
 	int i,j;
 
@@ -120,8 +202,9 @@ vector_t *find_direct_translocations(vector_t *sp1, vector_t *sp2){
 		for(j=0;j<sp2->size;j++){   
 			inter_split_molecule_t *b = vector_get(sp2,j);
 			int orient = inter_split_indicates_translocation(*a,*b);
-			if(orient){
-				vector_soft_put(tlocs,inter_sv_init(a,b,SV_TRANSLOCATION,orient));
+            splitmolecule_t *del_tra = find_matching_split_molecule(molecules,a,b,orient);
+			if(orient && del_tra != NULL){
+				vector_soft_put(tlocs,inter_sv_init(a,b,del_tra,SV_TRANSLOCATION,orient));
 			}
 		}
 	}
@@ -131,7 +214,9 @@ vector_t *find_direct_translocations(vector_t *sp1, vector_t *sp2){
 
 int is_inter_chr_split(barcoded_read_pair *pair, interval_10X *a, interval_10X *b){
 	if( (pair->barcode !=a->barcode) || (pair->barcode!=b->barcode)){ return 0;}
-	return in_range(pair->left,a->start,2*MOLECULE_EXT) && in_range(pair->right,b->start,2*MOLECULE_EXT);
+
+	return (in_range(pair->left,a->start,2*MOLECULE_EXT) && in_range(pair->right,b->start,2*MOLECULE_EXT)) ||
+       ( in_range(pair->left,b->start,2*MOLECULE_EXT) && in_range(pair->right,a->start,2*MOLECULE_EXT));
 }
 
 // returns a vector of inter_split_molecules
@@ -142,13 +227,30 @@ vector_t *find_separated_molecules(vector_t *reads, vector_t *mol_a, vector_t *m
 	for(i=0;i<reads->size;i++){
 		barcoded_read_pair *pair =  vector_get(reads,i);
 		if( pair->barcode == -1){ continue;}
-		size_t k = barcode_binary_search(mol_a,pair->barcode);
-		size_t t = barcode_binary_search(mol_b,pair->barcode);
-		size_t kk = k;
+        size_t k = 0;
+		//size_t k = barcode_binary_search(mol_a,pair->barcode);
+         while (k < mol_a->size && ((interval_10X *)vector_get(mol_a,k))->barcode != pair->barcode){
+            k++;
+        }
+        if ( k >= mol_a->size){
+            continue;
+        }
+		//size_t t = barcode_binary_search(mol_b,pair->barcode);
+		size_t t = 0;
+        while (t < mol_b->size && ((interval_10X *)vector_get(mol_b,t))->barcode != pair->barcode){
+            t++;
+        }
+        if ( t >= mol_b->size){
+            continue;
+        }
+        size_t kk = k;
 		size_t tt = t;
+
 		while(I10X_VECTOR_GET(mol_a,kk)->barcode == pair->barcode){	
 			while(I10X_VECTOR_GET(mol_b,tt)->barcode == pair->barcode){
-				if(is_inter_chr_split(pair,vector_get(mol_a,kk),vector_get(mol_b,tt))){
+
+                        
+                if(is_inter_chr_split(pair,vector_get(mol_a,kk),vector_get(mol_b,tt))){
 					vector_soft_put(isms,inter_split_init(pair,vector_get(mol_a,kk),vector_get(mol_b,tt)));
 				}	
 				tt++;
@@ -184,17 +286,28 @@ vector_t *find_interchromosomal_events(vector_t **molecules, bam_vector_pack **r
 		filter_dangling_reads(reads[i]->inter_mm);
 
 	}
+
 	int k, t;
 	for(k=0;k < chr_to_eval->size;k++){
 		i = *(int *) vector_get(chr_to_eval, k);
-		for(t=k+1;t< chr_to_eval->size;t++){
+	
+
+        for(j=0;j<reads[i]->inter_mp->size;j++){
+            barcoded_read_pair *ptr = vector_get(reads[i]->inter_mp,j);
+            VALOR_LOG("%d\t%d\t%d\t%d\t%d\t%d\t%lu\n",ptr->l_chr,ptr->left,ptr->l_or,ptr->r_chr,ptr->right,ptr->r_or,ptr->barcode);
+        }
+        for(j=0;j<reads[i]->inter_pm->size;j++){
+            barcoded_read_pair *ptr = vector_get(reads[i]->inter_pm,j);
+            VALOR_LOG("%d\t%d\t%d\t%d\t%d\t%d\t%lu\n",ptr->l_chr,ptr->left,ptr->l_or,ptr->r_chr,ptr->right,ptr->r_or,ptr->barcode);
+        }
+        for(t=k+1;t< chr_to_eval->size;t++){
 			j = *(int *) vector_get(chr_to_eval, t);
-			vector_t *pm_seps = find_separated_molecules(reads[i]->inter_pm,molecules[i],molecules[j]);
+			vector_t *pm_seps = find_separated_molecules(reads[i]->inter_pm,molecules[j],molecules[i]);
 			vector_t *mp_seps = find_separated_molecules(reads[i]->inter_mp,molecules[i],molecules[j]);
 			//			vector_t *pp_seps = find_separated_molecules(reads[i]->inter_pp,molecules[i],molecules[j]);
 			//			vector_t *mm_seps = find_separated_molecules(reads[i]->inter_mm,molecules[i],molecules[j]);
 
-			vector_t *direct_t =  find_direct_translocations(pm_seps,mp_seps);
+			vector_t *direct_t =  find_direct_translocations(pm_seps,mp_seps,molecules);
 			vector_soft_put(all_chr_vec,direct_t);
 			//TODO
 			//			vector_t *invert_t =  find_invert_translocations(ppmm_seps,mmpp_seps);

@@ -19,6 +19,7 @@ typedef struct _interval_pair{
 } interval_pair;
 typedef interval_pair interval_discordant;
 
+typedef interval_pair splitmolecule_t;
 int interval_can_pair(interval_10X *i1, interval_10X *i2);
 
 int interval_pair_overlaps(interval_pair *p1,interval_pair *i2, int relaxation);
@@ -58,4 +59,9 @@ int interval_outer_distance(interval_10X a, interval_10X b);
 
 int interval_inner_distance(interval_10X a, interval_10X b);
 
+splitmolecule_t *splitmolecule_copy(splitmolecule_t *to_copy);
+void splitmolecule_destroy(splitmolecule_t *molecule);
+
+vector_t *discover_split_molecules(vector_t *regions);
+splitmolecule_t *splitmolecule_init(interval_10X *i1,interval_10X *i2);
 #endif

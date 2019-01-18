@@ -193,10 +193,8 @@ bam_vector_pack *read_10X_chr( bam_info* in_bam, char* bam_path, sonic *snc, int
         if( bam_alignment_core->mpos == -1) goto skip;
         unsigned char * b_text =  bam_aux_get(bam_alignment,"BX");
         unsigned long barcode;
-        if(IS_BIG_ENDIAN)
+
             barcode = encode_ten_x_barcode(b_text);
-        else
-            barcode = dna_fast_encode(b_text);
 
         //		if(bam_alignment_core->tid!=bam_alignment_core->mtid) goto skip;
 

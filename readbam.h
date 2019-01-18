@@ -30,9 +30,9 @@ typedef struct barcoded_read_pair{
 	unsigned int l_or : 1;
 	unsigned int right :31;
 	unsigned int r_or :1;
-	unsigned long barcode :44;
-	int l_chr :10;
-	int r_chr :10;
+	unsigned long barcode;
+	int l_chr :16;
+	int r_chr :16;
 }barcoded_read_pair;
 
 typedef struct simple_interval{

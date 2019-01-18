@@ -25,7 +25,8 @@ typedef struct ic_sv{
 	int chr_target :16;
 	sv_type type;
 	unsigned char supports[3];
-	short tabu;
+
+    short tabu;
 	int dv :30;
 	int covered :1;
 	int inactive :1;

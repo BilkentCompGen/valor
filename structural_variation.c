@@ -109,7 +109,7 @@ int sv_equals(const void *i1, const void *i2){
 }
 
 
-void g_dfs_step(graph_t *g, vector_t *comp, sv_t *sv){
+void sv_g_dfs_step(graph_t *g, vector_t *comp, sv_t *sv){
 	sv->covered = 1;
 	vector_put(comp,sv);
 	vector_t *edges = graph_get_edges(g,sv);
@@ -117,12 +117,12 @@ void g_dfs_step(graph_t *g, vector_t *comp, sv_t *sv){
 	for(i=0;i<edges->size;i++){
 		sv_t **val = vector_get(edges,i);
 		if(!(*val)->covered){
-			g_dfs_step(g,comp,*val);
+			sv_g_dfs_step(g,comp,*val);
 		}
 	}
 }
 
-vector_t *g_dfs_components(graph_t *g){
+vector_t *sv_g_dfs_components(graph_t *g){
 	adjlist_t *al = graph_to_al(g);
 	vector_t *comps = vector_init(sizeof(vector_t),16);
 	comps->rmv  = &vector_free;
@@ -133,7 +133,7 @@ vector_t *g_dfs_components(graph_t *g){
 		if( !sv->covered){
 			vector_t *comp = vector_init(sizeof(sv_t),40);
 			comp->rmv = &sv_destroy;
-			g_dfs_step(g,comp,sv);
+			sv_g_dfs_step(g,comp,sv);
 			vector_soft_put(comps,comp);
 		}
 

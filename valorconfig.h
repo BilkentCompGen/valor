@@ -6,8 +6,8 @@
 #endif
 #include <stdio.h>
 #define MAX_FRAG_SIZE  1000 // max segment size (distance between paired end reads)
-#define VALOR_FILTER_GAP 1
-#define VALOR_FILTER_SAT 1
+#define VALOR_FILTER_GAP 0
+#define VALOR_FILTER_SAT 0
 #define BARCODE_LEN 16
 /**************CLONE INFORMATION**************************/
 //#define CLONE_MEAN  30000
@@ -41,6 +41,8 @@ extern double CLONE_STD_DEV;
 /*************DELETION INFORMATION****************************/
 #define DELETION_MIN_REQUIRED_SUPPORT 3
 #define DELETION_MIN_CLUSTER_SIZE 4
+/*************INTER_CHR_EVENTS****************************/
+#define MIN_INTER_CLUSTER_SIZE 3
 /*************GRAPH PROPERTIES****************************/
 #define QCLIQUE_LAMBDA 0.5
 #define QCLIQUE_GAMMA 0.6

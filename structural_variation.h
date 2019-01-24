@@ -29,7 +29,7 @@ typedef struct sv{
 
 
 int g_remove_all(graph_t *,vector_t *, vector_t *);
-vector_t *g_dfs_components(graph_t *);
+vector_t *sv_g_dfs_components(graph_t *);
 
 
 int _svcmp(const void *v1, const void *v2,size_t);

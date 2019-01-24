@@ -6,7 +6,7 @@
 #include "common.h"
 #include "valorconfig.h"
 typedef interval_pair splitmolecule_t;
-typedef struct inter_split_molecule{
+typedef struct inter_interval_pair{
 	int start1;
 	int start2;
 	int end1;
@@ -14,8 +14,15 @@ typedef struct inter_split_molecule{
 	int chr1;
 	int chr2;	
     unsigned long barcode;
-} inter_split_molecule_t;
+} inter_interval_pair;
+typedef inter_interval_pair inter_split_molecule_t;
 
+typedef struct inter_sv_call{
+    inter_interval_pair break_points;
+    int supports[3];
+    int cluster_size;
+    sv_type type;
+}inter_sv_call_t;
 // inter-chrosomal svs
 typedef struct ic_sv{
 	inter_split_molecule_t AB;
@@ -37,12 +44,16 @@ typedef struct ic_sv{
 #define INTERC_BACK_COPY 4
 #define INTERC_FORW_COPY 3
 
+
 void ic_sv_bed_print(FILE *stream, ic_sv_t *sv);
+void inter_sv_call_bed_print(FILE *stream, inter_sv_call_t *sv);
 
 
+int interc_sv_comp(const void *, const void *);
+int interc_sv_compd(const void *, const void *, size_t);
 size_t barcode_binary_search(vector_t *mols, unsigned long key);
 
-int inter_split_overlaps(inter_split_molecule_t s1, inter_split_molecule_t s2);
+int inter_split_overlaps(inter_split_molecule_t s1, inter_split_molecule_t s2, int relax);
 
 inter_split_molecule_t *inter_split_init(barcoded_read_pair *pair, interval_10X *a, interval_10X *b);
 

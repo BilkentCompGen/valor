@@ -192,7 +192,7 @@ int main( int argc, char **argv){
 
         graph_trim(sv_graph);
 
-        vector_t *comps = g_dfs_components(sv_graph);
+        vector_t *comps = sv_g_dfs_components(sv_graph);
 
         if(comps->size == 0){continue;}
 
@@ -301,7 +301,7 @@ int main( int argc, char **argv){
         for(k=0;k<variants->size;k++){
             vector_t *sub_vec = vector_get(variants,k);
             for(i=0;i<sub_vec->size;i++){
-                ic_sv_bed_print(outbedfile,vector_get(sub_vec,i));
+                inter_sv_call_bed_print(outbedfile,vector_get(sub_vec,i));
             }
         }
 

@@ -101,8 +101,8 @@ size_t split_molecule_binary_search(vector_t *splits, interval_10X key){
 			last = mid - 1;
 		}
 	}
-
-	while( mid >= 0 && key.start -30000< ((splitmolecule_t*) vector_get(splits,mid))->start1){
+//-30000
+	while( mid >= 0 && key.start -30000 < ((splitmolecule_t*) vector_get(splits,mid))->start1){
 		mid--;
 	}
 	return mid +1;
@@ -123,7 +123,32 @@ void filter_dangling_reads(vector_t *reads){
 	vector_defragment(reads);
 	reads->REMOVE_POLICY = REMP_SORTED;
 }
-size_t barcode_binary_search(vector_t *mols, unsigned long key){
+size_t interval_pair_binary_search(vector_t *mols, interval_10X interval){
+	if(mols->size == 0){return -1;}
+	long first, last;
+	long mid = 0;
+	first =0;
+	last = mols->size - 1;
+
+	while( first < last){
+//		mid = (first + last)/2;
+        mid = (last - first)/2 + first;
+		if(((interval_pair*)vector_get(mols,mid))->start1 < interval.start){
+			first = mid + 1;
+		}
+		else{
+			last = mid - 1;
+		}
+	}
+    int cur_start = ((interval_pair *) vector_get(mols,mid))->start1;
+	mid--;
+	while( mid >= 0 && cur_start > interval.start){
+		mid--;
+	}
+	return mid+1;
+}
+
+size_t molecule_barcode_binary_search(vector_t *mols, unsigned long key){
 	if(mols->size == 0){return -1;}
 	long first, last;
 	long mid = 0;
@@ -202,11 +227,9 @@ int inter_split_overlaps(inter_split_molecule_t s1, inter_split_molecule_t s2, i
 
 int direct_translocation_overlaps(ic_sv_t *i1, ic_sv_t *i2){
     return  i1->chr_source == i2->chr_source && i1->chr_target == i2->chr_target &&
-        interval_pair_overlaps(&i1->EF,&i2->EF,CLONE_MEAN) && 
-        inter_split_overlaps(i1->AB,i2->AB,CLONE_MEAN) &&
-        inter_split_overlaps(i1->CD,i2->CD,CLONE_MEAN);
-
-            
+        interval_pair_overlaps(&i1->EF,&i2->EF,2*CLONE_MEAN) && 
+        inter_split_overlaps(i1->AB,i2->AB,2*CLONE_MEAN) &&
+        inter_split_overlaps(i1->CD,i2->CD,2*CLONE_MEAN);
     return 0;
 }
  
@@ -252,11 +275,13 @@ int inter_split_indicates_translocation(inter_split_molecule_t s1, inter_split_m
 	interval_10X C = (interval_10X){s2.start1,s2.end1,s2.barcode};  
 	interval_10X D = (interval_10X){s2.start2,s2.end2,s2.barcode};  
 	if(interval_inner_distance(A,C) < DUP_GAP &&
-			interval_inner_distance(A,C) > DUP_OVERLAP){
+			interval_inner_distance(A,C) > DUP_OVERLAP &&
+            interval_outer_distance(A,C) < DUP_MAX_DIST){
 		return INTERC_BACK_COPY;
 	}
 	else if(interval_inner_distance(B,D) < DUP_GAP &&
-			interval_inner_distance(B,D) > DUP_OVERLAP){
+			interval_inner_distance(B,D) > DUP_OVERLAP &&
+              interval_outer_distance(B,D) < DUP_MAX_DIST){
 		return INTERC_FORW_COPY;
 	}
 	return 0; 
@@ -329,8 +354,11 @@ splitmolecule_t *find_matching_split_molecule(vector_t **splits,inter_split_mole
     interval_pair *cand = vector_get(splits[src_chr],pos);
     while( pos < splits[src_chr]->size && cand->start1 < deletion_interval.end + 50000){
 
-        if( cand->start1 + cand->end1 > 2 * deletion_interval.start - 50000 && 
-                cand->start2 + cand->end2 < 2 * deletion_interval.end + 50000){
+
+        if( cand->start1 + cand->end1 < 2 * deletion_interval.start  && 
+             cand->start1 + cand->end1 > 2 * deletion_interval.start - CLONE_MEAN  && 
+                cand->start2 + cand->end2 < 2 * deletion_interval.end + CLONE_MEAN &&
+                cand->start2 + cand->end2 > 2 * deletion_interval.end){
     
             return vector_get(splits[src_chr], pos);
         }
@@ -370,7 +398,40 @@ int is_inter_chr_split(barcoded_read_pair *pair, interval_10X *a, interval_10X *
 	return (in_range(pair->left,a->start,2*MOLECULE_EXT) && in_range(pair->right,b->start,2*MOLECULE_EXT));        
 }
 
-int cnt = 0;
+int split_get_pm_support(splitmolecule_t *split, vector_t *discordants){
+    int support = 0;
+    int mid = scl_binary_search (discordants,split);
+    int j;
+    for(j=mid;j < discordants->size;j++){
+		if(interval_pair_overlaps(split,vector_get(discordants,j),CLONE_MEAN/32)){
+			support++;				
+		}
+		if(split->end1 < IDIS_VECTOR_GET(discordants,j)->start1){
+			break;
+		}
+		if(support > MAX_SUPPORT){ break;}	
+	}
+    return support;
+}
+
+void filter_unsupported_pm_splits(vector_t *splits, vector_t *discordants){
+    int i;
+
+
+    splits->REMOVE_POLICY = REMP_LAZY;
+    for(i=0;i<splits->size;i++){
+        splitmolecule_t *split = vector_get(splits,i);
+        int support = split_get_pm_support(split,discordants);
+        if( support < 1){
+            vector_remove(splits,i);
+        }
+    } 
+    splits->REMOVE_POLICY = REMP_SORTED;
+    vector_defragment(splits);
+    vector_zip(splits);    
+}
+
+
 // returns a vector of inter_split_molecules
 vector_t *find_inter_split_molecules(vector_t *reads, vector_t *mol_a, vector_t *mol_b){
 	vector_t *isms = vector_init(sizeof(inter_split_molecule_t),512);
@@ -399,8 +460,8 @@ vector_t *find_inter_split_molecules(vector_t *reads, vector_t *mol_a, vector_t 
         }
 
 */
-		size_t k = barcode_binary_search(mol_a,pair->barcode);
-        size_t t = barcode_binary_search(mol_b,pair->barcode);
+		size_t k = molecule_barcode_binary_search(mol_a,pair->barcode);
+        size_t t = molecule_barcode_binary_search(mol_b,pair->barcode);
         size_t kk = k;
 		size_t tt = t;
 
@@ -416,10 +477,10 @@ vector_t *find_inter_split_molecules(vector_t *reads, vector_t *mol_a, vector_t 
                 } 
                         
                 if(is_inter_chr_split(pair,vector_get(mol_a,kk),vector_get(mol_b,tt))){
-					cnt++;
+
                     vector_soft_put(isms,inter_split_init(pair,vector_get(mol_a,kk),vector_get(mol_b,tt)));
 			    }else  if(is_inter_chr_split(pair,vector_get(mol_b,tt),vector_get(mol_a,kk))){
-					cnt++;
+
                     vector_soft_put(isms,inter_split_init(pair,vector_get(mol_b,tt),vector_get(mol_a,kk)));
 				}	
 
@@ -486,7 +547,9 @@ size_t ic_sv_hf(hashtable_t *table, const void *vsv){
 	hash+=sv->type;
 	hash*=BIG_PRIME;
 	hash= hash % table->size;
-	return hash;
+	
+
+    return hash;
 
 
 	//return SuperFastHash((vsv),2*sizeof(splitmolecule_t)) % table->size;
@@ -612,6 +675,17 @@ vector_t *cluster_interchromosomal_events(vector_t *predictions){
     return calls;
 }
 
+vector_t *resplit_molecules(vector_t *molecules, vector_t *discordants){
+    int i;
+
+    for(i=0;i<molecules->size;i++){
+        interval_10X *mol = vector_get(molecules,i);
+        int dis_index = interval_pair_binary_search(discordants, *mol);
+
+    }
+    return NULL;
+}
+
 //Direct signature -> pm, mp
 //Inverted signature pp, mm
 // This will be slow. 
@@ -639,6 +713,7 @@ vector_t *find_interchromosomal_events(vector_t **molecules, bam_vector_pack **r
         if(bit_set_get_bit(get_bam_info(NULL)->chro_bs,j)){
             splits[j] = discover_split_molecules(molecules[j]);
             qsort(splits[j]->items,splits[j]->size,sizeof(void *),interval_pair_comp);
+            filter_unsupported_pm_splits(splits[j],reads[j]->pm_discordants);
         }else{
             splits[j] = vector_init(sizeof(interval_pair),1);
         }

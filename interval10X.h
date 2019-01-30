@@ -64,4 +64,6 @@ void splitmolecule_destroy(splitmolecule_t *molecule);
 
 vector_t *discover_split_molecules(vector_t *regions);
 splitmolecule_t *splitmolecule_init(interval_10X *i1,interval_10X *i2);
+
+size_t scl_binary_search(vector_t *intervals, splitmolecule_t *key);
 #endif

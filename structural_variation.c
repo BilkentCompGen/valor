@@ -563,25 +563,7 @@ size_t scl_binary_searchdup(vector_t *intervals, splitmolecule_t *key){
 }
 
 
-size_t scl_binary_search(vector_t *intervals, splitmolecule_t *key){
-	if(intervals->size == 0){return -1;}
-	long first, last;
-	long mid = 0;
-	first =0;
-	last = intervals->size - 1;
-	int counter = 0;	
-	while( first < last){
-		mid = (first + last)/2;
-		if(IDIS_VECTOR_GET(intervals,mid)->end1 < key->start1){
-			first = mid + 1;
-		}
-		else{
-			last = mid - 1;
-		}
-		counter ++;
-	}
-	return mid;
-}
+
 
 
 void update_deletion_supports_b(sv_t *del, vector_t *pm_reads){

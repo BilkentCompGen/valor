@@ -6,8 +6,8 @@
 #endif
 #include <stdio.h>
 #define MAX_FRAG_SIZE  1000 // max segment size (distance between paired end reads)
-#define VALOR_FILTER_GAP 0
-#define VALOR_FILTER_SAT 0
+#define VALOR_FILTER_GAP 1
+#define VALOR_FILTER_SAT 1
 #define BARCODE_LEN 16
 /**************CLONE INFORMATION**************************/
 //#define CLONE_MEAN  30000
@@ -24,13 +24,13 @@ extern double CLONE_STD_DEV;
 /*************INVERSION INFORMATION****************************/
 #define INV_MIN_SIZE  80000 // 80K
 #define INV_MAX_SIZE  10000000 // 10M
-#define INV_GAP  CLONE_MEAN
+#define INV_GAP  (CLONE_MEAN/4)
 #define INV_OVERLAP (-CLONE_MEAN/4) // 1 molecule size
 #define INVERSION_MIN_REQUIRED_SUPPORT 3
 #define INVERSION_MIN_CLUSTER_SIZE 16
 /*************DUPLICATION INFORMION****************************/
 #define DUP_OVERLAP (-CLONE_MEAN/4)
-#define DUP_GAP CLONE_MEAN
+#define DUP_GAP (CLONE_MEAN/4)
 #define DUP_MIN_SIZE CLONE_MEAN //1000
 #define DUP_MAX_SIZE 7000000
 #define DUP_MAX_DIST 10000000
@@ -42,7 +42,7 @@ extern double CLONE_STD_DEV;
 #define DELETION_MIN_REQUIRED_SUPPORT 3
 #define DELETION_MIN_CLUSTER_SIZE 4
 /*************INTER_CHR_EVENTS****************************/
-#define MIN_INTER_CLUSTER_SIZE 3
+#define MIN_INTER_CLUSTER_SIZE 4
 /*************GRAPH PROPERTIES****************************/
 #define QCLIQUE_LAMBDA 0.5
 #define QCLIQUE_GAMMA 0.6

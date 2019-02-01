@@ -2,6 +2,7 @@
 #include "graph.h"
 #include "clique_inter.h"
 #define SCL_INIT_LIMIT 400
+#include "cnv.h"
 
 int isv_chr_cmp(const ic_sv_t *s1, const ic_sv_t *s2){
     if( s1->chr_source == s2->chr_source){
@@ -343,8 +344,9 @@ splitmolecule_t *find_matching_split_molecule(vector_t **splits,inter_split_mole
         exit(-1);
         return NULL;
     }
-
-
+    //splitmolecule_t *aaa = splitmolecule_init(&(interval_10X){deletion_interval.start-20000,deletion_interval.start,0},
+     //                                       &(interval_10X){deletion_interval.end,deletion_interval.end+20000,0});
+    //return aaa;
     size_t pos = split_molecule_binary_search(splits[src_chr],deletion_interval);
     if( pos == -1){
   //      VALOR_LOG("NO %d %d\n",deletion_interval.start,deletion_interval.end);
@@ -477,10 +479,8 @@ vector_t *find_inter_split_molecules(vector_t *reads, vector_t *mol_a, vector_t 
                 } 
                         
                 if(is_inter_chr_split(pair,vector_get(mol_a,kk),vector_get(mol_b,tt))){
-
                     vector_soft_put(isms,inter_split_init(pair,vector_get(mol_a,kk),vector_get(mol_b,tt)));
 			    }else  if(is_inter_chr_split(pair,vector_get(mol_b,tt),vector_get(mol_a,kk))){
-
                     vector_soft_put(isms,inter_split_init(pair,vector_get(mol_b,tt),vector_get(mol_a,kk)));
 				}	
 
@@ -592,6 +592,34 @@ inter_interval_pair ic_sv_reduce_breakpoints(ic_sv_t *sv){
                                         .end2= sv->CD.start1,
                                         .barcode= 0};
     }
+}
+
+int ic_sv_is_proper(void *vcall){
+    inter_sv_call_t *call =vcall;
+    bam_info *in_bams = get_bam_info(NULL);
+    parameters *params = get_params();
+	sonic *snc = sonic_load(NULL);
+
+    int start = call->break_points.start1;
+    int target_start = call->break_points.start2;
+    int end = call->break_points.end1;
+    int target_end = call->break_points.end2;
+
+    int src_chr = call->break_points.chr1;
+    int tgt_chr = call->break_points.chr2;
+
+    int is_ref_dup_source = sonic_is_segmental_duplication(snc,snc->chromosome_names[src_chr],start,end);
+	int is_ref_dup_target = sonic_is_segmental_duplication(snc,snc->chromosome_names[tgt_chr],target_start,target_end);
+
+	int is_ref_gap_source = params->filter_gap && sonic_is_gap(snc,snc->chromosome_names[src_chr],start,end);
+	int is_ref_gap_target = params->filter_gap && sonic_is_gap(snc,snc->chromosome_names[tgt_chr],target_start,target_end);
+	int is_ref_sat_source = params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[src_chr],start,end);
+	int is_ref_sat_target = params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[tgt_chr],target_start,target_end);
+
+	int does_cnv_support_tra= get_depth_region(in_bams->depths[src_chr],start,end) < in_bams->depth_mean[src_chr] + 1 * in_bams->depth_std[src_chr] &&
+            get_depth_region(in_bams->depths[src_chr],start,end) > in_bams->depth_mean[src_chr] - 1 * in_bams->depth_std[src_chr];
+
+    return !(is_ref_dup_source && is_ref_dup_target) && !(is_ref_gap_source || is_ref_gap_target) && !(is_ref_sat_source && is_ref_sat_target) && does_cnv_support_tra;
 }
 inter_sv_call_t *ic_sv_cluster_resolve(vector_t *cluster){
     inter_interval_pair bp;
@@ -757,6 +785,7 @@ vector_t *find_interchromosomal_events(vector_t **molecules, bam_vector_pack **r
 
 			vector_t *direct_t =  find_direct_translocations(pm_seps,mp_seps,splits);
             vector_t *direct_calls = cluster_interchromosomal_events(direct_t);
+            vector_filter(direct_calls,ic_sv_is_proper);
             vector_free(direct_t);
             vector_free(pm_seps);
             vector_free(mp_seps);

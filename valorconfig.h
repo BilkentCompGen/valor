@@ -42,7 +42,7 @@ extern double CLONE_STD_DEV;
 #define DELETION_MIN_REQUIRED_SUPPORT 3
 #define DELETION_MIN_CLUSTER_SIZE 4
 /*************INTER_CHR_EVENTS****************************/
-#define MIN_INTER_CLUSTER_SIZE 4
+#define MIN_INTER_CLUSTER_SIZE 2
 /*************GRAPH PROPERTIES****************************/
 #define QCLIQUE_LAMBDA 0.5
 #define QCLIQUE_GAMMA 0.6

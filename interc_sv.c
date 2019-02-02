@@ -615,10 +615,21 @@ int ic_sv_is_proper(void *vcall){
 	int is_ref_gap_target = params->filter_gap && sonic_is_gap(snc,snc->chromosome_names[tgt_chr],target_start,target_end);
 	int is_ref_sat_source = params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[src_chr],start,end);
 	int is_ref_sat_target = params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[tgt_chr],target_start,target_end);
+    double depth = get_depth_region(in_bams->depths[src_chr],start,end);
 
-	int does_cnv_support_tra= get_depth_region(in_bams->depths[src_chr],start,end) < in_bams->depth_mean[src_chr] + 1 * in_bams->depth_std[src_chr] &&
-            get_depth_region(in_bams->depths[src_chr],start,end) > in_bams->depth_mean[src_chr] - 1 * in_bams->depth_std[src_chr];
+    int does_cnv_support_tra;  
+    if(is_ref_dup_source){
+        does_cnv_support_tra=  get_depth_region(in_bams->depths[src_chr],start,end) > in_bams->depth_mean[src_chr] - 0.1 * in_bams->depth_std[src_chr];
+   
+    }else{
 
+        does_cnv_support_tra=  depth < in_bams->depth_mean[src_chr] + 1.5 * in_bams->depth_std[src_chr] &&
+            get_depth_region(in_bams->depths[src_chr],start,end) > in_bams->depth_mean[src_chr] - 1.5 * in_bams->depth_std[src_chr];
+   
+    }
+
+    inter_sv_call_bed_print(logFile,call);  
+    fprintf(logFile,"%lf\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n" ,depth,does_cnv_support_tra,is_ref_dup_source, is_ref_dup_target, is_ref_gap_source, is_ref_gap_target, is_ref_sat_source, is_ref_sat_target);  
     return !(is_ref_dup_source && is_ref_dup_target) && !(is_ref_gap_source || is_ref_gap_target) && !(is_ref_sat_source && is_ref_sat_target) && does_cnv_support_tra;
 }
 inter_sv_call_t *ic_sv_cluster_resolve(vector_t *cluster){
@@ -630,9 +641,9 @@ inter_sv_call_t *ic_sv_cluster_resolve(vector_t *cluster){
     int cnt = 0;
     for(i = 0;i< cluster->size;i++){
         ic_sv_t *sv =*(ic_sv_t **) vector_get(cluster,i);
-        ic_sv_bed_print(logFile,sv);
+
         inter_interval_pair sv_bp =  ic_sv_reduce_breakpoints(sv);
-        inter_sv_call_bed_print(logFile,&(inter_sv_call_t){.break_points=sv_bp,.supports={0,0,0},.cluster_size=0,.type=SV_TRANSLOCATION});    
+
         if( cnt != 0 && !inter_split_overlaps(bp,sv_bp,CLONE_MEAN)){
         //    continue;
         }
@@ -706,9 +717,14 @@ vector_t *cluster_interchromosomal_events(vector_t *predictions){
 vector_t *resplit_molecules(vector_t *molecules, vector_t *discordants){
     int i;
 
+    int base_index = -1;
     for(i=0;i<molecules->size;i++){
         interval_10X *mol = vector_get(molecules,i);
         int dis_index = interval_pair_binary_search(discordants, *mol);
+        if(dis_index == -1){
+            continue;
+        }
+        
 
     }
     return NULL;

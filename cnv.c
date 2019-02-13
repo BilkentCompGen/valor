@@ -52,6 +52,11 @@ double make_global_molecule_std_dev(short *depths, sonic *snc, int chr, double m
 
 	sum = 0;
 	for( i=0;i<bin_count;i++){
+        if(depths[i] < mean / 10){
+            continue;
+        }else if( depths[i] > mean * 10){
+            continue;
+        }
 		sum+=(depths[i]-mean)*(depths[i]-mean);
 	}
 

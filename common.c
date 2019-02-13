@@ -17,10 +17,12 @@ const char *sv_type_name(sv_type type){
 	switch(type){
 		case SV_INVERSION:
 			return "inversion";
-		case SV_DUPLICATION:
+		case SV_DIRECT_DUPLICATION:
 			return "duplication";
 		case SV_INVERTED_DUPLICATION:
 			return "inverted-duplication";
+        case SV_TANDEM_DUPLICATION:
+			return "tandem-duplication";
 		case SV_DELETION:
 			return "deletion";
 		case SV_TRANSLOCATION:
@@ -411,7 +413,7 @@ void resizeMem( void **ptr, size_t old_size, size_t new_size){
 
 	ret = realloc(*ptr,new_size);
 
-	if(ret == NULL){
+	if(ret == NULL && new_size != 0){
 		fprintf( stderr, "Cannot allocate memory. Currently addressed memory = %0.2f MB, requested memory = %0.2f MB.\nCheck the available main memory.\n", getMemUsage(), ( float) ( (new_size-old_size) / 1048576.0));
 		exit( 0);
 
@@ -442,13 +444,20 @@ int chr_atoi(char *chromosome){
 int what_is_min_cluster_size(sv_type type){
 	switch(type){
 		case SV_DELETION:
+
 			return DELETION_MIN_CLUSTER_SIZE;
 		case SV_INVERSION:
 			return INVERSION_MIN_CLUSTER_SIZE;
-		case SV_DUPLICATION:
-		case SV_INVERTED_DUPLICATION:
+		case SV_DIRECT_DUPLICATION:
+        case SV_INVERTED_DUPLICATION:
 			return DUPLICATION_MIN_CLUSTER_SIZE;
-		default:
+        case SV_TRANSLOCATION:
+        case SV_INVERTED_TRANSLOCATION:
+
+			return TRANSLOCATION_MIN_CLUSTER_SIZE;
+        case SV_TANDEM_DUPLICATION:
+            return TANDEM_DUPLICATION_MIN_CLUSTER_SIZE;
+        default:
 			return -1;
 	}
 }
@@ -464,18 +473,22 @@ sv_type atosv(char *str){
 		return SV_INVERSION;
 	}	
 	if(strcmp(str,"DUP")==0){
-		return SV_DUPLICATION;
+		return SV_DIRECT_DUPLICATION;
 	}	
 	if(strcmp(str,"IDUP")==0){
 		return SV_INVERTED_DUPLICATION;
+	}
+    if(strcmp(str,"TDUP")==0){
+		return SV_TANDEM_DUPLICATION;
 	}
 	if(strcmp(str,"DEL")==0){
 		return SV_DELETION;
 	}
 	if(strcmp(str,"TRA")==0){
-
-
 		return SV_TRANSLOCATION;
+	}
+	if(strcmp(str,"ITRA")==0){
+		return SV_INVERTED_TRANSLOCATION;
 	}
 	return 0;
 }

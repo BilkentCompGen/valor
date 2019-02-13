@@ -57,10 +57,12 @@ int inter_split_overlaps(inter_split_molecule_t s1, inter_split_molecule_t s2, i
 
 inter_split_molecule_t *inter_split_init(barcoded_read_pair *pair, interval_10X *a, interval_10X *b);
 
-int inter_split_indicates_translocation(inter_split_molecule_t s1, inter_split_molecule_t s2);
+int inter_split_indicates_translocation(inter_split_molecule_t s1, inter_split_molecule_t s2, sv_type type);
 
 ic_sv_t *inter_sv_init(inter_split_molecule_t *s1, inter_split_molecule_t *s2, splitmolecule_t *tra_del ,sv_type type, int orient);
 
+size_t split_molecule_binary_search(vector_t *splits, interval_10X key);
+void filter_unsupported_pm_splits(vector_t *splits, vector_t *discordants);
 vector_t *find_direct_translocations(vector_t *sp1, vector_t *sp2, vector_t **molecules);
 int is_inter_chr_split(barcoded_read_pair *pair, interval_10X *a, interval_10X *b);
 

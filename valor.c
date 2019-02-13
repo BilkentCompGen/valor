@@ -149,12 +149,14 @@ int main( int argc, char **argv){
 
         VALOR_LOG("Matched split molecule pair count: %zu\n", variations[i]->size);
 
-        vector_free(split_molecules);
+        qsort(split_molecules->items,split_molecules->size,sizeof(void*),interval_pair_comp);  
+
         printf("%zu candidate variations are made\n",variations[i]->size);
         update_sv_supports_b(variations[i],
                 reads[i]);
         variations[i]->REMOVE_POLICY = REMP_LAZY;
 
+        filter_unsupported_pm_splits(split_molecules, reads[i]->pm_discordants);
         vector_filter(variations[i],sv_is_proper);
 
         VALOR_LOG("Structural variation candidate count: %zu\n",variations[i]->size);
@@ -246,20 +248,87 @@ int main( int argc, char **argv){
 
 
             sv_t *first = vector_get(svc->items,0);
-            if(svc->items->size < what_is_min_cluster_size(first->type)){continue;}
+            if(svc->items->size < what_is_min_cluster_size(first->type)){
+                fprintf(logFile,"%s\t%d\t%d\t%s\t%d\t%d\t%s\t%zu\t%d\tSmall CLSTR\n",
+                    snc->chromosome_names[i],
+                    svc->break_points->start1,
+                    svc->break_points->end1,
+                    snc->chromosome_names[i],
+                    svc->break_points->start2,
+                    svc->break_points->end2,
+                    sv_type_name(first->type),
+                    svc->items->size,
+                    svc->supports[0]+svc->supports[1]
+                   );
+
+                
+                continue;
+            }
 
 
             double mean_depth = 0;
-            if(first->type == SV_DUPLICATION || first->type == SV_INVERTED_DUPLICATION){
+            if(first->type == SV_DIRECT_DUPLICATION || first->type == SV_INVERTED_DUPLICATION){
                 if(first->orientation == DUP_FORW_COPY){
                     mean_depth = get_depth_region(in_bams->depths[i],svc->break_points->start1,svc->break_points->end1);
                 }else if(first->orientation == DUP_BACK_COPY){
                     mean_depth = get_depth_region(in_bams->depths[i],svc->break_points->start1,svc->break_points->end1);
                 }
 
-                if(mean_depth < 1.5 * in_bams->depth_mean[i]){ continue;}
+//                if(mean_depth < 1.5 * in_bams->depth_mean[i]){ continue;}
                 //if(mean_depth < in_bams->depth_mean[i] + 1.25 * in_bams->depth_std[i]){ continue;}
-            }else if (first->type == SV_DELETION){
+            }
+            else if (first->type == SV_TRANSLOCATION || first->type == SV_INVERTED_TRANSLOCATION){
+
+                interval_pair deletion_interval;
+
+
+                deletion_interval = (interval_pair){.start1=svc->break_points->start1-CLONE_MEAN/2,.end1=svc->break_points->start1,.start2=svc->break_points->end1,.end2=svc->break_points->end1+CLONE_MEAN/2,.barcode=0};
+
+
+                size_t pos = 0;//split_molecule_binary_search(split_molecules,deletion_interval);
+                if( pos == -1){ continue;}
+                splitmolecule_t *cand = vector_get(split_molecules,pos);
+                int flag = 0;
+                while( pos < split_molecules->size){ // && cand->start1 < deletion_interval.end + 50000){
+
+                    if(interval_pair_overlaps(&deletion_interval,cand,CLONE_MEAN/2)){
+                        flag = 1;
+                        break;
+                    }
+
+                    /*if( cand->end1 < deletion_interval.start + CLONE_MEAN /2  && 
+                            cand->start1 + cand->end1 > 2 * deletion_interval.start - 3* CLONE_MEAN  && 
+                            cand->start2 + cand->end2 < 2 * deletion_interval.end +3* CLONE_MEAN &&
+                            cand->start2 >deletion_interval.end - CLONE_MEAN /2){
+
+                        flag = 1;
+                        break;
+                    }*/
+                    pos++;
+                    cand = vector_get(split_molecules,pos);
+                }
+                if(!flag){
+                    fprintf(logFile,"%s\t%d\t%d\t%s\t%d\t%d\t%s\t%zu\t%d\t%lf\tQQ\n",
+                    snc->chromosome_names[i],
+                    svc->break_points->start1,
+                    svc->break_points->end1,
+                    snc->chromosome_names[i],
+                    svc->break_points->start2,
+                    svc->break_points->end2,
+                    sv_type_name(first->type),
+                    svc->items->size,
+                    svc->supports[0]+svc->supports[1],
+                    mean_depth       
+                   );
+
+                    continue;
+                }
+
+                mean_depth = get_depth_region(in_bams->depths[i],first->AB.end1, first->AB.start2);
+            }else if (first->type == SV_TANDEM_DUPLICATION){
+                mean_depth = get_depth_region(in_bams->depths[i],first->AB.start1, first->AB.end2);
+            }
+            else if (first->type == SV_DELETION){
                 mean_depth = get_depth_region(in_bams->depths[i],first->AB.end1, first->AB.start2);
             }else {
                 mean_depth = get_depth_region(in_bams->depths[i],first->AB.end1,first->CD.start1)/2 + get_depth_region(in_bams->depths[i],first->AB.end2,first->CD.start2)/2;
@@ -284,7 +353,18 @@ int main( int argc, char **argv){
         if((svs_to_find & SV_TRANSLOCATION) == 0){
             destroy_bams(reads[i]);
             free(in_bams->depths[i]);
+        }else{
+            vector_free(reads[i]->mp_discordants);
+            vector_free(reads[i]->mm_discordants);
+            vector_free(reads[i]->pp_discordants);
+
+            reads[i]->mp_discordants = NULL;
+            reads[i]->pp_discordants = NULL;
+            reads[i]->mm_discordants = NULL;
+
         }
+
+        vector_free(split_molecules);
         vector_free(variations[i]);
         vector_free(clusters[i]);
         graph_free(sv_graph);

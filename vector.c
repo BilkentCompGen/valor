@@ -241,6 +241,7 @@ void vector_clear( vector_t *vector){
 //NOT TESTED YET
 void vector_zip( vector_t *vector){
 	resizeMem((void **)&(vector->items),vector->limit * sizeof(void *),vector->size * sizeof(void *));
+    vector->limit = vector->size;
 }
 
 void *vector_get( vector_t *vector, size_t index){

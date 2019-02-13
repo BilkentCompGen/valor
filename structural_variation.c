@@ -259,11 +259,15 @@ int splitmolecule_indicates_sv(splitmolecule_t *s1, splitmolecule_t *s2, sv_type
 	switch(type){
 		case SV_INVERSION:
 			return splitmolecule_indicates_inversion(*s1,*s2);
-		case SV_DUPLICATION:
+		case SV_DIRECT_DUPLICATION:
 			return splitmolecule_indicates_duplication(*s1,*s2);
 		case SV_INVERTED_DUPLICATION:
 			return splitmolecule_indicates_inverted_duplication(*s1,*s2);
-		default:
+        case SV_TRANSLOCATION:
+			return splitmolecule_indicates_duplication(*s1,*s2);
+        case SV_INVERTED_TRANSLOCATION:
+			return splitmolecule_indicates_inverted_duplication(*s1,*s2);
+        default:
 			fprintf(stderr,"Unknown SV type ordinal %d\n",type);
 			VALOR_LOG("Unknown SV type ordinal %d\n",type);
 			exit(-1);
@@ -336,6 +340,13 @@ int duplication_overlaps(sv_t *i1, sv_t *i2){
 			},CLONE_MEAN);
 }
 
+int tandem_duplication_overlaps(sv_t *i1, sv_t *i2){
+	return interval_pair_overlaps(
+			&(i1->AB),&(i2->AB)
+			,CLONE_MEAN);
+}
+
+
 int deletion_overlaps(sv_t *i1, sv_t *i2){
 	return interval_pair_overlaps(
 			&(i1->AB),&(i2->AB)
@@ -347,12 +358,20 @@ int sv_overlaps(sv_t *i1, sv_t *i2){
 	switch(i1->type){
 		case SV_INVERSION:
 			return inversion_overlaps(i1,i2);
-		case SV_DUPLICATION:
+
+		case SV_DIRECT_DUPLICATION:
 			return duplication_overlaps(i1,i2);
 		case SV_INVERTED_DUPLICATION:
 			return duplication_overlaps(i1,i2);
+		case SV_TANDEM_DUPLICATION:
+			return tandem_duplication_overlaps(i1,i2);
+        case SV_TRANSLOCATION:
+			return duplication_overlaps(i1,i2);
+		case SV_INVERTED_TRANSLOCATION:
+			return duplication_overlaps(i1,i2);
 		case SV_DELETION:
 			return deletion_overlaps(i1,i2);
+
 		default:
 			fprintf(stderr,"Unknown SV type ordinal %d\n",i1->type);
 			VALOR_LOG("Unknown SV type ordinal %d\n",i1->type);
@@ -473,11 +492,16 @@ vector_t *find_svs(vector_t *split_molecules, sv_type type){
 
 		for(i=0;i<split_molecules->size;i++){
 			AB = vector_get(split_molecules,i);
+
 			if(type&SV_DELETION){
 				sv_t *tmp = sv_init(AB,NULL,SV_DELETION);
 				vector_soft_put(svs,tmp);
 			}
-			if(!(type & ( SV_INVERSION | SV_DUPLICATION | SV_INVERTED_DUPLICATION))){ continue;}
+			if(type&SV_TANDEM_DUPLICATION){
+				sv_t *tmp = sv_init(AB,NULL,SV_TANDEM_DUPLICATION);
+				vector_soft_put(svs,tmp);
+			}
+			if(!(type & ( SV_INVERSION | SV_DIRECT_DUPLICATION | SV_INVERTED_DUPLICATION | SV_TRANSLOCATION | SV_INVERTED_TRANSLOCATION))){ continue;}
 			for(j=0;j<split_molecules->size;j++){
 				if(i==j){continue;}
 				CD = vector_get(split_molecules,j);
@@ -504,10 +528,15 @@ vector_t *find_svs(vector_t *split_molecules, sv_type type){
 		for(i=0;i<split_molecules->size;i++){
 			splitmolecule_t *AB = vector_get(split_molecules,i);
 			if(type & SV_DELETION){
-				sv_t *tmp = sv_init(AB,NULL,type);
+				sv_t *tmp = sv_init(AB,NULL,SV_DELETION);
 				vector_soft_put(osvs[omp_get_thread_num()],tmp);
 			}
-			if(!(type & ( SV_INVERSION | SV_DUPLICATION | SV_INVERTED_DUPLICATION))){ continue;}
+            if(type&SV_TANDEM_DUPLICATION){
+				sv_t *tmp = sv_init(AB,NULL,SV_TANDEM_DUPLICATION);
+				vector_soft_put(svs,tmp);
+			}
+
+			if(!(type & ( SV_INVERSION | SV_DIRECT_DUPLICATION | SV_INVERTED_DUPLICATION| SV_TRANSLOCATION | SV_INVERTED_TRANSLOCATION))){ continue;}
 
 			for(j=0;j<split_molecules->size;j++){
 				if(i==j){continue;}
@@ -565,6 +594,25 @@ size_t scl_binary_searchdup(vector_t *intervals, splitmolecule_t *key){
 
 
 
+void update_tandem_duplication_supports_b(sv_t *dup, vector_t *mp_reads){
+	int j;
+	int mp_support = 0;
+	int midAB = scl_binary_search(mp_reads,&(dup->AB));
+
+	for(j=midAB;j<mp_reads->size;j++){
+		if(interval_pair_overlaps(&(dup->AB),vector_get(mp_reads,j),MAX_FRAG_SIZE)){
+			mp_support++;				
+		}
+		if(dup->AB.end1 < IDIS_VECTOR_GET(mp_reads,j)->start1){
+			break;
+		}
+		if(mp_support > MAX_SUPPORT){ break;}	
+    }
+	dup->supports[1] = mp_support;
+	dup->supports[0] = mp_support;
+}
+
+
 
 void update_deletion_supports_b(sv_t *del, vector_t *pm_reads){
 	int j;
@@ -575,7 +623,7 @@ void update_deletion_supports_b(sv_t *del, vector_t *pm_reads){
 	midAB = scl_binary_search(pm_reads,&(del->AB));
 
 	for(j=midAB;j<pm_reads->size;j++){
-		if(interval_pair_overlaps(&(del->AB),vector_get(pm_reads,j),CLONE_MEAN)){
+		if(interval_pair_overlaps(&(del->AB),vector_get(pm_reads,j),MAX_FRAG_SIZE)){//CLONE_MEAN)){
 			pm_support++;				
 		}
 		if(del->AB.end1 < IDIS_VECTOR_GET(pm_reads,j)->start1){
@@ -865,13 +913,22 @@ void update_sv_supports_b(vector_t *svs, bam_vector_pack *reads){
 			case SV_INVERSION:
 				update_inversion_supports_b(sv,reads->pp_discordants,reads->mm_discordants);
 				break;
-			case SV_DUPLICATION:
+			case SV_DIRECT_DUPLICATION:
 				update_duplication_supports_b(sv,reads->pm_discordants,reads->mp_discordants);
 				break;
 			case SV_INVERTED_DUPLICATION:
 				update_duplication_supports_b(sv,reads->pp_discordants,reads->mm_discordants);
 				break;
-			case SV_DELETION:
+            case SV_TANDEM_DUPLICATION:
+				update_tandem_duplication_supports_b(sv,reads->mp_discordants);
+				break;
+            case SV_TRANSLOCATION:
+                update_duplication_supports_b(sv,reads->pm_discordants,reads->mp_discordants);
+                break;
+            case SV_INVERTED_TRANSLOCATION:
+                update_duplication_supports_b(sv,reads->pp_discordants,reads->mm_discordants);
+                break;
+            case SV_DELETION:
 				update_deletion_supports_b(sv,reads->pm_discordants);
 				break;
 			default:
@@ -889,7 +946,7 @@ void update_sv_supports(vector_t *svs, bam_vector_pack *reads  ,sv_type type){
 		case SV_INVERSION:
 			update_inversion_supports(svs,reads->pp_discordants,reads->mm_discordants);
 			break;
-		case SV_DUPLICATION:
+		case SV_DIRECT_DUPLICATION:
 			update_duplication_supports(svs,reads->pm_discordants,reads->mp_discordants);
 			break;
 		case SV_INVERTED_DUPLICATION:
@@ -897,6 +954,12 @@ void update_sv_supports(vector_t *svs, bam_vector_pack *reads  ,sv_type type){
 			break;
 		case SV_DELETION:
 			update_deletion_supports(svs,reads->pm_discordants);
+			break;
+        case SV_TRANSLOCATION:
+			update_duplication_supports(svs,reads->pm_discordants,reads->mp_discordants);
+			break;
+        case SV_INVERTED_TRANSLOCATION:
+			update_duplication_supports(svs,reads->pp_discordants,reads->mm_discordants);
 			break;
 		default:
 			fprintf(stderr,"Unknown SV type ordinal %d\n",type);
@@ -949,6 +1012,14 @@ splitmolecule_t *inverted_duplication_reduce_breakpoints(sv_t *dup){
 	return sc;
 }
 
+splitmolecule_t *tandem_duplication_reduce_breakpoints(sv_t *sv){
+	splitmolecule_t *sc = getMem(sizeof(splitmolecule_t));
+	sc->start1 = sv->AB.start1;
+	sc->end1 = sv->AB.end1;
+	sc->start2 = sv->AB.start2;
+    sc->end2 = sv->AB.end2;
+	return sc;
+}
 splitmolecule_t *deletion_reduce_breakpoints(sv_t *sv){
 	splitmolecule_t *sc = getMem(sizeof(splitmolecule_t));
 	sc->start1 = sv->AB.start1;
@@ -961,11 +1032,14 @@ splitmolecule_t *deletion_reduce_breakpoints(sv_t *sv){
 splitmolecule_t *sv_reduce_breakpoints(sv_t *sv){
 	switch(sv->type){
 		case SV_INVERSION: return inversion_reduce_breakpoints(sv);
-		case SV_DUPLICATION: return duplication_reduce_breakpoints(sv);
 
+		case SV_DIRECT_DUPLICATION: return duplication_reduce_breakpoints(sv);
 		case SV_INVERTED_DUPLICATION: return inverted_duplication_reduce_breakpoints(sv);
+        case SV_TRANSLOCATION: return duplication_reduce_breakpoints(sv);
+		case SV_INVERTED_TRANSLOCATION: return inverted_duplication_reduce_breakpoints(sv);
 		case SV_DELETION: return deletion_reduce_breakpoints(sv);
-		default: return NULL;
+		case SV_TANDEM_DUPLICATION: return tandem_duplication_reduce_breakpoints(sv);
+		default: fprintf(stderr, "SV type of unknown ordinal %d!\n",sv->type); exit(-1);                                   ;
 	}
 }
 
@@ -996,29 +1070,68 @@ int sv_is_proper(void *vsv){
 				return 0;
 			}
 			return 1;
-		case SV_DELETION:
-			start = sv->AB.end1;
-			end = sv->AB.start2;
+		case SV_TANDEM_DUPLICATION:
+			start = sv->AB.start1;
+			end = sv->AB.end2;
+
+            fprintf(logFile,"%s\t%d\t%d\t%s\t%d\t%d\t%s\t%d\t%lf\t",
+            snc->chromosome_names[CUR_CHR],start,end,
+            snc->chromosome_names[CUR_CHR],end+1,end+end-start,
+            sv_type_name( sv->type), sv->supports[0],get_depth_region(in_bams->depths[CUR_CHR],sv->AB.end1,sv->AB.start2));
 			if( params->filter_gap && 
 					sonic_is_gap(snc,snc->chromosome_names[CUR_CHR], sv->AB.end1, sv->AB.start2)){
+                fprintf(logFile,"gap\n");
 				return 0;
 			}
-			if( sv->supports[0] < DELETION_MIN_REQUIRED_SUPPORT){
-				return 0;
+			if( sv->supports[0] < TANDEM_DUPLICATION_MIN_SUPPORT){
+			
+                fprintf(logFile,"sup\n");
+                return 0;
 			}
-			if( get_depth_region(in_bams->depths[CUR_CHR],sv->AB.end1,sv->AB.start2) > in_bams->depth_mean[CUR_CHR]/2 + in_bams->depth_std[CUR_CHR]){
-				return 0;
+		    if( sonic_is_segmental_duplication(snc,snc->chromosome_names[CUR_CHR], sv->AB.start1, sv->AB.end2)){
+                fprintf(logFile,"dup\n");
+                return 0;
+            }
+
+            if(get_depth_region(in_bams->depths[CUR_CHR],start,end) < in_bams->depth_mean[CUR_CHR] + 1 * in_bams->depth_std[CUR_CHR]){
+
+                fprintf(logFile,"deph\n");
+                return 0;
 			}
 
 			// VALOR_LOG("%s\t%d\t%d\t%lf\t%lf\t%d\n",snc->chromosome_names[CUR_CHR],start,end,get_depth_region(in_bams->depths[CUR_CHR],start,end),get_depth_deviation(in_bams->depths[CUR_CHR],start,end),result);
 			return 1;
 			break;
 
-		case SV_TRANSLOCATION:
-		case SV_INVERTED_TRANSLOCATION:
-			//TODO
+        case SV_DELETION:
+			start = sv->AB.end1;
+			end = sv->AB.start2;
+
+            fprintf(logFile,"%s\t%d\t%d\t%s\t%d\t%d\t%s\t%lf\t",
+            snc->chromosome_names[CUR_CHR],start,start+1,
+            snc->chromosome_names[CUR_CHR],end,end+1,
+            sv_type_name( sv->type), get_depth_region(in_bams->depths[CUR_CHR],sv->AB.end1,sv->AB.start2));
+			if( params->filter_gap && 
+					sonic_is_gap(snc,snc->chromosome_names[CUR_CHR], sv->AB.start1, sv->AB.end2)){
+                fprintf(logFile,"gap\n");
+				return 0;
+			}
+			if( sv->supports[0] < DELETION_MIN_REQUIRED_SUPPORT){
+			
+                fprintf(logFile,"sup\n");
+                return 0;
+			}
+			if( get_depth_region(in_bams->depths[CUR_CHR],sv->AB.end1,sv->AB.start2) > in_bams->depth_mean[CUR_CHR]/2 + in_bams->depth_std[CUR_CHR]){
+
+                fprintf(logFile,"deph\n");
+                return 0;
+			}
+
+			// VALOR_LOG("%s\t%d\t%d\t%lf\t%lf\t%d\n",snc->chromosome_names[CUR_CHR],start,end,get_depth_region(in_bams->depths[CUR_CHR],start,end),get_depth_deviation(in_bams->depths[CUR_CHR],start,end),result);
+			return 1;
 			break;
-		case SV_DUPLICATION:
+		case SV_TRANSLOCATION:
+		case SV_DIRECT_DUPLICATION:
 			if( sv->supports[0]<DUPLICATION_MIN_REQUIRED_SUPPORT){
 				return 0;
 			}
@@ -1037,6 +1150,8 @@ int sv_is_proper(void *vsv){
 				end = sv->CD.end2;
 			}
 			break;
+
+		case SV_INVERTED_TRANSLOCATION:
 		case SV_INVERTED_DUPLICATION:
 			if( sv->supports[0]<DUPLICATION_MIN_REQUIRED_SUPPORT){
 				return 0;
@@ -1071,8 +1186,26 @@ int sv_is_proper(void *vsv){
 	int is_ref_gap_target = params->filter_gap && sonic_is_gap(snc,snc->chromosome_names[CUR_CHR],target_start,target_end);
 	int is_ref_sat_source = params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[CUR_CHR],start,end);
 	int is_ref_sat_target = params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[CUR_CHR],target_start,target_end);
-	int does_cnv_support_dup = get_depth_region(in_bams->depths[CUR_CHR],start,end) > in_bams->depth_mean[CUR_CHR] + 1 * in_bams->depth_std[CUR_CHR];
-	return !((is_ref_dup_source && is_ref_dup_target) || !does_cnv_support_dup   || is_ref_gap_source || is_ref_gap_target || is_ref_sat_source || is_ref_sat_target);
+	int does_cnv_support_dup;
+    if(sv->type == SV_TRANSLOCATION || sv->type == SV_INVERTED_TRANSLOCATION){
+
+        does_cnv_support_dup= get_depth_region(in_bams->depths[CUR_CHR],start,end) < in_bams->depth_mean[CUR_CHR] + 1 * in_bams->depth_std[CUR_CHR]     && (is_ref_dup_source
+                || get_depth_region(in_bams->depths[CUR_CHR],start,end) > in_bams->depth_mean[CUR_CHR] - 1 * in_bams->depth_std[CUR_CHR]);
+    }
+    else{
+        does_cnv_support_dup= get_depth_region(in_bams->depths[CUR_CHR],start,end) > in_bams->depth_mean[CUR_CHR] + 1.5 * in_bams->depth_std[CUR_CHR];
+    }
+    fprintf(logFile,"%s\t%d\t%d\t%s\t%d\t%d\t%s\n",
+            snc->chromosome_names[CUR_CHR],start,end,
+            snc->chromosome_names[CUR_CHR],target_start,target_end,
+            sv_type_name( sv->type));
+    fprintf(logFile,"%lf\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n" ,get_depth_region(in_bams->depths[CUR_CHR],start,end),does_cnv_support_dup,is_ref_dup_source, is_ref_dup_target, is_ref_gap_source, is_ref_gap_target, is_ref_sat_source, is_ref_sat_target);  
+	return !((is_ref_dup_source && is_ref_dup_target) || 
+            !does_cnv_support_dup || 
+            is_ref_gap_source || 
+            is_ref_gap_target || 
+            is_ref_sat_source || 
+            is_ref_sat_target);
 }
 
 

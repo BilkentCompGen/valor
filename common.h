@@ -50,14 +50,15 @@ extern long long memUsage;
 extern FILE *logFile; //Defined in valor.c
 extern int CUR_CHR;
 
-#define SV_MAX_ID 16
+#define SV_MAX_ID 128
 typedef enum SV_TYPE{
         SV_DELETION = 1,
-        SV_INVERSION = 2,
-        SV_DUPLICATION = 4,
-        SV_INVERTED_DUPLICATION = 8,
-        SV_TRANSLOCATION = 16,
-        SV_INVERTED_TRANSLOCATION = 32
+        SV_TANDEM_DUPLICATION = 2,
+        SV_INVERSION = 4,
+        SV_DIRECT_DUPLICATION = 8,
+        SV_INVERTED_DUPLICATION = 16,
+        SV_TRANSLOCATION = 32,
+        SV_INVERTED_TRANSLOCATION = 64
 }sv_type;
 
 sv_type atosv(char *str);

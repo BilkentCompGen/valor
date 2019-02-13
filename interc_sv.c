@@ -266,8 +266,7 @@ inter_split_molecule_t *inter_split_init(barcoded_read_pair *pair, interval_10X 
 	return isplit;
 }
 
-
-int inter_split_indicates_translocation(inter_split_molecule_t s1, inter_split_molecule_t s2){
+int inter_split_indicates_invert_translocation(inter_split_molecule_t s1, inter_split_molecule_t s2){
 	if( !(s1.chr1 == s2.chr1 && s1.chr2 == s2.chr2)){ return 0;}
     if( s1.barcode == s2.barcode) {return 0;}
 
@@ -277,15 +276,50 @@ int inter_split_indicates_translocation(inter_split_molecule_t s1, inter_split_m
 	interval_10X D = (interval_10X){s2.start2,s2.end2,s2.barcode};  
 	if(interval_inner_distance(A,C) < DUP_GAP &&
 			interval_inner_distance(A,C) > DUP_OVERLAP &&
-            interval_outer_distance(A,C) < DUP_MAX_DIST){
+            interval_outer_distance(B,D) < DUP_MAX_DIST){
 		return INTERC_BACK_COPY;
 	}
 	else if(interval_inner_distance(B,D) < DUP_GAP &&
 			interval_inner_distance(B,D) > DUP_OVERLAP &&
-              interval_outer_distance(B,D) < DUP_MAX_DIST){
+              interval_outer_distance(A,C) < DUP_MAX_DIST){
 		return INTERC_FORW_COPY;
 	}
 	return 0; 
+}
+int inter_split_indicates_direct_translocation(inter_split_molecule_t s1, inter_split_molecule_t s2){
+	if( !(s1.chr1 == s2.chr1 && s1.chr2 == s2.chr2)){ return 0;}
+    if( s1.barcode == s2.barcode) {return 0;}
+
+	interval_10X A = (interval_10X){s1.start1,s1.end1,s1.barcode};  
+	interval_10X B = (interval_10X){s1.start2,s1.end2,s1.barcode};  
+	interval_10X C = (interval_10X){s2.start1,s2.end1,s2.barcode};  
+	interval_10X D = (interval_10X){s2.start2,s2.end2,s2.barcode};  
+	if(interval_inner_distance(A,C) < DUP_GAP &&
+			interval_inner_distance(A,C) > DUP_OVERLAP &&
+            interval_outer_distance(B,D) < DUP_MAX_DIST){
+		return INTERC_BACK_COPY;
+	}
+	else if(interval_inner_distance(B,D) < DUP_GAP &&
+			interval_inner_distance(B,D) > DUP_OVERLAP &&
+              interval_outer_distance(A,C) < DUP_MAX_DIST){
+		return INTERC_FORW_COPY;
+	}
+	return 0; 
+}
+
+
+int inter_split_indicates_translocation(inter_split_molecule_t s1, inter_split_molecule_t s2, sv_type type){
+    switch(type){
+    case SV_TRANSLOCATION:
+        return inter_split_indicates_direct_translocation(s1,s2);
+    case SV_INVERTED_TRANSLOCATION:
+        return inter_split_indicates_invert_translocation(s1,s2);
+
+    default:
+        fprintf(stderr,"Inter SV with  unknown ordinal: %d!\n",type);
+        exit(-1);
+    }
+    return 0;
 }
 
 ic_sv_t *inter_sv_init(inter_split_molecule_t *a, inter_split_molecule_t *b, splitmolecule_t *tra_del, sv_type type, int orient){
@@ -319,8 +353,7 @@ ic_sv_t *inter_sv_init(inter_split_molecule_t *a, inter_split_molecule_t *b, spl
 	return new_i;
 }
 
-splitmolecule_t *find_matching_split_molecule(vector_t **splits,inter_split_molecule_t *a, inter_split_molecule_t *b, int orient){    
-    
+splitmolecule_t *find_matching_split_molecule(vector_t **splits,inter_split_molecule_t *a, inter_split_molecule_t *b, int orient){     
 	if(orient == 0){
        
     //    VALOR_LOG("BAD Orient: %d\n",orient);
@@ -332,12 +365,16 @@ splitmolecule_t *find_matching_split_molecule(vector_t **splits,inter_split_mole
     if( orient == INTERC_FORW_COPY){
         src_chr = MIN(a->chr1,a->chr2);
         tar_chr = MAX(a->chr1,a->chr2);
-        deletion_interval = (interval_10X){.start = a->end1,.end = b->start1,.barcode=0};
+        int start = MIN(a->end1,b->end1);
+        int end = MAX(a->start1,b->start1);
+        deletion_interval = (interval_10X){.start = start,.end = end,.barcode=0};
     }else if(orient == INTERC_BACK_COPY){
         tar_chr = MIN(a->chr1,a->chr2);
         src_chr = MAX(a->chr1,a->chr2);
-        deletion_interval = (interval_10X){.start = a->end2,.end = b->start2,.barcode=0};
 
+        int start = MIN(a->end2,b->end2);
+        int end = MAX(a->start2,b->start2);
+        deletion_interval = (interval_10X){.start = start,.end = end,.barcode=0};
     }else{
         
         fprintf(stderr, "Translocation orientation cannot be %d, terminating!!\n",orient);
@@ -372,7 +409,7 @@ splitmolecule_t *find_matching_split_molecule(vector_t **splits,inter_split_mole
     return NULL;
 }
 
-vector_t *find_direct_translocations(vector_t *sp1, vector_t *sp2, vector_t **molecules){
+vector_t *find_interc_translocations(vector_t *sp1, vector_t *sp2, vector_t **molecules,sv_type type){
 	vector_t *tlocs = vector_init(sizeof(ic_sv_t),512);
 	int i,j;
 
@@ -380,13 +417,13 @@ vector_t *find_direct_translocations(vector_t *sp1, vector_t *sp2, vector_t **mo
 		inter_split_molecule_t *a = vector_get(sp1,i);
 		for(j=0;j<sp2->size;j++){   
 			inter_split_molecule_t *b = vector_get(sp2,j);
-			int orient = inter_split_indicates_translocation(*a,*b);
+			int orient = inter_split_indicates_translocation(*a,*b,type);
 
             splitmolecule_t *del_tra = find_matching_split_molecule(molecules,a,b,orient);
 			
 //            VALOR_LOG("%d\t%d\n",orient,del_tra!=NULL);
             if(orient && del_tra != NULL){
-				vector_soft_put(tlocs,inter_sv_init(a,b,del_tra,SV_TRANSLOCATION,orient));
+				vector_soft_put(tlocs,inter_sv_init(a,b,del_tra,type,orient));
 			}
 		}
 	}
@@ -400,15 +437,38 @@ int is_inter_chr_split(barcoded_read_pair *pair, interval_10X *a, interval_10X *
 	return (in_range(pair->left,a->start,2*MOLECULE_EXT) && in_range(pair->right,b->start,2*MOLECULE_EXT));        
 }
 
+size_t ip_binary_search(vector_t *intervals, splitmolecule_t *key){
+	if(intervals->size == 0){return -1;}
+	long first, last;
+	long mid = 0;
+	first =0;
+	last = intervals->size - 1;
+	int counter = 0;	
+	while( first < last){
+		mid = (first + last)/2;
+		if(IDIS_VECTOR_GET(intervals,mid)->end1 < key->start1){
+			first = mid + 1;
+		}
+		else{
+			last = mid - 1;
+		}
+		counter ++;
+	}
+    while(mid>0 && key->end1 > IDIS_VECTOR_GET(intervals,mid)->start1){
+        mid--;
+    }
+	return mid;
+}
+
 int split_get_pm_support(splitmolecule_t *split, vector_t *discordants){
     int support = 0;
-    int mid = scl_binary_search (discordants,split);
+    int mid = ip_binary_search (discordants,split);
     int j;
     for(j=mid;j < discordants->size;j++){
-		if(interval_pair_overlaps(split,vector_get(discordants,j),CLONE_MEAN/32)){
+		if(interval_pair_overlaps(split,vector_get(discordants,j),CLONE_MEAN/2)){
 			support++;				
 		}
-		if(split->end1 < IDIS_VECTOR_GET(discordants,j)->start1){
+		if(split->end1 < IDIS_VECTOR_GET(discordants,j)->start1 + CLONE_MEAN/2){
 			break;
 		}
 		if(support > MAX_SUPPORT){ break;}	
@@ -619,7 +679,7 @@ int ic_sv_is_proper(void *vcall){
 
     int does_cnv_support_tra;  
     if(is_ref_dup_source){
-        does_cnv_support_tra=  get_depth_region(in_bams->depths[src_chr],start,end) > in_bams->depth_mean[src_chr] - 0.1 * in_bams->depth_std[src_chr];
+        does_cnv_support_tra=  get_depth_region(in_bams->depths[src_chr],start,end) > in_bams->depth_mean[src_chr] - 1.5 * in_bams->depth_std[src_chr];
    
     }else{
 
@@ -776,7 +836,8 @@ vector_t *find_interchromosomal_events(vector_t **molecules, bam_vector_pack **r
             VALOR_LOG("%d\t%d\t%d\t%d\t%d\t%d\t%lu\n",ptr->l_chr,ptr->left,ptr->l_or,ptr->r_chr,ptr->right,ptr->r_or,ptr->barcode);
         }
 */
-        for(t=k+1;t< chr_to_eval->size;t++){
+        for(t=0;t< chr_to_eval->size;t++){
+            if(k==t){continue;}
 			j = *(int *) vector_get(chr_to_eval, t);
 			vector_t *pm_seps = find_inter_split_molecules(reads[i]->inter_pm,molecules[i],molecules[j]);
  //           printf("pm- %d\n",cnt);
@@ -791,21 +852,36 @@ vector_t *find_interchromosomal_events(vector_t **molecules, bam_vector_pack **r
 			vector_t *mp_seps = find_inter_split_molecules(reads[i]->inter_mp,molecules[i],molecules[j]);
 /*			
             printf("mp- %d\n",cnt);
-            //			vector_t *pp_seps = find_inter_split_molecules(reads[i]->inter_pp,molecules[i],molecules[j]);
+
             for(kkk = 0; kkk< mp_seps->size;kkk++){
                 inter_split_molecule_t *ptr = vector_get(mp_seps,kkk);
                 VALOR_LOG("%d\t%d\t%d\t%d\t%d\t%d\t%lu\t-+\n",ptr->chr1,ptr->start1,ptr->end1,ptr->chr2,ptr->start2,ptr->end2,ptr->barcode);
             }
 */
-			//			vector_t *mm_seps = find_inter_split_molecules(reads[i]->inter_mm,molecules[i],molecules[j]);
+						vector_t *mm_seps = find_inter_split_molecules(reads[i]->inter_mm,molecules[i],molecules[j]);
+            			vector_t *pp_seps = find_inter_split_molecules(reads[i]->inter_pp,molecules[i],molecules[j]);
 
-			vector_t *direct_t =  find_direct_translocations(pm_seps,mp_seps,splits);
+			vector_t *direct_t =  find_interc_translocations(pm_seps,mp_seps,splits,SV_TRANSLOCATION);
+			vector_t *invert_t =  find_interc_translocations(pp_seps,mm_seps,splits,SV_INVERTED_TRANSLOCATION);
+
             vector_t *direct_calls = cluster_interchromosomal_events(direct_t);
+            vector_t *invert_calls = cluster_interchromosomal_events(invert_t);
+
+
             vector_filter(direct_calls,ic_sv_is_proper);
+            vector_filter(invert_calls,ic_sv_is_proper);
+            
+
             vector_free(direct_t);
+            vector_free(invert_t);
+
             vector_free(pm_seps);
             vector_free(mp_seps);
+            vector_free(pp_seps);
+            vector_free(mm_seps);
+
             vector_soft_put(all_chr_vec,direct_calls);
+            vector_soft_put(all_chr_vec,invert_calls);
 			//TODO
 			//			vector_t *invert_t =  find_invert_translocations(ppmm_seps,mmpp_seps);
 		}

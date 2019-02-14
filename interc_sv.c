@@ -795,7 +795,7 @@ vector_t *resplit_molecules(vector_t *molecules, vector_t *discordants){
 // This will be slow. 
 vector_t *find_interchromosomal_events(vector_t **molecules, bam_vector_pack **reads){
 	int i, j;
-	//sonic *snc = sonic_load(NULL);
+	sonic *snc = sonic_load(NULL);
 	//parameters *params = get_params();
 	vector_t *chr_to_eval = bit_set_2_index_vec( get_bam_info(NULL)->chro_bs);
 	//int chr_count = params->chromosome_count;
@@ -839,7 +839,8 @@ vector_t *find_interchromosomal_events(vector_t **molecules, bam_vector_pack **r
         for(t=0;t< chr_to_eval->size;t++){
             if(k==t){continue;}
 			j = *(int *) vector_get(chr_to_eval, t);
-			vector_t *pm_seps = find_inter_split_molecules(reads[i]->inter_pm,molecules[i],molecules[j]);
+			printf("Discovering translocations between contigs %s and %s\n",snc->chromosome_names[i],snc->chromosome_names[j]);
+            vector_t *pm_seps = find_inter_split_molecules(reads[i]->inter_pm,molecules[i],molecules[j]);
  //           printf("pm- %d\n",cnt);
             int kkk;
 

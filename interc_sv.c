@@ -95,7 +95,7 @@ size_t split_molecule_binary_search(vector_t *splits, interval_10X key){
 
 	while( first < last){
 		mid = (first + last)/2;
-		if(((splitmolecule_t*)vector_get(splits,mid))->start1< key.start){
+		if(((interval_pair*)vector_get(splits,mid))->start1< key.start){
 			first = mid + 1;
 		}
 		else{
@@ -103,7 +103,7 @@ size_t split_molecule_binary_search(vector_t *splits, interval_10X key){
 		}
 	}
 //-30000
-	while( mid >= 0 && key.start -30000 < ((splitmolecule_t*) vector_get(splits,mid))->start1){
+	while( mid >= 0 && key.start -30000 < ((interval_pair*) vector_get(splits,mid))->start1){
 		mid--;
 	}
 	return mid +1;
@@ -322,7 +322,7 @@ int inter_split_indicates_translocation(inter_split_molecule_t s1, inter_split_m
     return 0;
 }
 
-ic_sv_t *inter_sv_init(inter_split_molecule_t *a, inter_split_molecule_t *b, splitmolecule_t *tra_del, sv_type type, int orient){
+ic_sv_t *inter_sv_init(inter_split_molecule_t *a, inter_split_molecule_t *b, interval_pair *tra_del, sv_type type, int orient){
 	if(orient == 0){ return NULL;}
     ic_sv_t *new_i = malloc(sizeof(ic_sv_t));
 	memset(new_i,0,sizeof(ic_sv_t));
@@ -353,7 +353,7 @@ ic_sv_t *inter_sv_init(inter_split_molecule_t *a, inter_split_molecule_t *b, spl
 	return new_i;
 }
 
-splitmolecule_t *find_matching_split_molecule(vector_t **splits,inter_split_molecule_t *a, inter_split_molecule_t *b, int orient){     
+interval_pair *find_matching_split_molecule(vector_t **splits,inter_split_molecule_t *a, inter_split_molecule_t *b, int orient){     
 	if(orient == 0){
        
     //    VALOR_LOG("BAD Orient: %d\n",orient);
@@ -381,7 +381,7 @@ splitmolecule_t *find_matching_split_molecule(vector_t **splits,inter_split_mole
         exit(-1);
         return NULL;
     }
-    //splitmolecule_t *aaa = splitmolecule_init(&(interval_10X){deletion_interval.start-20000,deletion_interval.start,0},
+    //interval_pair *aaa = splitmolecule_init(&(interval_10X){deletion_interval.start-20000,deletion_interval.start,0},
      //                                       &(interval_10X){deletion_interval.end,deletion_interval.end+20000,0});
     //return aaa;
     size_t pos = split_molecule_binary_search(splits[src_chr],deletion_interval);
@@ -419,7 +419,7 @@ vector_t *find_interc_translocations(vector_t *sp1, vector_t *sp2, vector_t **mo
 			inter_split_molecule_t *b = vector_get(sp2,j);
 			int orient = inter_split_indicates_translocation(*a,*b,type);
 
-            splitmolecule_t *del_tra = find_matching_split_molecule(molecules,a,b,orient);
+            interval_pair *del_tra = find_matching_split_molecule(molecules,a,b,orient);
 			
 //            VALOR_LOG("%d\t%d\n",orient,del_tra!=NULL);
             if(orient && del_tra != NULL){
@@ -437,7 +437,7 @@ int is_inter_chr_split(barcoded_read_pair *pair, interval_10X *a, interval_10X *
 	return (in_range(pair->left,a->start,2*MOLECULE_EXT) && in_range(pair->right,b->start,2*MOLECULE_EXT));        
 }
 
-size_t ip_binary_search(vector_t *intervals, splitmolecule_t *key){
+size_t ip_binary_search(vector_t *intervals, interval_pair *key){
 	if(intervals->size == 0){return -1;}
 	long first, last;
 	long mid = 0;
@@ -460,7 +460,7 @@ size_t ip_binary_search(vector_t *intervals, splitmolecule_t *key){
 	return mid;
 }
 
-int split_get_pm_support(splitmolecule_t *split, vector_t *discordants){
+int split_get_pm_support(interval_pair *split, vector_t *discordants){
     int support = 0;
     int mid = ip_binary_search (discordants,split);
     int j;
@@ -482,7 +482,7 @@ void filter_unsupported_pm_splits(vector_t *splits, vector_t *discordants){
 
     splits->REMOVE_POLICY = REMP_LAZY;
     for(i=0;i<splits->size;i++){
-        splitmolecule_t *split = vector_get(splits,i);
+        interval_pair *split = vector_get(splits,i);
         int support = split_get_pm_support(split,discordants);
         if( support < 1){
             vector_remove(splits,i);
@@ -612,7 +612,7 @@ size_t ic_sv_hf(hashtable_t *table, const void *vsv){
     return hash;
 
 
-	//return SuperFastHash((vsv),2*sizeof(splitmolecule_t)) % table->size;
+	//return SuperFastHash((vsv),2*sizeof(interval_pair)) % table->size;
 }
 
 vector_t *ic_sv_g_dfs_components(graph_t *g){

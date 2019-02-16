@@ -1054,21 +1054,35 @@ int sv_is_proper(void *vsv){
 	int target_end = -1;
 	switch(sv->type){
 		case SV_INVERSION:
-			if( params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[CUR_CHR],sv->AB.start1,sv->CD.end1)){
-				return 0;
+			fprintf(logFile,"%s\t%d\t%d\t%s\t%d\t%d\t%s\t%lf\t",
+            snc->chromosome_names[CUR_CHR],sv->AB.end1,sv->CD.start1,
+            snc->chromosome_names[CUR_CHR],sv->AB.end2,sv->CD.start2,
+            sv_type_name( sv->type), get_depth_region(in_bams->depths[CUR_CHR],sv->AB.end1,sv->AB.start2));
+            if( params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[CUR_CHR],sv->AB.start1,sv->CD.end1)){
+		        fprintf(logFile,"sat 5'\n");
+                return 0;
 			}
 			if( params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[CUR_CHR],sv->AB.start2,sv->CD.end2)){
-				return 0;
+			
+		        fprintf(logFile,"sat 3'\n");
+                return 0;
 			}
 			if( sv->supports[0] < INVERSION_MIN_REQUIRED_SUPPORT){
-				return 0;
+		
+		        fprintf(logFile,"sup 5'\n");
+                return 0;
 			}
 			if( sv->supports[1] < INVERSION_MIN_REQUIRED_SUPPORT){
-				return 0;
+				
+		        fprintf(logFile,"sup 3'\n");
+                return 0;
 			}
 			if( params->filter_gap && sonic_is_gap(snc, snc->chromosome_names[CUR_CHR], sv->AB.start1, sv->CD.end2)){
-				return 0;
+				
+		        fprintf(logFile,"Gap\n");
+                return 0;
 			}
+            fprintf( logFile, "Call\n");
 			return 1;
 		case SV_TANDEM_DUPLICATION:
 			start = sv->AB.start1;

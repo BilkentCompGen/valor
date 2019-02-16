@@ -5,7 +5,7 @@
 #include "interval10X.h"
 #include "common.h"
 #include "valorconfig.h"
-typedef interval_pair splitmolecule_t;
+
 typedef struct inter_interval_pair{
 	int start1;
 	int start2;
@@ -27,7 +27,7 @@ typedef struct inter_sv_call{
 typedef struct ic_sv{
 	inter_split_molecule_t AB;
 	inter_split_molecule_t CD;
-	splitmolecule_t EF;
+	interval_pair EF;
 	int chr_source :16;
 	int chr_target :16;
 	sv_type type;
@@ -59,7 +59,7 @@ inter_split_molecule_t *inter_split_init(barcoded_read_pair *pair, interval_10X 
 
 int inter_split_indicates_translocation(inter_split_molecule_t s1, inter_split_molecule_t s2, sv_type type);
 
-ic_sv_t *inter_sv_init(inter_split_molecule_t *s1, inter_split_molecule_t *s2, splitmolecule_t *tra_del ,sv_type type, int orient);
+ic_sv_t *inter_sv_init(inter_split_molecule_t *s1, inter_split_molecule_t *s2, interval_pair *tra_del ,sv_type type, int orient);
 
 size_t split_molecule_binary_search(vector_t *splits, interval_10X key);
 void filter_unsupported_pm_splits(vector_t *splits, vector_t *discordants);

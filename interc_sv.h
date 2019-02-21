@@ -42,7 +42,7 @@ typedef struct ic_sv{
 
 
 #define INTERC_BACK_COPY 4
-#define INTERC_FORW_COPY 3
+#define INTERC_FORW_COPY 2
 
 
 void ic_sv_bed_print(FILE *stream, ic_sv_t *sv);

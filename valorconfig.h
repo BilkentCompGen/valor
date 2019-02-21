@@ -23,18 +23,24 @@ extern double CLONE_STD_DEV;
 #define MOLECULE_BIN_SIZE 8000
 /*************INVERSION INFORMATION****************************/
 #define INV_MIN_SIZE  80000 // 80K
-#define INV_MAX_SIZE  10000000 // 10M
+#define INV_MAX_SIZE  30000000 // 10M
 #define INV_GAP  (CLONE_MEAN/2)
 #define INV_OVERLAP (-CLONE_MEAN/2) // 1 molecule size
-#define INVERSION_MIN_REQUIRED_SUPPORT 2
+#define INVERSION_MIN_REQUIRED_SUPPORT 6
 #define INVERSION_MIN_CLUSTER_SIZE 12
 /*************DUPLICATION INFORMION****************************/
-#define DUP_OVERLAP (-CLONE_MEAN/4)
-#define DUP_GAP (CLONE_MEAN/4)
+
+#define DUP_OVERLAP (-CLONE_MEAN/2)
+#define DUP_GAP (CLONE_MEAN/2)
 #define DUP_MIN_SIZE CLONE_MEAN //1000
 #define DUP_MAX_SIZE 7000000
 #define DUP_MAX_DIST 10000000
 #define DUP_MIN_DIST 100000
+/*************INTER TRANSLOCATION INFORMION****************************/
+#define TRA_OVERLAP (-CLONE_MEAN/3)
+#define TRA_GAP (CLONE_MEAN/3)
+#define TRA_MIN_SIZE 2*CLONE_MEAN //1000
+#define TRA_MAX_SIZE 7000000
 #define VALOR_MOBILE_ELEMENTS "Alu:L1:SVA:HERV"
 
 #define DUPLICATION_MIN_CLUSTER_SIZE 12
@@ -48,7 +54,7 @@ extern double CLONE_STD_DEV;
 #define DELETION_MIN_CLUSTER_SIZE 4
 
 /*************INTER_CHR_EVENTS****************************/
-#define MIN_INTER_CLUSTER_SIZE 4
+#define MIN_INTER_CLUSTER_SIZE 12
 /*************GRAPH PROPERTIES****************************/
 #define QCLIQUE_LAMBDA 0.5
 #define QCLIQUE_GAMMA 0.6

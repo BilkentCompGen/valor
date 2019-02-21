@@ -824,7 +824,7 @@ void update_inversion_supports_b(sv_t *inv, vector_t *pp_reads, vector_t *mm_rea
 
 	for(j=midAB;j<pp_reads->size;j++){
 
-		if(interval_pair_overlaps(&(inv->AB),vector_get(pp_reads,j),MAX_FRAG_SIZE)){
+		if(interval_pair_overlaps(&(inv->AB),vector_get(pp_reads,j),CLONE_MEAN)){
 			pp_support++;				
 		}
 		if(inv->AB.end1 < IDIS_VECTOR_GET(pp_reads,j)->start1){
@@ -835,7 +835,7 @@ void update_inversion_supports_b(sv_t *inv, vector_t *pp_reads, vector_t *mm_rea
 	}
 
 	for(j=midCD;j<mm_reads->size;j++){
-		if(interval_pair_overlaps(&(inv->CD),vector_get(mm_reads,j),MAX_FRAG_SIZE)){
+		if(interval_pair_overlaps(&(inv->CD),vector_get(mm_reads,j),CLONE_MEAN)){
 			mm_support++;				
 		}
 		if(inv->CD.end1 < IDIS_VECTOR_GET(mm_reads,j)->start1){
@@ -1135,7 +1135,7 @@ int sv_is_proper(void *vsv){
                 fprintf(logFile,"sup\n");
                 return 0;
 			}
-			if( get_depth_region(in_bams->depths[CUR_CHR],sv->AB.end1,sv->AB.start2) > in_bams->depth_mean[CUR_CHR]/2 + in_bams->depth_std[CUR_CHR]){
+			if( get_depth_region(in_bams->depths[CUR_CHR],sv->AB.end1,sv->AB.start2) > in_bams->depth_mean[CUR_CHR]/2 + 1.5 *in_bams->depth_std[CUR_CHR]){
 
                 fprintf(logFile,"deph\n");
                 return 0;
@@ -1203,11 +1203,10 @@ int sv_is_proper(void *vsv){
 	int does_cnv_support_dup;
     if(sv->type == SV_TRANSLOCATION || sv->type == SV_INVERTED_TRANSLOCATION){
 
-        does_cnv_support_dup= get_depth_region(in_bams->depths[CUR_CHR],start,end) < in_bams->depth_mean[CUR_CHR] + 1 * in_bams->depth_std[CUR_CHR]     && (is_ref_dup_source
-                || get_depth_region(in_bams->depths[CUR_CHR],start,end) > in_bams->depth_mean[CUR_CHR] - 1 * in_bams->depth_std[CUR_CHR]);
+        does_cnv_support_dup= (is_ref_dup_source  || get_depth_region(in_bams->depths[CUR_CHR],start,end) < 1.5 * in_bams->depth_mean[CUR_CHR] - 1.5 * in_bams->depth_std[CUR_CHR] )&& (get_depth_region(in_bams->depths[CUR_CHR],start,end) > 0.5* in_bams->depth_mean[CUR_CHR] + 1.5 * in_bams->depth_std[CUR_CHR]);
     }
     else{
-        does_cnv_support_dup= get_depth_region(in_bams->depths[CUR_CHR],start,end) > in_bams->depth_mean[CUR_CHR] + 1.5 * in_bams->depth_std[CUR_CHR];
+        does_cnv_support_dup= get_depth_region(in_bams->depths[CUR_CHR],start,end) > 1.5 * in_bams->depth_mean[CUR_CHR] - 1.5 * in_bams->depth_std[CUR_CHR];
     }
     fprintf(logFile,"%s\t%d\t%d\t%s\t%d\t%d\t%s\n",
             snc->chromosome_names[CUR_CHR],start,end,

@@ -5,6 +5,7 @@
 #define VALOR_DEFAULT_LOG_FILE "valor.log"
 #endif
 #include <stdio.h>
+#define IS_BIG_ENDIAN 0
 #define MAX_FRAG_SIZE  1000 // max segment size (distance between paired end reads)
 #define VALOR_FILTER_GAP 1
 #define VALOR_FILTER_SAT 1
@@ -20,29 +21,29 @@ extern double CLONE_STD_DEV;
 //#define CLONE_MIN (CLONE_MEAN - 3 * CLONE_STD_DEV)
 #define CLONE_MAX_DIST 3000000000
 #define CLONE_MIN_DIST 70000 
-#define MOLECULE_BIN_SIZE 8000
+#define MOLECULE_BIN_SIZE 4000
 /*************INVERSION INFORMATION****************************/
 #define INV_MIN_SIZE  80000 // 80K
-#define INV_MAX_SIZE  30000000 // 10M
-#define INV_GAP  (CLONE_MEAN/2)
-#define INV_OVERLAP (-CLONE_MEAN/2) // 1 molecule size
-#define INVERSION_MIN_REQUIRED_SUPPORT 6
-#define INVERSION_MIN_CLUSTER_SIZE 12
+#define INV_MAX_SIZE  10000000 // 10M
+#define INV_GAP  (CLONE_MEAN/4)
+#define INV_OVERLAP (-CLONE_MEAN/4) // 1 molecule size
+#define INVERSION_MIN_REQUIRED_SUPPORT 4
+#define INVERSION_MIN_CLUSTER_SIZE 8
 /*************DUPLICATION INFORMION****************************/
 
-#define DUP_OVERLAP (-CLONE_MEAN/2)
-#define DUP_GAP (CLONE_MEAN/2)
+#define DUP_OVERLAP (-CLONE_MEAN/4)
+#define DUP_GAP (CLONE_MEAN/4)
 #define DUP_MIN_SIZE CLONE_MEAN //1000
 #define DUP_MAX_SIZE 7000000
 #define DUP_MAX_DIST 10000000
 #define DUP_MIN_DIST 100000
 /*************INTER TRANSLOCATION INFORMION****************************/
-#define TRA_OVERLAP (-CLONE_MEAN/3)
-#define TRA_GAP (CLONE_MEAN/3)
+#define TRA_OVERLAP (-CLONE_MEAN/2)
+#define TRA_GAP (CLONE_MEAN/2)
 #define TRA_MIN_SIZE 2*CLONE_MEAN //1000
 #define TRA_MAX_SIZE 7000000
 #define VALOR_MOBILE_ELEMENTS "Alu:L1:SVA:HERV"
-
+#define TRA_MIN_INTRA_SPLIT 4
 #define DUPLICATION_MIN_CLUSTER_SIZE 12
 #define TRANSLOCATION_MIN_CLUSTER_SIZE 8
 #define DUPLICATION_MIN_REQUIRED_SUPPORT 8

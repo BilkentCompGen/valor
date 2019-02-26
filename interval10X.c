@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-
+#include <stdint.h>
 int interval_start_comp(const void *v1, const void *v2){
         interval_10X *i1 = *(interval_10X **)v1;
         interval_10X *i2 = *(interval_10X **)v2;
@@ -87,6 +87,29 @@ char *decode_ten_x_barcode( unsigned long barcode){
 	text[16]=0;
 	return text;
 }
+
+#define LONG_BARCODE_LEN 2 //(BARCODE_LEN/8)
+
+uint64_t super_fast_ten_x_barcode_encode(unsigned char* source){
+//      static uint64_t mask = 0x6006600660066006;
+
+        if (source == NULL) { return -1;}
+        static uint64_t mask = 0x0606060606060606;
+
+        uint64_t *l_ptr = (uint64_t *) (&source[1]);
+
+        int i;
+        uint64_t result = 0;
+        for(i=0;i<2;i++){
+                result = result << 2;
+                result |= (mask & l_ptr[i]);
+        }
+        result = result >> 1;
+        result = result | ( result >> 28);
+        result = result & 0x00000000FFFFFFFF;
+        return result;
+}
+
 
 /*
  *	Borrowed from tardis

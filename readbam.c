@@ -10,7 +10,7 @@
 
 #define INITIAL_ARRAY_SIZE 500000
 
-#define IS_BIG_ENDIAN (*(uint16_t *)"\0\xff" < 0x100)
+//#define IS_BIG_ENDIAN (*(uint16_t *)"\0\xff" < 0x100)
 
 
 bam_info *get_bam_info(sonic *snc){
@@ -153,6 +153,23 @@ void free_alt_read(void *vread){
     free(read);
 }
 
+uint64_t barcode_encode_RG(uint64_t barcode, unsigned char *RG){
+    int i;
+    if(barcode == -1){ return barcode;}
+    if (RG==NULL) { return barcode;}
+    unsigned  char *R_tmp = RG;
+    int last_c_index = 0;
+    int current = 0;
+    while(R_tmp[current] !=0){
+        if( R_tmp[current] == ':'){
+            last_c_index = current;
+        }
+        current ++;
+    }
+    uint64_t group = atol((const char *)&(RG[last_c_index+1]));
+    
+    return barcode | (group <<32);
+}
 
 bam_vector_pack *read_10X_chr( bam_info* in_bam, char* bam_path, sonic *snc, int chr, bam_stats *statistics){
 
@@ -194,9 +211,16 @@ bam_vector_pack *read_10X_chr( bam_info* in_bam, char* bam_path, sonic *snc, int
         unsigned char * b_text =  bam_aux_get(bam_alignment,"BX");
         unsigned long barcode;
 
-            barcode = encode_ten_x_barcode(b_text);
 
+#if IS_BIG_ENDIAN
+        barcode = encode_ten_x_barcode(b_text);
+#else
+
+//        barcode =super_fast_ten_x_barcode_encode(b_text);
+        barcode = encode_ten_x_barcode(b_text);
+#endif
         //		if(bam_alignment_core->tid!=bam_alignment_core->mtid) goto skip;
+//        barcode = barcode_encode_RG(barcode,bam_aux_get(bam_alignment,"RG"));
 
         int ccval = ( identify_read_alignment(*bam_alignment_core, frag_min, frag_max));
         int start1,end1,start2,end2;

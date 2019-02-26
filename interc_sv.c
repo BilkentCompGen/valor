@@ -480,21 +480,39 @@ interval_pair *find_matching_split_molecule(vector_t **splits,inter_split_molecu
   //      VALOR_LOG("NO %d %d\n",deletion_interval.start,deletion_interval.end);
         return NULL;
     }
-
+    vector_t *found_splits = vector_init(sizeof(interval_pair),10);
+     
     interval_pair *cand = vector_get(splits[src_chr],pos);
     while( pos < splits[src_chr]->size && cand->start1 < deletion_interval.end1 + 50000){
 
         if(interval_pair_overlaps(&deletion_interval,cand,CLONE_MEAN)){
-            return vector_get(splits[src_chr], pos);
+     //       return vector_get(splits[src_chr], pos);
+            vector_put(found_splits,cand);
         }
         pos++;
         cand = vector_get(splits[src_chr],pos);
     }
+    if(found_splits->size < TRA_MIN_INTRA_SPLIT){
+    
+        sonic *snc = sonic_load(NULL);
+        fprintf(logFile,"%s\t%d\t%d\t%s\t%d\t%d\t%s\tQQ\t%zu\n",snc->chromosome_names[src_chr],start,end,snc->chromosome_names[tar_chr],tar_start,tar_end,"some-translocation",found_splits->size);
+        return NULL;
+    }
 
-	sonic *snc = sonic_load(NULL);
-    fprintf(logFile,"%s\t%d\t%d\t%s\t%d\t%d\t%s\tQQ\n",snc->chromosome_names[src_chr],start,end,snc->chromosome_names[tar_chr],tar_start,tar_end,"some-translocation");;
+    interval_pair *to_return = malloc(sizeof(interval_pair));
+    *to_return = *(interval_pair *)vector_get(found_splits,0);
+    int i;
+    for(i = 1; i< found_splits->size; i++){
+        interval_pair *it = vector_get(found_splits, i);
+
+        to_return->start1 = i * ((double)to_return->start1 / (i+1)) + (double)it->start1/(i+1);
+        to_return->end1 = i * ((double)to_return->end1 / (i+1)) + (double)it->end1/(i+1);
+        to_return->start2 = i * ((double)to_return->start2 / (i+1)) + (double)it->start2/(i+1);
+        to_return->end2 = i * ((double)to_return->end2 / (i+1)) + (double)it->end2/(i+1);
+    }
+
 //    VALOR_LOG("CM\n%d\t%d\t%d\n",src_chr,deletion_interval.start,deletion_interval.end);
-    return NULL;
+    return to_return;
 }
 
 vector_t *find_interc_translocations(vector_t *sp1, vector_t *sp2, vector_t **molecules,sv_type type){
@@ -754,8 +772,7 @@ inter_interval_pair ic_sv_reduce_breakpoints(ic_sv_t *sv){
                                         .barcode= 0};
     }
 }
-
-int ic_sv_is_proper(void *vcall){
+int ic_sv_call_is_proper(void *vcall){
     inter_sv_call_t *call =vcall;
     bam_info *in_bams = get_bam_info(NULL);
     parameters *params = get_params();
@@ -770,8 +787,10 @@ int ic_sv_is_proper(void *vcall){
     int tgt_chr = call->break_points.chr2;
 
 
-    int is_ref_dup_source = sonic_is_segmental_duplication(snc,snc->chromosome_names[src_chr],start-CLONE_MEAN/2,start+CLONE_MEAN/2) &&
-        sonic_is_segmental_duplication(snc,snc->chromosome_names[src_chr],end-CLONE_MEAN/2,end+CLONE_MEAN/2) ;
+    int is_ref_dup_source = sonic_is_segmental_duplication(snc,snc->chromosome_names[src_chr],start,end);
+    
+    //sonic_is_segmental_duplication(snc,snc->chromosome_names[src_chr],start-CLONE_MEAN/2,start+CLONE_MEAN/2) &&
+     //   sonic_is_segmental_duplication(snc,snc->chromosome_names[src_chr],end-CLONE_MEAN/2,end+CLONE_MEAN/2) ;
 	int is_ref_dup_target = sonic_is_segmental_duplication(snc,snc->chromosome_names[tgt_chr],target_start,target_end);
 
 	int is_ref_gap_source = params->filter_gap && sonic_is_gap(snc,snc->chromosome_names[src_chr],start,end);
@@ -782,7 +801,7 @@ int ic_sv_is_proper(void *vcall){
 
     int does_cnv_support_tra;  
     if(is_ref_dup_source){
-        does_cnv_support_tra=  get_depth_region(in_bams->depths[src_chr],start,end) > in_bams->depth_mean[src_chr] - 1.5 * in_bams->depth_std[src_chr];
+        does_cnv_support_tra=  get_depth_region(in_bams->depths[src_chr],start,end) > in_bams->depth_mean[src_chr] - 3 * in_bams->depth_std[src_chr];
    
     }else{
 
@@ -798,6 +817,60 @@ int ic_sv_is_proper(void *vcall){
             call->break_points.start2,
             call->break_points.end2,
             sv_type_name(call->type),
+            depth,does_cnv_support_tra,is_ref_dup_source, is_ref_dup_target, is_ref_gap_source, is_ref_gap_target, is_ref_sat_source, is_ref_sat_target);  
+    return !(is_ref_dup_source && is_ref_dup_target) && !(is_ref_gap_source || is_ref_gap_target) && !(is_ref_sat_source && is_ref_sat_target) && does_cnv_support_tra;
+}
+
+int ic_sv_is_proper(void *vsv){
+    ic_sv_t *sv =vsv;
+    bam_info *in_bams = get_bam_info(NULL);
+    parameters *params = get_params();
+	sonic *snc = sonic_load(NULL);
+    inter_interval_pair break_points = ic_sv_reduce_breakpoints(sv);
+    int start = break_points.start1;
+    int target_start = break_points.start2;
+    int end = break_points.end1;
+    int target_end = break_points.end2;
+    
+    int src_chr;// = call->break_points.chr1;
+    int tgt_chr;// = call->break_points.chr2;
+    if( sv->chr_source == sv->AB.chr1){
+        src_chr = sv->AB.chr1;
+        tgt_chr = sv->AB.chr2;
+    }else{
+        src_chr = sv->AB.chr2;
+        tgt_chr = sv->AB.chr1;
+    }
+
+    int is_ref_dup_source = sonic_is_segmental_duplication(snc,snc->chromosome_names[src_chr],sv->EF.start1,sv->EF.end2);
+    //int is_ref_dup_source = sonic_is_segmental_duplication(snc,snc->chromosome_names[src_chr],start-CLONE_MEAN/2,start+CLONE_MEAN/2) &&
+     //   sonic_is_segmental_duplication(snc,snc->chromosome_names[src_chr],end-CLONE_MEAN/2,end+CLONE_MEAN/2) ;
+	int is_ref_dup_target = sonic_is_segmental_duplication(snc,snc->chromosome_names[tgt_chr],target_start-CLONE_MEAN/2,target_end+CLONE_MEAN/2);
+
+	int is_ref_gap_source = params->filter_gap && sonic_is_gap(snc,snc->chromosome_names[src_chr],start,end);
+	int is_ref_gap_target = params->filter_gap && sonic_is_gap(snc,snc->chromosome_names[tgt_chr],target_start,target_end);
+	int is_ref_sat_source = params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[src_chr],start,end);
+	int is_ref_sat_target = params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[tgt_chr],target_start,target_end);
+    double depth = get_depth_region(in_bams->depths[src_chr],start,end);
+
+    int does_cnv_support_tra;  
+    if(is_ref_dup_source){
+        does_cnv_support_tra=  get_depth_region(in_bams->depths[src_chr],start,end) > in_bams->depth_mean[src_chr] - 3 * in_bams->depth_std[src_chr];
+   
+    }else{
+
+        does_cnv_support_tra=  (is_ref_dup_source || depth < in_bams->depth_mean[src_chr] + 3 * in_bams->depth_std[src_chr] )&&
+            get_depth_region(in_bams->depths[src_chr],start,end) > in_bams->depth_mean[src_chr] - 3 * in_bams->depth_std[src_chr];
+   
+    }
+    fprintf(logFile,"%s\t%d\t%d\t%s\t%d\t%d\t%s\tpred\t%lf\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n",
+            snc->chromosome_names[src_chr],
+            break_points.start1,
+            break_points.end1,
+            snc->chromosome_names[tgt_chr],
+            break_points.start2,
+            break_points.end2,
+            sv_type_name(sv->type),
             depth,does_cnv_support_tra,is_ref_dup_source, is_ref_dup_target, is_ref_gap_source, is_ref_gap_target, is_ref_sat_source, is_ref_sat_target);  
     return !(is_ref_dup_source && is_ref_dup_target) && !(is_ref_gap_source || is_ref_gap_target) && !(is_ref_sat_source && is_ref_sat_target) && does_cnv_support_tra;
 }
@@ -885,7 +958,7 @@ vector_t *cluster_interchromosomal_events(vector_t *predictions){
 
 vector_t *resplit_molecules(vector_t *molecules, vector_t *discordants){
     int i;
-
+    vector_t *new_splits = vector_init(sizeof(interval_pair),16);
     int base_index = -1;
     for(i=0;i<molecules->size;i++){
         interval_10X *mol = vector_get(molecules,i);
@@ -894,9 +967,19 @@ vector_t *resplit_molecules(vector_t *molecules, vector_t *discordants){
             continue;
         }
         
+        interval_pair *disc = vector_get(discordants,dis_index);
+        while(dis_index<discordants->size && disc->start1 < mol->end-CLONE_MEAN/2){
+            if(disc->barcode == mol->barcode && disc->start1 > mol->start + CLONE_MEAN/4 && disc->end2 < mol->end - CLONE_MEAN/4 ){
+                
+                interval_pair split = (interval_pair){.start1=mol->start,.end1=disc->end1,.start2=disc->start2,.end2=mol->end,.barcode=mol->barcode};
+                vector_put(new_splits,&split);
+                break;
+            }
 
+            disc = vector_get(discordants,dis_index);
+        }
     }
-    return NULL;
+    return new_splits;
 }
 
 //Direct signature -> pm, mp
@@ -931,7 +1014,7 @@ vector_t *find_interchromosomal_events(vector_t **molecules, bam_vector_pack **r
             splits[j] = vector_init(sizeof(interval_pair),1);
         }
     }
-	int k, t;
+	int k;
 	for(k=0;k < chr_to_eval->size;k++){
 		i = *(int *) vector_get(chr_to_eval, k);
 	
@@ -973,6 +1056,8 @@ vector_t *find_interchromosomal_events(vector_t **molecules, bam_vector_pack **r
 			vector_t *direct_t =  find_interc_translocations(pm_seps,mp_seps,splits,SV_TRANSLOCATION);
 			vector_t *invert_t =  find_interc_translocations(pp_seps,mm_seps,splits,SV_INVERTED_TRANSLOCATION);
 
+            vector_filter(direct_t,ic_sv_is_proper);
+            vector_filter(invert_t,ic_sv_is_proper);
 			printf("Number of pm-mp variant candidates %zu\n",direct_t->size);
 			printf("Number of pp-mm variant candidates %zu\n",invert_t->size);
             vector_t *direct_calls = cluster_interchromosomal_events(direct_t);
@@ -981,8 +1066,8 @@ vector_t *find_interchromosomal_events(vector_t **molecules, bam_vector_pack **r
 			printf("Number of pm-mp variant clusters %zu\n",direct_calls->size);
 			printf("Number of pp-mm variant clusters %zu\n",invert_calls->size);
 
-            vector_filter(direct_calls,ic_sv_is_proper);
-            vector_filter(invert_calls,ic_sv_is_proper);
+            vector_filter(direct_calls,ic_sv_call_is_proper);
+            vector_filter(invert_calls,ic_sv_call_is_proper);
             
 			printf("Number of pm-mp variant calls %zu\n",direct_calls->size);
 			printf("Number of pp-mm variant calls %zu\n",invert_calls->size);

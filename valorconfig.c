@@ -7,7 +7,7 @@
 #define GET_FIELD(F) #F
 void printvalorconfig(FILE *file){
 
-    fprintf(file,"**************** RUN  DETAILS ********************");
+    fprintf(file,"**************** RUN  DETAILS ********************\n");
 
     fprintf(file,"FILTER GAP: %d\n" , VALOR_FILTER_GAP);
     fprintf(file,"FILTER SATELLITE: %d\n" , VALOR_FILTER_SAT);
@@ -63,6 +63,6 @@ void printvalorconfig(FILE *file){
     
     fprintf(file,"QCLIQUE_LAMBDA : %f\n" , QCLIQUE_LAMBDA);
     fprintf(file,"QCLIQUE_GAMMA : %f\n" , QCLIQUE_GAMMA);
-    fprintf(file,"*************************************************"); 
+    fprintf(file,"*************************************************\n"); 
 }
 

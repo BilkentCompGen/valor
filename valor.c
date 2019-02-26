@@ -324,7 +324,7 @@ int main( int argc, char **argv){
                     continue;
                 }
 
-                mean_depth = get_depth_region(in_bams->depths[i],first->AB.end1, first->AB.start2);
+                mean_depth = get_depth_region(in_bams->depths[i],svc->break_points->start1, svc->break_points->end1);
             }else if (first->type == SV_TANDEM_DUPLICATION){
                 mean_depth = get_depth_region(in_bams->depths[i],first->AB.start1, first->AB.end2);
             }

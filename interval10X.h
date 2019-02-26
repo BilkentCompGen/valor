@@ -38,6 +38,7 @@ void interval_pair_intersect(interval_pair *interval, interval_pair *that);
 
 unsigned long encode_ten_x_barcode(unsigned char* source);
 
+uint64_t super_fast_ten_x_barcode_encode(unsigned char* source);
 int interval_start_comp(const void *v1, const void *v2);
 
 int interval_comp(const void *v1, const void *v2);

@@ -288,12 +288,12 @@ int main( int argc, char **argv){
                 size_t pos = 0;//split_molecule_binary_search(split_molecules,deletion_interval);
                 if( pos == -1){ continue;}
                 splitmolecule_t *cand = vector_get(split_molecules,pos);
-                int flag = 0;
+
+                vector_t *found_splits = vector_init(sizeof(interval_pair),10);
                 while( pos < split_molecules->size){ // && cand->start1 < deletion_interval.end + 50000){
 
                     if(interval_pair_overlaps(&deletion_interval,cand,CLONE_MEAN/2)){
-                        flag = 1;
-                        break;
+                        vector_put(found_splits,cand);
                     }
 
                     /*if( cand->end1 < deletion_interval.start + CLONE_MEAN /2  && 
@@ -307,7 +307,7 @@ int main( int argc, char **argv){
                     pos++;
                     cand = vector_get(split_molecules,pos);
                 }
-                if(!flag){
+                if(found_splits->size < TRA_MIN_INTRA_SPLIT){
                     fprintf(logFile,"%s\t%d\t%d\t%s\t%d\t%d\t%s\t%zu\t%d\t%lf\tQQ\n",
                     snc->chromosome_names[i],
                     svc->break_points->start1,
@@ -320,7 +320,7 @@ int main( int argc, char **argv){
                     svc->supports[0]+svc->supports[1],
                     mean_depth       
                    );
-
+                   vector_free(found_splits);
                     continue;
                 }
 

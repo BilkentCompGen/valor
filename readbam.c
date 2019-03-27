@@ -10,7 +10,7 @@
 
 #define INITIAL_ARRAY_SIZE 500000
 
-#define IS_BIG_ENDIAN (*(uint16_t *)"\0\xff" < 0x100)
+
 
 
 bam_info *get_bam_info(sonic *snc){
@@ -53,8 +53,31 @@ void print_alignment_core(bam1_core_t *bam_alignment_core){
             bam_alignment_core->mpos ,
             bam_alignment_core->isize);
 }
+bam_vector_pack *make_intra_bam_vector_pack(){
+    bam_vector_pack *new_pack = malloc(sizeof(bam_vector_pack));
+    new_pack->concordants= vector_init(sizeof(interval_10X),
+            INITIAL_ARRAY_SIZE);
+    new_pack->mm_discordants=vector_init(sizeof(interval_discordant),
+            INITIAL_ARRAY_SIZE);
+    new_pack->pp_discordants=vector_init(sizeof(interval_discordant),
+            INITIAL_ARRAY_SIZE);
+    new_pack->pm_discordants=vector_init(sizeof(interval_discordant),
+            INITIAL_ARRAY_SIZE);
+    ;
+    new_pack->mp_discordants=vector_init(sizeof(interval_discordant),
+            INITIAL_ARRAY_SIZE);
+    ;
+    return new_pack;
+}
+bam_vector_pack *make_inter_bam_vector_pack(){
 
-
+    bam_vector_pack *new_pack = malloc(sizeof(bam_vector_pack));
+    new_pack->inter_pm = vector_init(sizeof(barcoded_read_pair),INITIAL_ARRAY_SIZE);
+    new_pack->inter_mm = vector_init(sizeof(barcoded_read_pair),INITIAL_ARRAY_SIZE);
+    new_pack->inter_pp = vector_init(sizeof(barcoded_read_pair),INITIAL_ARRAY_SIZE);
+    new_pack->inter_mp = vector_init(sizeof(barcoded_read_pair),INITIAL_ARRAY_SIZE);
+    return new_pack;
+}
 bam_vector_pack *make_bam_vector_pack(){
     bam_vector_pack *new_pack = malloc(sizeof(bam_vector_pack));
     new_pack->concordants= vector_init(sizeof(interval_10X),
@@ -75,7 +98,6 @@ bam_vector_pack *make_bam_vector_pack(){
     new_pack->inter_pp = vector_init(sizeof(barcoded_read_pair),INITIAL_ARRAY_SIZE);
     new_pack->inter_mp = vector_init(sizeof(barcoded_read_pair),INITIAL_ARRAY_SIZE);
     return new_pack;
-
 }
 
 bam_stats *calculate_bam_statistics( bam_info* in_bam, char* bam_path, int number_of_reads_to_stat){
@@ -151,6 +173,208 @@ void free_alt_read(void *vread){
     free(read->read_name);
     free(read->positions);
     free(read);
+}
+
+
+bam_vector_pack *read_10X_chr_inter( bam_info *in_bam, char *bam_path, sonic *snc, int chr, bam_stats *statistics){
+    
+    
+    double frag_min = MAX(0, statistics->read_length_mean - 3 * statistics->read_length_std_dev);
+    double frag_max = statistics->read_length_mean + 3 * statistics->read_length_std_dev;
+    static htsFile *bam_file = NULL;
+    if(bam_file==NULL){
+        bam_file = safe_hts_open( bam_path, "r");
+    }
+    static bam_hdr_t *bam_header = NULL;
+    if(bam_header == NULL){
+        bam_header = bam_hdr_read( (bam_file->fp).bgzf);
+    }
+    bam1_core_t *bam_alignment_core;
+
+    static int return_value = 0;
+
+
+    bam_vector_pack *pack = make_inter_bam_vector_pack();
+
+    static bam1_t* bam_alignment = NULL;
+
+
+    if(bam_alignment ==NULL){
+        bam_alignment = bam_init1();
+
+    }
+    return_value = bam_read1( (bam_file->fp).bgzf, bam_alignment);
+    while(  return_value != -1 && chr == bam_alignment->core.tid){
+
+        bam_alignment_core = &bam_alignment->core;
+        //print_alignment_core(bam_alignment_core);
+        if(bam_alignment_core->tid==-1) goto skip; //Skip invalid reads
+        if(bam_alignment_core->tid == bam_alignment_core->mtid) goto skip;
+        if(bam_alignment_core->tid >= snc->number_of_chromosomes) goto skip;
+        if( bam_alignment_core->pos == -1) goto skip;
+        //		if( bam_alignment_core->isize < 0) goto skip;
+        if( bam_alignment_core->mpos == -1) goto skip;
+        unsigned char * b_text =  bam_aux_get(bam_alignment,"BX");
+        unsigned long barcode;
+
+
+        if(barcode == -1) goto skip;
+
+        int ccval = ( identify_read_alignment(*bam_alignment_core, frag_min,75000));
+
+        int start1,end1,start2,end2;
+
+        start1 = MIN(bam_alignment_core->mpos,bam_alignment_core->pos);
+        start2 = MAX(bam_alignment_core->mpos,bam_alignment_core->pos);
+        end1 = start1+bam_alignment_core->l_qseq;
+        end2 = start2+bam_alignment_core->l_qseq;
+
+        in_bam->read_count+=2;
+
+        vector_t *target = NULL;
+        if( bam_alignment_core->qual < MIN_QUAL) goto skip;
+        switch(ccval){
+            case RPCONC:
+            case RPPP:
+            case RPMM:
+            case RPTDUPMP:
+            case RPTDUPPM:
+                break;
+
+            case RPINTER:
+                #if IS_BIG_ENDIAN
+                        barcode = encode_ten_x_barcode(b_text);
+                #else
+                //        barcode =super_fast_ten_x_barcode_encode(b_text);
+                        barcode = encode_ten_x_barcode(b_text);
+                #endif
+
+
+                if((bam_alignment_core->flag & BAM_FREVERSE)){
+                        if((bam_alignment_core->flag & BAM_FMREVERSE)){
+                        target = pack->inter_mm;
+                    }else{
+                        target =  pack->inter_mp;
+                    }
+
+                }else{
+                    if((bam_alignment_core->flag & BAM_FMREVERSE)){
+                        target = pack->inter_pm;
+                    }else{
+                        target = pack->inter_pp;
+                    }
+                }
+                vector_put(target,&(barcoded_read_pair){
+                        .left = bam_alignment_core->pos,
+                        .l_or = ((bam_alignment_core->flag & BAM_FREVERSE) !=0),
+                        .right = bam_alignment_core->mpos,
+                        .r_or = ((bam_alignment_core->flag & BAM_FMREVERSE) !=0),
+                        .barcode = barcode,
+                        .l_chr = bam_alignment_core->tid,
+                        .r_chr = bam_alignment_core->mtid
+                        });
+                break;		
+            default:
+                break;
+        }
+skip:
+        return_value = bam_read1( (bam_file->fp).bgzf, bam_alignment);
+    }
+    //	bam_destroy1(bam_alignment);
+    return pack;
+}
+
+
+
+bam_vector_pack *read_10X_chr_intra( bam_info* in_bam, char* bam_path, sonic *snc, int chr, bam_stats *statistics){
+
+    double frag_min = MAX(0, statistics->read_length_mean - 3 * statistics->read_length_std_dev);
+    double frag_max = statistics->read_length_mean + 3 * statistics->read_length_std_dev;
+    static htsFile *bam_file = NULL;
+    if(bam_file==NULL){
+        bam_file = safe_hts_open( bam_path, "r");
+    }
+    static bam_hdr_t *bam_header = NULL;
+    if(bam_header == NULL){
+        bam_header = bam_hdr_read( (bam_file->fp).bgzf);
+    }
+    bam1_core_t *bam_alignment_core;
+
+    static int return_value = 0;
+
+
+    bam_vector_pack *pack = make_intra_bam_vector_pack();
+
+    static bam1_t* bam_alignment = NULL;
+
+
+    if(bam_alignment ==NULL){
+        bam_alignment = bam_init1();
+
+    }
+    return_value = bam_read1( (bam_file->fp).bgzf, bam_alignment);
+
+    while(  return_value != -1 && chr == bam_alignment->core.tid){
+
+        bam_alignment_core = &bam_alignment->core;
+        //print_alignment_core(bam_alignment_core);
+
+        if(bam_alignment_core->tid==-1) goto skip; //Skip invalid reads
+        if(bam_alignment_core->tid != bam_alignment_core->mtid) goto skip; //Skip inter
+        if(bam_alignment_core->tid >= snc->number_of_chromosomes) goto skip;
+        if( bam_alignment_core->pos == -1) goto skip;
+        //		if( bam_alignment_core->isize < 0) goto skip;
+        if( bam_alignment_core->mpos == -1) goto skip;
+        unsigned char * b_text =  bam_aux_get(bam_alignment,"BX");
+        unsigned long barcode;
+
+        barcode = encode_ten_x_barcode(b_text);
+        //		if(bam_alignment_core->tid!=bam_alignment_core->mtid) goto skip;
+
+        int ccval = ( identify_read_alignment(*bam_alignment_core, frag_min, frag_max));
+        int start1,end1,start2,end2;
+
+        start1 = MIN(bam_alignment_core->mpos,bam_alignment_core->pos);
+        start2 = MAX(bam_alignment_core->mpos,bam_alignment_core->pos);
+        end1 = start1+bam_alignment_core->l_qseq;
+        end2 = start2+bam_alignment_core->l_qseq;
+
+        in_bam->read_count+=1;
+
+        vector_t *target = NULL;
+        if( bam_alignment_core->qual < MIN_QUAL) goto skip;
+        switch(ccval){
+            case RPCONC:
+                if(barcode==-1){goto skip;}
+                vector_put(pack->concordants,
+                        &(interval_10X){start1,end2,barcode}
+                        );
+                break;
+            case RPPP:
+                vector_put(pack->pp_discordants,
+                        &(interval_discordant){start1,end1,start2,end2,barcode}
+                        );
+                break;
+            case RPMM:
+                vector_put(pack->mm_discordants,
+                        &(interval_discordant){start1,end1,start2,end2,barcode}
+                        );
+                break;
+            case RPTDUPPM:
+                vector_put(pack->pm_discordants,&(interval_discordant){start1,end1,start2,end2,barcode});
+                break;
+            case RPTDUPMP:
+                vector_put(pack->mp_discordants,&(interval_discordant){start1,end1,start2,end2,barcode});
+                break;
+           default:
+                break;
+
+        }
+skip:
+        return_value = bam_read1( (bam_file->fp).bgzf, bam_alignment);
+    }
+    //	bam_destroy1(bam_alignment);
+    return pack;
 }
 
 

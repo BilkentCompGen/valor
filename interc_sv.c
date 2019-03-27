@@ -754,8 +754,7 @@ inter_interval_pair ic_sv_reduce_breakpoints(ic_sv_t *sv){
                                         .barcode= 0};
     }
 }
-
-int ic_sv_is_proper(void *vcall){
+int ic_sv_call_is_proper(void *vcall){
     inter_sv_call_t *call =vcall;
     bam_info *in_bams = get_bam_info(NULL);
     parameters *params = get_params();
@@ -799,6 +798,46 @@ int ic_sv_is_proper(void *vcall){
             call->break_points.end2,
             sv_type_name(call->type),
             depth,does_cnv_support_tra,is_ref_dup_source, is_ref_dup_target, is_ref_gap_source, is_ref_gap_target, is_ref_sat_source, is_ref_sat_target);  
+    return !(is_ref_dup_source && is_ref_dup_target) && !(is_ref_gap_source || is_ref_gap_target) && !(is_ref_sat_source && is_ref_sat_target) && does_cnv_support_tra;
+}
+
+int ic_sv_is_proper(void *vcall){
+    ic_sv_t *sv =vcall;
+    bam_info *in_bams = get_bam_info(NULL);
+    parameters *params = get_params();
+	sonic *snc = sonic_load(NULL);
+
+    inter_interval_pair break_points = ic_sv_reduce_breakpoints(sv);
+    int start = break_points.start1;
+    int target_start = break_points.start2;
+    int end = break_points.end1;
+    int target_end = break_points.end2;
+
+    int src_chr = break_points.chr1;
+    int tgt_chr = break_points.chr2;
+
+
+    int is_ref_dup_source = sonic_is_segmental_duplication(snc,snc->chromosome_names[src_chr],start-CLONE_MEAN/2,start+CLONE_MEAN/2) &&
+        sonic_is_segmental_duplication(snc,snc->chromosome_names[src_chr],end-CLONE_MEAN/2,end+CLONE_MEAN/2) ;
+	int is_ref_dup_target = sonic_is_segmental_duplication(snc,snc->chromosome_names[tgt_chr],target_start,target_end);
+
+	int is_ref_gap_source = params->filter_gap && sonic_is_gap(snc,snc->chromosome_names[src_chr],start,end);
+	int is_ref_gap_target = params->filter_gap && sonic_is_gap(snc,snc->chromosome_names[tgt_chr],target_start,target_end);
+	int is_ref_sat_source = params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[src_chr],start,end);
+	int is_ref_sat_target = params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[tgt_chr],target_start,target_end);
+    double depth = get_depth_region(in_bams->depths[src_chr],start,end);
+
+    int does_cnv_support_tra;  
+    if(is_ref_dup_source){
+        does_cnv_support_tra=  get_depth_region(in_bams->depths[src_chr],start,end) > in_bams->depth_mean[src_chr] - 1.5 * in_bams->depth_std[src_chr];
+   
+    }else{
+
+        does_cnv_support_tra=  (is_ref_dup_source || depth < in_bams->depth_mean[src_chr] + 3 * in_bams->depth_std[src_chr] )&&
+            get_depth_region(in_bams->depths[src_chr],start,end) > in_bams->depth_mean[src_chr] - 3 * in_bams->depth_std[src_chr];
+   
+    }
+
     return !(is_ref_dup_source && is_ref_dup_target) && !(is_ref_gap_source || is_ref_gap_target) && !(is_ref_sat_source && is_ref_sat_target) && does_cnv_support_tra;
 }
 inter_sv_call_t *ic_sv_cluster_resolve(vector_t *cluster){
@@ -897,6 +936,85 @@ vector_t *resplit_molecules(vector_t *molecules, vector_t *discordants){
 
     }
     return NULL;
+}
+
+
+vector_t *find_interchromosomal_events_lowmem(vector_t **molecules, bam_vector_pack **intra_reads, char *bamname, bam_stats *stats){
+    int j;
+    sonic *snc = sonic_load(NULL);
+    
+    vector_t *chr_to_eval = bit_set_2_index_vec( get_bam_info(NULL)->chro_bs);
+
+    vector_t *all_chr_vec = vector_init(sizeof(vector_t),24*23);
+
+    for(j=0;j<chr_to_eval->size;j++){
+        int i = *(int *) vector_get(chr_to_eval,j);
+        
+        bam_info *in_bams = get_bam_info(NULL);
+        bam_vector_pack *reads = read_10X_chr_inter(in_bams,bamname,snc,i,stats);
+        if(reads == NULL){ 
+            continue;
+        }
+        
+        filter_dangling_reads(reads->inter_pm);
+        filter_dangling_reads(reads->inter_mp);
+        filter_dangling_reads(reads->inter_pp);
+        filter_dangling_reads(reads->inter_mm);
+
+        qsort(molecules[i]->items,molecules[i]->size,sizeof(void *),barcode_comp);
+
+        vector_t *splits = discover_split_molecules(molecules[i]);
+        qsort(splits->items,splits->size,sizeof(void *),interval_pair_comp);
+        filter_unsupported_pm_splits(splits,intra_reads[i]->pm_discordants);
+
+        printf("Discovering translocations from contig %s\n",snc->chromosome_names[i]);
+        printf("Number of pm discordants %zu\n",reads->inter_pm->size);
+        printf("Number of mp discordants %zu\n",reads->inter_mp->size);
+        printf("Number of pp discordants %zu\n",reads->inter_pp->size);
+        printf("Number of mm discordants %zu\n",reads->inter_mm->size);
+
+        vector_t *pm_seps = find_inter_split_molecules(reads->inter_pm,i,molecules[i],molecules);
+        vector_t *mp_seps = find_inter_split_molecules(reads->inter_mp,i,molecules[i],molecules);
+
+        vector_t *mm_seps = find_inter_split_molecules(reads->inter_mm,i,molecules[i],molecules);
+        vector_t *pp_seps = find_inter_split_molecules(reads->inter_pp,i,molecules[i],molecules);
+
+        printf("Number of pm splits %zu\n",pm_seps->size);
+        printf("Number of mp splits %zu\n",mp_seps->size);
+        printf("Number of pp splits %zu\n",pp_seps->size);
+        printf("Number of mm splits %zu\n",mm_seps->size);
+
+        vector_t *direct_tra =  find_interc_translocations(pm_seps,mp_seps,splits,SV_TRANSLOCATION);
+        vector_t *invert_tra =  find_interc_translocations(pp_seps,mm_seps,splits,SV_INVERTED_TRANSLOCATION);
+
+        vector_filter(direct_tra,ic_sv_is_proper);
+        vector_filter(invert_tra,ic_sv_is_proper);
+        printf("Number of pm-mp variant candidates %zu\n",direct_tra->size);
+        printf("Number of pp-mm variant candidates %zu\n",invert_tra->size);
+        vector_t *direct_calls = cluster_interchromosomal_events(direct_tra);
+        vector_t *invert_calls = cluster_interchromosomal_events(invert_tra);
+
+        printf("Number of pm-mp variant clusters %zu\n",direct_calls->size);
+        printf("Number of pp-mm variant clusters %zu\n",invert_calls->size);
+
+        vector_filter(direct_calls,ic_sv_call_is_proper);
+        vector_filter(invert_calls,ic_sv_call_is_proper);
+
+        printf("Number of pm-mp variant calls %zu\n",direct_calls->size);
+        printf("Number of pp-mm variant calls %zu\n",invert_calls->size);
+
+        vector_free(direct_tra);
+        vector_free(invert_tra);
+
+        vector_free(pm_seps);
+        vector_free(mp_seps);
+        vector_free(pp_seps);
+        vector_free(mm_seps);
+
+        vector_soft_put(all_chr_vec,direct_calls);
+        vector_soft_put(all_chr_vec,invert_calls);
+    }
+    return all_chr_vec;
 }
 
 //Direct signature -> pm, mp
@@ -1004,5 +1122,5 @@ vector_t *find_interchromosomal_events(vector_t **molecules, bam_vector_pack **r
 	}
 	return all_chr_vec;
 }
-
+// Test
 

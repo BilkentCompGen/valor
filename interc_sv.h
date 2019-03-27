@@ -72,5 +72,6 @@ vector_t *find_separated_molecules(vector_t *reads, vector_t *mol_a, vector_t *m
 
 
 
+vector_t *find_interchromosomal_events_lowmem(vector_t **molecules, bam_vector_pack **intra, char *bamname, bam_stats *stats);
 vector_t *find_interchromosomal_events(vector_t **molecules, bam_vector_pack **reads);
 #endif

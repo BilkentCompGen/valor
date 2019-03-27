@@ -94,7 +94,7 @@ int main( int argc, char **argv){
     for( i = 0; i < params->chromosome_count ;i++){
 
         CUR_CHR = i;
-        reads[i] = read_10X_chr(in_bams,bamname,snc,i,stats);
+        reads[i] = read_10X_chr_intra(in_bams,bamname,snc,i,stats);
         if(reads[i]->concordants->size == 0){
             destroy_bams(reads[i]);
             printf("No reads for chromosome %s %s %s.\r",
@@ -373,11 +373,11 @@ int main( int argc, char **argv){
     }
     printf("\n");
 
-    if(svs_to_find & SV_TRANSLOCATION){
+    if(svs_to_find & SV_TRANSLOCATION || svs_to_find & SV_INVERTED_TRANSLOCATION){
         printf("Looking for translocations.\n");
         printf("Reading from temp molecule file.\n");
         vector_t **molecules = read_molecules_from_bed(molecule_bed_path);
-        vector_t *variants = find_interchromosomal_events(molecules,reads);
+        vector_t *variants = find_interchromosomal_events_lowmem(molecules,reads, bamname ,stats);
         for(k=0;k<variants->size;k++){
             vector_t *sub_vec = vector_get(variants,k);
             for(i=0;i<sub_vec->size;i++){

@@ -84,6 +84,8 @@ bam_vector_pack *read_10X_chr_intra( bam_info* in_bam, char *bam_path, sonic *sn
 bam_vector_pack *read_10X_chr_inter( bam_info* in_bam, char *bam_path, sonic *snc,int chr);
 bam_vector_pack *read_10X_chr( bam_info* in_bam, char *bam_path, sonic *snc,int chr, bam_stats *);
 bam_vector_pack **read_10X_bam( bam_info* in_bam, char *bam_path, sonic *snc);
+
 void destroy_bams( bam_vector_pack* reads);
+void destroy_intra_bams( bam_vector_pack* reads);
 #endif
 

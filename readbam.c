@@ -938,6 +938,15 @@ skip:
 }
 
 
+void destroy_intra_bams(bam_vector_pack *reads){
+    vector_free(reads->concordants);
+    vector_free(reads->pp_discordants);
+    vector_free(reads->mm_discordants);
+    vector_free(reads->pm_discordants);
+    vector_free(reads->mp_discordants);
+
+    free(reads);
+}
 void destroy_bams(bam_vector_pack *reads){
     vector_free(reads->concordants);
     vector_free(reads->pp_discordants);

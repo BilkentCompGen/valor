@@ -45,10 +45,7 @@ int main( int argc, char **argv){
     int i,j,k;
     time_t rawtime;
     struct tm *timeinfo;
-    vector_t **regions; // Vector of Inverval_10X
-    vector_t *groups;   // Vector of Interval_10X
-    vector_t **variations; //Vector of sv_t
-    vector_t **clusters;   //Vector of cluster_t
+
 
     char *out_file_path = malloc((strlen("-predicted_svs.bedpe")+strlen(params->outprefix)+1)*sizeof(char));
     sprintf(out_file_path,"%s-predicted_svs.bedpe",params->outprefix);
@@ -87,33 +84,35 @@ int main( int argc, char **argv){
     //	bam_vector_pack **reads = read_10X_bam(in_bams,bamname,snc);
     bam_vector_pack **reads = malloc(sizeof(bam_vector_pack) * snc->number_of_chromosomes);//read_10X_bam(in_bams,bamname,snc);
 
-    regions = getMem(sizeof(vector_t *) * snc->number_of_chromosomes);
-    variations = getMem(sizeof(vector_t *) * snc->number_of_chromosomes);
-    clusters = getMem(sizeof(vector_t *) * snc->number_of_chromosomes);
+
     int first_skipped = 0;
     for( i = 0; i < params->chromosome_count ;i++){
 
         CUR_CHR = i;
         reads[i] = read_10X_chr_intra(in_bams,bamname,snc,i,stats);
         if(reads[i]->concordants->size == 0){
-            destroy_bams(reads[i]);
+            destroy_intra_bams(reads[i]);
             printf("No reads for chromosome %s %s %s.\r",
                     snc->chromosome_names[first_skipped],
                     (i-first_skipped==1?"and":"to"),
                     snc->chromosome_names[i]);
             continue;
         }
+    
+
+
+
         bit_set_set_bit(get_bam_info(NULL)->chro_bs,i,1);
         printf("\nFinding structural variants in chromosome %s\n",snc->chromosome_names[i]);
         first_skipped = i+1;
 
         printf("Recovering split molecules..\n");
-        regions[i] = recover_molecules(reads[i]->concordants);
+        vector_t *regions = recover_molecules(reads[i]->concordants);
 
         if(params->svs_to_find & SV_TRANSLOCATION){
-            append_molecules_to_bed(regions[i],molecule_bed_path);
+            append_molecules_to_bed(regions,molecule_bed_path);
         }
-        in_bams->depths[i] = make_molecule_depth_array(regions[i],snc,i);
+        in_bams->depths[i] = make_molecule_depth_array(regions,snc,i);
 
         in_bams->depth_mean[i] = make_global_molecule_mean(in_bams->depths[i],snc,i);
         in_bams->depth_std[i] = make_global_molecule_std_dev(in_bams->depths[i],snc,i,in_bams->depth_mean[i]);
@@ -122,64 +121,64 @@ int main( int argc, char **argv){
                 in_bams->depth_mean[i],in_bams->depth_std[i]);
 
         VALOR_LOG("chr: %s\nmolecule mean depth: %lf\nmolecule std-dev depth: %lf\n", snc->chromosome_names[i], in_bams->depth_mean[i], in_bams->depth_std[i]);
-        VALOR_LOG("Initial molecule count: %zu\n",regions[i]->size);
-        filter_molecules(regions[i],snc,i);
+        VALOR_LOG("Initial molecule count: %zu\n",regions->size);
+        filter_molecules(regions,snc,i);
 
-        VALOR_LOG("Filtered molecule count: %zu\n",regions[i]->size);
-        qsort(regions[i]->items,regions[i]->size,sizeof(void*),interval_start_comp);  
-        groups = group_overlapping_molecules(regions[i]);
+        VALOR_LOG("Filtered molecule count: %zu\n",regions->size);
+        qsort(regions->items,regions->size,sizeof(void*),interval_start_comp);  
+        vector_t *groups = group_overlapping_molecules(regions);
         groups->rmv = &vector_free;
 
-        CLONE_MEAN = molecule_mean(regions[i]);
+        CLONE_MEAN = molecule_mean(regions);
         CLONE_STD_DEV = molecule_group_std(groups,CLONE_MEAN);
         VALOR_LOG("Molecule size mean: %lf\nMolecule size std-dev: %lf\n", CLONE_MEAN, CLONE_STD_DEV);
         vector_free(groups);
 
-        qsort(regions[i]->items,regions[i]->size,sizeof(void*),barcode_comp);  
+        qsort(regions->items,regions->size,sizeof(void*),barcode_comp);  
 
-        printf("Molecule Count: %zu\tMolecule mean: %lf\tMolecule std-dev: %lf\n",regions[i]->size,CLONE_MEAN,CLONE_STD_DEV);
+        printf("Molecule Count: %zu\tMolecule mean: %lf\tMolecule std-dev: %lf\n",regions->size,CLONE_MEAN,CLONE_STD_DEV);
 
-        vector_t *split_molecules = discover_split_molecules(regions[i]);
-        vector_free(regions[i]);
+        vector_t *split_molecules = discover_split_molecules(regions);
+        vector_free(regions);
 
         VALOR_LOG("Split molecule candidate count: %zu\n",split_molecules->size);
 
         printf("Matching split molecules\n");
-        variations[i] = find_svs(split_molecules,svs_to_find);
+        vector_t *variations = find_svs(split_molecules,svs_to_find);
 
-        VALOR_LOG("Matched split molecule pair count: %zu\n", variations[i]->size);
+        VALOR_LOG("Matched split molecule pair count: %zu\n", variations->size);
 
         qsort(split_molecules->items,split_molecules->size,sizeof(void*),interval_pair_comp);  
 
-        printf("%zu candidate variations are made\n",variations[i]->size);
-        update_sv_supports_b(variations[i],
+        printf("%zu candidate variations are made\n",variations->size);
+        update_sv_supports_b(variations,
                 reads[i]);
-        variations[i]->REMOVE_POLICY = REMP_LAZY;
+        variations->REMOVE_POLICY = REMP_LAZY;
 
         filter_unsupported_pm_splits(split_molecules, reads[i]->pm_discordants);
-        vector_filter(variations[i],sv_is_proper);
+        vector_filter(variations,sv_is_proper);
 
-        VALOR_LOG("Structural variation candidate count: %zu\n",variations[i]->size);
+        VALOR_LOG("Structural variation candidate count: %zu\n",variations->size);
 
-        printf("%zu candidate variations are left after filtering\n",variations[i]->size);
+        printf("%zu candidate variations are left after filtering\n",variations->size);
 #if FILTER1XK //If number of variations are more than MAX_INVERSIONS_IN_GRAPH, do random selection
-        if(variations[i]->size > MAX_INVERSIONS_IN_GRAPH){
+        if(variations->size > MAX_INVERSIONS_IN_GRAPH){
             srand(time(NULL));
-            variations[i]->REMOVE_POLICY=REMP_LAZY;
-            for(k=0;k<variations[i]->size;k++){
-                if(rand()%variations[i]->size>MAX_INVERSIONS_IN_GRAPH){
-                    vector_remove(variations[i],k);
+            variations->REMOVE_POLICY=REMP_LAZY;
+            for(k=0;k<variations->size;k++){
+                if(rand()%variations->size>MAX_INVERSIONS_IN_GRAPH){
+                    vector_remove(variations,k);
                 }
             }
-            vector_defragment(variations[i]);
+            vector_defragment(variations);
 
-            printf("%zu candidate variations are left after random selection to decrease size\n",variations[i]->size);
+            printf("%zu candidate variations are left after random selection to decrease size\n",variations->size);
         }
 #endif
 
-        variations[i]->REMOVE_POLICY=REMP_SORTED;
+        variations->REMOVE_POLICY=REMP_SORTED;
 
-        graph_t *sv_graph = make_sv_graph(variations[i]);
+        graph_t *sv_graph = make_sv_graph(variations);
         /*
            fff = fopen("sv_graph_out.out","w+");
            graph_print(sv_graph,fff);
@@ -187,8 +186,8 @@ int main( int argc, char **argv){
 
 */
         printf("Finding SV Clusters\n\n");
-        clusters[i] = vector_init(sizeof(sv_cluster),50);
-        vector_set_remove_function(clusters[i],&sv_cluster_destroy);
+        vector_t *clusters = vector_init(sizeof(sv_cluster),50);
+        vector_set_remove_function(clusters,&sv_cluster_destroy);
 
 
 
@@ -230,21 +229,21 @@ int main( int argc, char **argv){
 
 
 
-                vector_soft_put(clusters[i],svc_garbage);
+                vector_soft_put(clusters,svc_garbage);
                 iteration_no++;
             }
             //			vector_free(garbage);
             //	graph_free(garbage_graph);
         }
 
-        printf("Clustering is finished, found %zu variant clusters\n",clusters[i]->size);
+        printf("Clustering is finished, found %zu variant clusters\n",clusters->size);
 
         vector_free(comps);
 
-        qsort(clusters[i]->items, clusters[i]->size, sizeof( void*), cluster_comp);
+        qsort(clusters->items, clusters->size, sizeof( void*), cluster_comp);
         printf("Printing variant calls\n");
-        for(j=0;j<clusters[i]->size;j++){
-            sv_cluster *svc = vector_get(clusters[i],j);
+        for(j=0;j<clusters->size;j++){
+            sv_cluster *svc = vector_get(clusters,j);
 
 
             sv_t *first = vector_get(svc->items,0);
@@ -351,22 +350,22 @@ int main( int argc, char **argv){
         fflush(outbedfile);
 
         if((svs_to_find & SV_TRANSLOCATION) == 0){
-            destroy_bams(reads[i]);
+            destroy_intra_bams(reads[i]);
             free(in_bams->depths[i]);
         }else{
             vector_free(reads[i]->mp_discordants);
             vector_free(reads[i]->mm_discordants);
             vector_free(reads[i]->pp_discordants);
-
+            vector_free(reads[i]->concordants);
             reads[i]->mp_discordants = NULL;
             reads[i]->pp_discordants = NULL;
             reads[i]->mm_discordants = NULL;
-
+            reads[i]->concordants = NULL;
         }
 
         vector_free(split_molecules);
-        vector_free(variations[i]);
-        vector_free(clusters[i]);
+        vector_free(variations);
+        vector_free(clusters);
         graph_free(sv_graph);
 
         printf("Reading next chromosome\n");
@@ -399,9 +398,9 @@ int main( int argc, char **argv){
     bit_set_free(in_bams->chro_bs);
     freeMem(in_bams, sizeof(bam_info));
     free(stats);
-    freeMem(clusters, sizeof(vector_t *) * snc->number_of_chromosomes);
-    freeMem(variations,sizeof(vector_t *) * snc->number_of_chromosomes);
-    free(regions);
+
+
+
     free(reads);
     free_sonic(snc);
     fclose(logFile);

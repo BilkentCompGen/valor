@@ -2,3 +2,7 @@ valor
 *.bedpe
 *.o
 *.swp
+*.ipch
+*.bin
+*.sam
+*.cram

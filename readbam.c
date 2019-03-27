@@ -176,11 +176,8 @@ void free_alt_read(void *vread){
 }
 
 
-bam_vector_pack *read_10X_chr_inter( bam_info *in_bam, char *bam_path, sonic *snc, int chr, bam_stats *statistics){
+bam_vector_pack *read_10X_chr_inter( bam_info *in_bam, char *bam_path, sonic *snc, int chr){
     
-    
-    double frag_min = MAX(0, statistics->read_length_mean - 3 * statistics->read_length_std_dev);
-    double frag_max = statistics->read_length_mean + 3 * statistics->read_length_std_dev;
     static htsFile *bam_file = NULL;
     if(bam_file==NULL){
         bam_file = safe_hts_open( bam_path, "r");
@@ -216,19 +213,7 @@ bam_vector_pack *read_10X_chr_inter( bam_info *in_bam, char *bam_path, sonic *sn
         if( bam_alignment_core->mpos == -1) goto skip;
         unsigned char * b_text =  bam_aux_get(bam_alignment,"BX");
         unsigned long barcode;
-
-
-        if(barcode == -1) goto skip;
-
-        int ccval = ( identify_read_alignment(*bam_alignment_core, frag_min,75000));
-
-        int start1,end1,start2,end2;
-
-        start1 = MIN(bam_alignment_core->mpos,bam_alignment_core->pos);
-        start2 = MAX(bam_alignment_core->mpos,bam_alignment_core->pos);
-        end1 = start1+bam_alignment_core->l_qseq;
-        end2 = start2+bam_alignment_core->l_qseq;
-
+        int ccval = ( identify_read_alignment(*bam_alignment_core, 100,75000));
         in_bam->read_count+=2;
 
         vector_t *target = NULL;
@@ -341,7 +326,7 @@ bam_vector_pack *read_10X_chr_intra( bam_info* in_bam, char* bam_path, sonic *sn
 
         in_bam->read_count+=1;
 
-        vector_t *target = NULL;
+
         if( bam_alignment_core->qual < MIN_QUAL) goto skip;
         switch(ccval){
             case RPCONC:

@@ -377,7 +377,7 @@ int main( int argc, char **argv){
         printf("Looking for translocations.\n");
         printf("Reading from temp molecule file.\n");
         vector_t **molecules = read_molecules_from_bed(molecule_bed_path);
-        vector_t *variants = find_interchromosomal_events_lowmem(molecules,reads, bamname ,stats);
+        vector_t *variants = find_interchromosomal_events_lowmem(molecules,reads, bamname);
         for(k=0;k<variants->size;k++){
             vector_t *sub_vec = vector_get(variants,k);
             for(i=0;i<sub_vec->size;i++){

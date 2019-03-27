@@ -59,7 +59,7 @@ inter_split_molecule_t *inter_split_init(barcoded_read_pair *pair, interval_10X 
 
 int inter_split_indicates_translocation(inter_split_molecule_t s1, inter_split_molecule_t s2, sv_type type);
 
-ic_sv_t *inter_sv_init(inter_split_molecule_t *s1, inter_split_molecule_t *s2, interval_pair *tra_del ,sv_type type, int orient);
+ic_sv_t *inter_sv_init(inter_split_molecule_t *s1, inter_split_molecule_t *s2, interval_pair *tra_del ,sv_type type);
 
 size_t split_molecule_binary_search(vector_t *splits, interval_10X key);
 void filter_unsupported_pm_splits(vector_t *splits, vector_t *discordants);
@@ -72,6 +72,6 @@ vector_t *find_separated_molecules(vector_t *reads, vector_t *mol_a, vector_t *m
 
 
 
-vector_t *find_interchromosomal_events_lowmem(vector_t **molecules, bam_vector_pack **intra, char *bamname, bam_stats *stats);
-vector_t *find_interchromosomal_events(vector_t **molecules, bam_vector_pack **reads);
+vector_t *find_interchromosomal_events_lowmem(vector_t **molecules, bam_vector_pack **intra, char *bamname);
+//vector_t *find_interchromosomal_events(vector_t **molecules, bam_vector_pack **reads);
 #endif

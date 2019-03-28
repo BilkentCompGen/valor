@@ -361,23 +361,38 @@ interval_pair *find_matching_split_molecule(vector_t *splits,inter_split_molecul
 
     interval_pair deletion_interval = (interval_pair){.start1=start-CLONE_MEAN/2,.end1=start,end,.end2=end+CLONE_MEAN/2,.barcode=0};
 
-    size_t pos = 0;
-     // split_molecule_binary_search(splits,deletion_interval);
-    if( pos == -1){
+    size_t pos = 0; //TODO use binary search instead
 
-        return NULL;
-    }
-
+	vector_t *found_splits = vector_init(sizeof(interval_pair),10);
+     
     interval_pair *cand = vector_get(splits,pos);
-    while( pos < splits->size && cand->start1 < deletion_interval.end1 + CLONE_MEAN){
+    while( pos < splits->size && cand->start1 < deletion_interval.end1 + 50000){
 
         if(interval_pair_overlaps(&deletion_interval,cand,CLONE_MEAN)){
-            return vector_get(splits, pos);
+            vector_put(found_splits,cand);
         }
         pos++;
         cand = vector_get(splits,pos);
     }
-    return NULL;
+    if(found_splits->size < TRA_MIN_INTRA_SPLIT){
+        return NULL;
+    }
+
+    interval_pair *to_return = malloc(sizeof(interval_pair));
+    *to_return = *(interval_pair *)vector_get(found_splits,0);
+    int i;
+    for(i = 1; i< found_splits->size; i++){
+        interval_pair *it = vector_get(found_splits, i);
+
+        to_return->start1 = i * ((double)to_return->start1 / (i+1)) + (double)it->start1/(i+1);
+        to_return->end1 = i * ((double)to_return->end1 / (i+1)) + (double)it->end1/(i+1);
+        to_return->start2 = i * ((double)to_return->start2 / (i+1)) + (double)it->start2/(i+1);
+        to_return->end2 = i * ((double)to_return->end2 / (i+1)) + (double)it->end2/(i+1);
+    }
+
+
+	return to_return;
+
 }
 
 vector_t *find_interc_translocations(vector_t *sp1, vector_t *sp2, vector_t *molecules,sv_type type){
@@ -584,12 +599,9 @@ size_t ic_sv_hf(hashtable_t *table, const void *vsv){
 	hash+=sv->type;
 	hash*=BIG_PRIME;
 	hash= hash % table->size;
-	
 
     return hash;
-
-
-	//return SuperFastHash((vsv),2*sizeof(interval_pair)) % table->size;
+//return SuperFastHash((vsv),2*sizeof(interval_pair)) % table->size;
 }
 
 vector_t *ic_sv_g_dfs_components(graph_t *g){
@@ -863,8 +875,8 @@ vector_t *find_interchromosomal_events_lowmem(vector_t **molecules, bam_vector_p
         vector_t *direct_tra =  find_interc_translocations(pm_seps,mp_seps,splits,SV_TRANSLOCATION);
         vector_t *invert_tra =  find_interc_translocations(pp_seps,mm_seps,splits,SV_INVERTED_TRANSLOCATION);
 
-        vector_filter(direct_tra,ic_sv_is_proper);
-        vector_filter(invert_tra,ic_sv_is_proper);
+  //      vector_filter(direct_tra,ic_sv_is_proper);
+//        vector_filter(invert_tra,ic_sv_is_proper);
         printf("Number of pm-mp variant candidates %zu\n",direct_tra->size);
         printf("Number of pp-mm variant candidates %zu\n",invert_tra->size);
         vector_t *direct_calls = cluster_interchromosomal_events(direct_tra);
@@ -893,109 +905,5 @@ vector_t *find_interchromosomal_events_lowmem(vector_t **molecules, bam_vector_p
     return all_chr_vec;
 }
 
-//Direct signature -> pm, mp
-//Inverted signature pp, mm
-// This will be slow. 
-/*
-vector_t *find_interchromosomal_events(vector_t **molecules, bam_vector_pack **reads){
-	int i, j;
-	sonic *snc = sonic_load(NULL);
-	//parameters *params = get_params();
-	vector_t *chr_to_eval = bit_set_2_index_vec( get_bam_info(NULL)->chro_bs);
-	//int chr_count = params->chromosome_count;
-	vector_t *all_chr_vec = vector_init(sizeof(vector_t),24*23);
-    vector_t **splits = malloc(sizeof(vector_t)*get_bam_info(NULL)->chro_bs->size);
-	for(j=0;j<chr_to_eval->size;j++){
-		i = *(int *) vector_get(chr_to_eval,j);
-		if(reads[i] == NULL){ 
-			continue;
-		}
-		filter_dangling_reads(reads[i]->inter_pm);
-		filter_dangling_reads(reads[i]->inter_mp);
-		filter_dangling_reads(reads[i]->inter_pp);
-		filter_dangling_reads(reads[i]->inter_mm);
 
-        qsort(molecules[j]->items,molecules[j]->size,sizeof(void *),barcode_comp);
-    }
-    for(j=0;j<get_bam_info(NULL)->chro_bs->size;j++){
-        if(bit_set_get_bit(get_bam_info(NULL)->chro_bs,j)){
-            splits[j] = discover_split_molecules(molecules[j]);
-            qsort(splits[j]->items,splits[j]->size,sizeof(void *),interval_pair_comp);
-            filter_unsupported_pm_splits(splits[j],reads[j]->pm_discordants);
-        }else{
-            splits[j] = vector_init(sizeof(interval_pair),1);
-        }
-    }
-	int k, t;
-	for(k=0;k < chr_to_eval->size;k++){
-		i = *(int *) vector_get(chr_to_eval, k);
-	
-
-        for(j=0;j<reads[i]->inter_mp->size;j++){
-            barcoded_read_pair *ptr = vector_get(reads[i]->inter_mp,j);
-            VALOR_LOG("%d\t%d\t%d\t%d\t%d\t%d\t%lu\n",ptr->l_chr,ptr->left,ptr->l_or,ptr->r_chr,ptr->right,ptr->r_or,ptr->barcode);
-        }
-        for(j=0;j<reads[i]->inter_pm->size;j++){
-            barcoded_read_pair *ptr = vector_get(reads[i]->inter_pm,j);
-            VALOR_LOG("%d\t%d\t%d\t%d\t%d\t%d\t%lu\n",ptr->l_chr,ptr->left,ptr->l_or,ptr->r_chr,ptr->right,ptr->r_or,ptr->barcode);
-        }
-
-			printf("Discovering translocations from contig %s\n",snc->chromosome_names[i]);
-			printf("Number of pm discordants %zu\n",reads[i]->inter_pm->size);
-			printf("Number of mp discordants %zu\n",reads[i]->inter_mp->size);
-			printf("Number of pp discordants %zu\n",reads[i]->inter_pp->size);
-			printf("Number of mm discordants %zu\n",reads[i]->inter_mm->size);
-
-            vector_t *pm_seps = find_inter_split_molecules(reads[i]->inter_pm,i,molecules[i],molecules);
-			vector_t *mp_seps = find_inter_split_molecules(reads[i]->inter_mp,i,molecules[i],molecules);
-
-            vector_t *mm_seps = find_inter_split_molecules(reads[i]->inter_mm,i,molecules[i],molecules);
-            vector_t *pp_seps = find_inter_split_molecules(reads[i]->inter_pp,i,molecules[i],molecules);
-
-
-            log_splits(pm_seps,"pm-split");
-            log_splits(mp_seps,"mp-split");
-            log_splits(mm_seps,"mm-split");
-            log_splits(pp_seps,"pp-split");
-			printf("Number of pm splits %zu\n",pm_seps->size);
-			printf("Number of mp splits %zu\n",mp_seps->size);
-			printf("Number of pp splits %zu\n",pp_seps->size);
-			printf("Number of mm splits %zu\n",mm_seps->size);
-
-			vector_t *direct_t =  find_interc_translocations(pm_seps,mp_seps,splits,SV_TRANSLOCATION);
-			vector_t *invert_t =  find_interc_translocations(pp_seps,mm_seps,splits,SV_INVERTED_TRANSLOCATION);
-
-			printf("Number of pm-mp variant candidates %zu\n",direct_t->size);
-			printf("Number of pp-mm variant candidates %zu\n",invert_t->size);
-            vector_t *direct_calls = cluster_interchromosomal_events(direct_t);
-            vector_t *invert_calls = cluster_interchromosomal_events(invert_t);
-
-			printf("Number of pm-mp variant clusters %zu\n",direct_calls->size);
-			printf("Number of pp-mm variant clusters %zu\n",invert_calls->size);
-
-            vector_filter(direct_calls,ic_sv_is_proper);
-            vector_filter(invert_calls,ic_sv_is_proper);
-            
-			printf("Number of pm-mp variant calls %zu\n",direct_calls->size);
-			printf("Number of pp-mm variant calls %zu\n",invert_calls->size);
-
-
-            vector_free(direct_t);
-            vector_free(invert_t);
-
-            vector_free(pm_seps);
-            vector_free(mp_seps);
-            vector_free(pp_seps);
-            vector_free(mm_seps);
-
-            vector_soft_put(all_chr_vec,direct_calls);
-            vector_soft_put(all_chr_vec,invert_calls);
-			//TODO
-			//			vector_t *invert_t =  find_invert_translocations(ppmm_seps,mmpp_seps);
-	//	}
-	}
-	return all_chr_vec;
-}
-*/
-// Test
 

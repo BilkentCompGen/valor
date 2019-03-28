@@ -50,7 +50,7 @@ extern long long memUsage;
 extern FILE *logFile; //Defined in valor.c
 extern int CUR_CHR;
 
-#define SV_MAX_ID 128
+#define SV_MAX_ID 32
 typedef enum SV_TYPE{
         SV_DELETION = 1,
         SV_TANDEM_DUPLICATION = 2,

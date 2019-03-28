@@ -55,6 +55,7 @@ extern double CLONE_STD_DEV;
 
 /*************INTER_CHR_EVENTS****************************/
 #define MIN_INTER_CLUSTER_SIZE 12
+#define TRA_MIN_INTRA_SPLIT 8
 /*************GRAPH PROPERTIES****************************/
 #define QCLIQUE_LAMBDA 0.5
 #define QCLIQUE_GAMMA 0.6

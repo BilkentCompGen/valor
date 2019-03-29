@@ -6,27 +6,20 @@ VAriation with LOng Range information
 Requirements
 ============
 
+ * gcc > 5.4
  * zlib   (http://www.zlib.net)
  * htslib (included; http://htslib.org/)
  * sonic  (included; https://github.com/calkan/sonic)
 
-Fetching VALOR
-===============
+How to install VALOR from source
+====================
 
 	git clone https://github.com/BilkentCompGen/valor.git --recursive
-
-Compilation
-===========
-
-Type:
-	
+	cd valor
 	make libs
-	
 	make
+	cp valor /path/to/your/favorite/binaries
 	
-	cp valor /path/to/your/favorite/binaries (or sudo make install)
-
-
 Running VALOR
 ==============
 
@@ -34,15 +27,15 @@ Required Parameters:
 
 	-i, --input [BAM files]        : Input files in sorted BAM format.
 	
-	-o, --out   [output folder]    : Folder to put results and temporary files in
+	-o, --out   [output prefix]    : Prefix for the output files
         
 	-s, --sonic  [sonic file]      : Sonic file. Check: https://github.com/calkan/sonic.
         
-	-f, --svs_to_find   [sv type]  : Comma separated list of SVs (i.e. INV,DUP,IDUP)
+	-f, --svs_to_find   [sv type]  : Comma separated list of SVs (i.e. INV,DUP,IDUP,TRA,ITRA,DEL)
 
 Optional Parameters:
       
-	-l, --log_file [logfile name]: default is [output folder]/valor.log
+	-l, --log_file [logfile name]: default is [output prefix]-valor.log
 	-t, --threads [thread count]: sets number of threads to be used (default is 1)
 	
 Help Parameters:
@@ -54,7 +47,7 @@ Help Parameters:
 	
 Example:
 	
-	valor -i input.bam -s hg19.sonic -o folder_name -f DUP
+	valor -i input.bam -s hg19.sonic -o output_prefix -f DUP,IDUP,DEL
 
 SONIC file (annotations container)
 ==================================
@@ -77,13 +70,23 @@ Please refer to the SONIC development repository: https://github.com/calkan/soni
 OUTPUT FORMAT
 =============
 
-in [OUTPUT_DIR]/predicted_inversions.bedpe
+in [output prefix]-predicted_inversions.bedpe
 
 ```bed
 Chromosome-name BP1-start BP1-end Chromosome-name BP2-start BP2-end SV_TYPE 10XG-Support Read_Pair_Support Molecule_Depth
 ```
 * Read pair Support: Number of read-pairs that support these breakpoints
 * 10XG Support: Number of 10XG Molecule-pairs that support these breakpoints
+
+BEDPE format table
+==================
+| chr1       	| start1         	| end1       	| chr2       	| start2       	| end2         	| type          	| Support info 	|
+|------------	|----------------	|------------	|------------	|--------------	|--------------	|---------------	|--------------	|
+| chr        	| bp1-start      	| bp1-end    	| chr        	| bp2-start    	| bp-end       	| inversion     	| ...          	|
+| chr        	| molecule-start 	| start      	| chr        	| end          	| molecule-end 	| deletion      	|              	|
+| chr        	| source-start   	| source-end 	| chr        	| target-start 	| target-end   	| duplication   	|              	|
+| source-chr 	| source-start   	| source-end 	| target-chr 	| target-start 	| target-end   	| translocation 	|              	|
+
 
 Docker Usage
 ============

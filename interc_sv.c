@@ -659,7 +659,8 @@ int ic_sv_call_is_proper(void *vcall){
 
     int is_ref_dup_source = sonic_is_segmental_duplication(snc,snc->chromosome_names[src_chr],start-CLONE_MEAN/2,start+CLONE_MEAN/2) &&
         sonic_is_segmental_duplication(snc,snc->chromosome_names[src_chr],end-CLONE_MEAN/2,end+CLONE_MEAN/2) ;
-	int is_ref_dup_target = sonic_is_segmental_duplication(snc,snc->chromosome_names[tgt_chr],target_start,target_end);
+
+int is_ref_dup_target = sonic_is_segmental_duplication(snc,snc->chromosome_names[tgt_chr],target_start-CLONE_MEAN/2,target_end+CLONE_MEAN/2);
 
 	int is_ref_gap_source = params->filter_gap && sonic_is_gap(snc,snc->chromosome_names[src_chr],start,end);
 	int is_ref_gap_target = params->filter_gap && sonic_is_gap(snc,snc->chromosome_names[tgt_chr],target_start,target_end);
@@ -707,8 +708,8 @@ int ic_sv_is_proper(void *vcall){
 
     int is_ref_dup_source = sonic_is_segmental_duplication(snc,snc->chromosome_names[src_chr],start-CLONE_MEAN/2,start+CLONE_MEAN/2) &&
         sonic_is_segmental_duplication(snc,snc->chromosome_names[src_chr],end-CLONE_MEAN/2,end+CLONE_MEAN/2) ;
-	int is_ref_dup_target = sonic_is_segmental_duplication(snc,snc->chromosome_names[tgt_chr],target_start,target_end);
 
+int is_ref_dup_target = sonic_is_segmental_duplication(snc,snc->chromosome_names[tgt_chr],target_start-CLONE_MEAN/2,target_end+CLONE_MEAN/2);
 	int is_ref_gap_source = params->filter_gap && sonic_is_gap(snc,snc->chromosome_names[src_chr],start,end);
 	int is_ref_gap_target = params->filter_gap && sonic_is_gap(snc,snc->chromosome_names[tgt_chr],target_start,target_end);
 	int is_ref_sat_source = params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[src_chr],start,end);
@@ -875,8 +876,8 @@ vector_t *find_interchromosomal_events_lowmem(vector_t **molecules, bam_vector_p
         vector_t *direct_tra =  find_interc_translocations(pm_seps,mp_seps,splits,SV_TRANSLOCATION);
         vector_t *invert_tra =  find_interc_translocations(pp_seps,mm_seps,splits,SV_INVERTED_TRANSLOCATION);
 
-  //      vector_filter(direct_tra,ic_sv_is_proper);
-//        vector_filter(invert_tra,ic_sv_is_proper);
+        //vector_filter(direct_tra,ic_sv_is_proper);
+        //vector_filter(invert_tra,ic_sv_is_proper);
         printf("Number of pm-mp variant candidates %zu\n",direct_tra->size);
         printf("Number of pp-mm variant candidates %zu\n",invert_tra->size);
         vector_t *direct_calls = cluster_interchromosomal_events(direct_tra);

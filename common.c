@@ -465,18 +465,13 @@ int what_is_min_cluster_size(sv_type type){
 // DUP,IDUP,DEL,TRA,INV
 sv_type atosv(char *str){
 	if(strcmp(str,"ALL")==0){
-		fprintf(stderr,"\"%s\" - Not Implemented\n",str);
-		exit(-1);
-		return -1;
+		return SV_INVERSION | SV_DIRECT_DUPLICATION | SV_INVERTED_DUPLICATION | SV_TRANSLOCATION | SV_INVERTED_TRANSLOCATION;
 	}
 	if(strcmp(str,"INV")==0){
 		return SV_INVERSION;
 	}	
 	if(strcmp(str,"DUP")==0){
-		return SV_DIRECT_DUPLICATION;
-	}	
-	if(strcmp(str,"IDUP")==0){
-		return SV_INVERTED_DUPLICATION;
+		return SV_DIRECT_DUPLICATION | SV_INVERTED_DUPLICATION;
 	}
     if(strcmp(str,"TDUP")==0){
 		return SV_TANDEM_DUPLICATION;
@@ -485,10 +480,7 @@ sv_type atosv(char *str){
 		return SV_DELETION;
 	}
 	if(strcmp(str,"TRA")==0){
-		return SV_TRANSLOCATION;
-	}
-	if(strcmp(str,"ITRA")==0){
-		return SV_INVERTED_TRANSLOCATION;
+		return SV_TRANSLOCATION | SV_INVERTED_TRANSLOCATION;
 	}
 	return 0;
 }

@@ -1,6 +1,10 @@
 #include "vector.h"
 
 
+void do_nothing(void *v){
+
+}
+
 vector_t *vector_dot_prod(vector_t *v1, vector_t *v2, void *(*foo)(void *, void *)){
 	if( v1->size != v2->size){ return NULL;}
 	vector_t *v3 = vector_init(VECTOR_VARIABLE_SIZE, v1->size);

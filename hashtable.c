@@ -292,10 +292,11 @@ vector_t *ht_select_pairs(hashtable_t *table, vector_t *set){
 vector_t *ht_to_vector(hashtable_t *table){
 	int i,j;
 	vector_t *set = vector_init(sizeof(pair_t),table->size);
+	set->rmv = do_nothing;
 	for(i=0;i<table->size;i++){
 		vector_t *bucket = table->buckets[i];
 		for(j=0;j<bucket->size;j++){
-			vector_put(set,vector_get(bucket,j));
+			vector_soft_put(set,vector_get(bucket,j));
 		}
 	}
 	return set;

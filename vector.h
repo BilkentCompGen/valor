@@ -62,4 +62,6 @@ void vector_tabularasa(vector_t *vector);
 void vector_set_remove_function(vector_t *vector, void (*rmv)(void*));
 vector_t *dang_string_tokenize(const char *str, const char *delims);
 
+
+void do_nothing(void *v);
 #endif

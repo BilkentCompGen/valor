@@ -771,6 +771,8 @@ inter_sv_call_t *ic_sv_cluster_resolve(vector_t *cluster){
     return call;
 }
 
+
+
 vector_t *cluster_interchromosomal_events(vector_t *predictions){
 
     vector_t *calls = vector_init(sizeof(inter_sv_call_t),predictions->size);
@@ -810,7 +812,56 @@ vector_t *cluster_interchromosomal_events(vector_t *predictions){
     graph_free(sv_graph);
     return calls;
 }
+vector_t *cluster_interchromosomal_events_lowmem(vector_t *predictions){
+    vector_t *chr_to_eval = bit_set_2_index_vec( get_bam_info(NULL)->chro_bs);
+    int j;
+ 
+	parameters *params = get_params();
+    vector_t *calls = vector_init(sizeof(inter_sv_call_t),predictions->size);
+    for(j=0;j<chr_to_eval->size;j++){
+        int i = *(int *) vector_get(chr_to_eval,j);
+        graph_t *sv_graph = graph_init(predictions->size *2, sizeof(ic_sv_t));
+        sv_graph->hf = &ic_sv_hf;
+        sv_graph->key_cmp = &_ic_sv_cmp; 
+        int k;
+        for(k=0; k<predictions->size; k++){
+            ic_sv_t *sv = vector_get(predictions,k);
+            if(sv->chr_target == i){
+                graph_put_node(sv_graph,vector_get(predictions,k));
+            }
+        }
+        adjlist_t *nodes = graph_to_al(sv_graph);
+        for(i=0; i<nodes->size; i++){
+            pair_t *ap = vector_get(nodes,i);
+            ic_sv_t *a = ap->key;
+            for(j=i+1; j<nodes->size; j++){
+                pair_t *bp = vector_get(nodes,j);
+                ic_sv_t *b = bp->key;
+                if(inter_sv_overlaps(a,b)){
+                    graph_put_edge(sv_graph,a,b);
+                    graph_put_edge(sv_graph,b,a);
+                }
+            }
+        }
+        vector_free(nodes);
+        graph_trim(sv_graph);
+        vector_t *components = ic_sv_g_dfs_components(sv_graph);
 
+        for(i=0;i<components->size;i++){
+            vector_t *comp = vector_get(components,i);
+            if(comp->size < MIN_INTER_CLUSTER_SIZE) { continue;}
+            icclique_t *clique = icclique_find_icclique(sv_graph,comp,0,params->quasi_clique_lambda,params->quasi_clique_gamma);
+            if(clique == NULL || clique->v_prime <= 0){icclique_free(clique);break;}
+
+            vector_soft_put(calls, ic_sv_cluster_resolve(clique->items)); 
+            icclique_free(clique);
+        }
+        vector_free(components);
+        graph_free(sv_graph);
+   }
+   vector_free(chr_to_eval);
+   return calls;
+}
 vector_t *resplit_molecules(vector_t *molecules, vector_t *discordants){
     int i;
 
@@ -880,8 +931,8 @@ vector_t *find_interchromosomal_events_lowmem(vector_t **molecules, bam_vector_p
         //vector_filter(invert_tra,ic_sv_is_proper);
         printf("Number of pm-mp variant candidates %zu\n",direct_tra->size);
         printf("Number of pp-mm variant candidates %zu\n",invert_tra->size);
-        vector_t *direct_calls = cluster_interchromosomal_events(direct_tra);
-        vector_t *invert_calls = cluster_interchromosomal_events(invert_tra);
+        vector_t *direct_calls = cluster_interchromosomal_events_lowmem(direct_tra);
+        vector_t *invert_calls = cluster_interchromosomal_events_lowmem(invert_tra);
 
         printf("Number of pm-mp variant clusters %zu\n",direct_calls->size);
         printf("Number of pp-mm variant clusters %zu\n",invert_calls->size);
@@ -903,6 +954,7 @@ vector_t *find_interchromosomal_events_lowmem(vector_t **molecules, bam_vector_p
         vector_soft_put(all_chr_vec,direct_calls);
         vector_soft_put(all_chr_vec,invert_calls);
     }
+    vector_free(chr_to_eval);
     return all_chr_vec;
 }
 

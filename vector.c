@@ -156,7 +156,7 @@ int vector_defragment(vector_t *vector){
 	}
 	int i = 0;
 	int j = 0;
-	while(i<vector->size){
+	while(i+1<vector->size){
 		++i;
 		if(vector->items[j]!=NULL){
 			++j;

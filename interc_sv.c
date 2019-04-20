@@ -364,15 +364,16 @@ interval_pair *find_matching_split_molecule(vector_t *splits,inter_split_molecul
     size_t pos = 0; //TODO use binary search instead
 
 	vector_t *found_splits = vector_init(sizeof(interval_pair),10);
-     
+    found_splits->rmv = do_nothing;
     interval_pair *cand = vector_get(splits,pos);
     while( pos < splits->size && cand->start1 < deletion_interval.end1 + 50000){
 
         if(interval_pair_overlaps(&deletion_interval,cand,CLONE_MEAN)){
-            vector_put(found_splits,cand);
+            vector_soft_put(found_splits,cand);
         }
-        pos++;
+
         cand = vector_get(splits,pos);
+        pos++;
     }
     if(found_splits->size < TRA_MIN_INTRA_SPLIT){
         return NULL;
@@ -390,9 +391,8 @@ interval_pair *find_matching_split_molecule(vector_t *splits,inter_split_molecul
         to_return->end2 = i * ((double)to_return->end2 / (i+1)) + (double)it->end2/(i+1);
     }
 
-
+    vector_free(found_splits);
 	return to_return;
-
 }
 
 vector_t *find_interc_translocations(vector_t *sp1, vector_t *sp2, vector_t *molecules,sv_type type){
@@ -412,6 +412,7 @@ vector_t *find_interc_translocations(vector_t *sp1, vector_t *sp2, vector_t *mol
                     vector_soft_put(tlocs,inter_sv_init(a,b,del_tra,type));
                 }
             }
+            free(del_tra);
 		}
 	}
 
@@ -729,8 +730,10 @@ int is_ref_dup_target = sonic_is_segmental_duplication(snc,snc->chromosome_names
 
     return !(is_ref_dup_source && is_ref_dup_target) && !(is_ref_gap_source || is_ref_gap_target) && !(is_ref_sat_source && is_ref_sat_target) && does_cnv_support_tra;
 }
+
 inter_sv_call_t *ic_sv_cluster_resolve(vector_t *cluster){
-    inter_interval_pair bp;
+    inter_interval_pair bp = {0};
+
     int supports[3] = {0};
     int i;
     int j;
@@ -926,7 +929,7 @@ vector_t *find_interchromosomal_events_lowmem(vector_t **molecules, bam_vector_p
 
         vector_t *direct_tra =  find_interc_translocations(pm_seps,mp_seps,splits,SV_TRANSLOCATION);
         vector_t *invert_tra =  find_interc_translocations(pp_seps,mm_seps,splits,SV_INVERTED_TRANSLOCATION);
-
+        vector_free(splits);
         //vector_filter(direct_tra,ic_sv_is_proper);
         //vector_filter(invert_tra,ic_sv_is_proper);
         printf("Number of pm-mp variant candidates %zu\n",direct_tra->size);
@@ -953,6 +956,11 @@ vector_t *find_interchromosomal_events_lowmem(vector_t **molecules, bam_vector_p
 
         vector_soft_put(all_chr_vec,direct_calls);
         vector_soft_put(all_chr_vec,invert_calls);
+        direct_calls->rmv = do_nothing;
+        invert_calls->rmv = do_nothing;
+        vector_free(direct_calls);
+        vector_free(invert_calls);
+        destroy_inter_bams(reads);
     }
     vector_free(chr_to_eval);
     return all_chr_vec;

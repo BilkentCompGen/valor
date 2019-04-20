@@ -16,6 +16,7 @@ typedef struct sv{
 	short tabu;
 	int dv;
 	sv_type type;
+	uint16_t chr;
 	unsigned char orientation :2;
 	unsigned char  covered :1;
 	unsigned char inactive :1;

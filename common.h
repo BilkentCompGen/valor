@@ -48,7 +48,6 @@
 // Track memory usage
 extern long long memUsage;
 extern FILE *logFile; //Defined in valor.c
-extern int CUR_CHR;
 
 #define SV_MAX_ID 32
 typedef enum SV_TYPE{
@@ -78,7 +77,7 @@ typedef struct _params
     int max_support;
     int sample_size;
     int min_qual;
-
+    int ploidy;
     
     double quasi_clique_lambda;
     double quasi_clique_gamma;

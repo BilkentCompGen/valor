@@ -57,6 +57,7 @@ parameters *init_params(void){
 	params->svs_to_find = 0;
 	params->low_mem = 0;
 	params->chromosome_count = 24;
+	params->ploidy = 2;
 	(params)->outprefix = NULL;
 	(params)->bam_file = NULL;
 	(params)->threads = 1;

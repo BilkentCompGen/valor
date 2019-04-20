@@ -34,6 +34,7 @@ int parse_command_line( int argc, char** argv, parameters* params)
 		{"version", no_argument,         0, 'v'},
 		{"out"    , required_argument,	 0, 'o'},
 		{"svs_to_find", required_argument,0,'f'},
+		{"ploidy", required_argument,0,'p'},
 		{"low_mem", no_argument,	 0, 'm'},
 		{"log_file", required_argument,	 0, 'l'},
 		{"contig_count", required_argument,	 0, 'c'},
@@ -47,7 +48,7 @@ int parse_command_line( int argc, char** argv, parameters* params)
 	}
  	int o;
 	int index;
-	while( ( o = getopt_long( argc, argv, "i:s:t:hvo:f:ml:c:", long_options, &index)) != -1)
+	while( ( o = getopt_long( argc, argv, "i:s:t:hvo:f:p:ml:c:", long_options, &index)) != -1)
 	{
 		switch( o)
 		{
@@ -58,7 +59,13 @@ int parse_command_line( int argc, char** argv, parameters* params)
 			case 'l':
 				set_str( &( params->logfile), optarg);
 			break;
-	
+		
+			
+			case 'p':
+				params->ploidy= atoi(optarg);
+			break;
+
+
 			case 'f':
 				params->svs_to_find = parse_svs(optarg);
 			break;
@@ -135,7 +142,9 @@ void print_help( void)
 
 	fprintf( stdout, "\t-i, --input [BAM files]        : Input files in sorted BAM format.\n");
 	fprintf( stdout, "\t-o, --out   [output folder]    : Folder to put stuff in\n");
+
 	fprintf( stdout, "\t-s, --sonic  [sonic file]      : Sonic file. Check: https://github.com/calkan/sonic.\n");
+	fprintf( stdout, "\t-p, --ploidy  [Number of chromosome sets]      : Default is 2.\n");
 
 	fprintf( stdout, "\t-f, --svs_to_find   [sv type]: Comma separated list of SV types (i.e. DUP,IDUP,INV).\n");
 	fprintf( stdout, "Optional Parameters:\n");

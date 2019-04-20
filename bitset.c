@@ -2,7 +2,7 @@
 
 
 static const unsigned char bitmasks[8] = { 1,2,4,8,16,32,64,128};
-static const  unsigned char nbitmasks[8] = {~1,~2,~4,~8,~16,~32,~64,0X7F};
+static const unsigned char nbitmasks[8] = {~1,~2,~4,~8,~16,~32,~64,0X7F};
 
 bit_set_t *bit_set_init(size_t bit_count){
     bit_set_t *new_bits = getMem(sizeof(bit_set_t));
@@ -80,26 +80,4 @@ vector_t *bit_set_2_index_vec(bit_set_t *bs){
 void bit_set_free(bit_set_t *bs){
     free(bs->bits);
     free(bs);
-}
-
-int bit_test(){
-    int i;
-    bit_set_t *bs = bit_set_init(24);
-    bit_set_set_bit(bs,17,1);    bit_set_set_all(bs,1);
-   
-   
-    for(i=0;i<24;i++){
-
-    }
-
-    bit_set_set_all(bs,0);
-    
-    bit_set_flip_bit(bs,14);
-    for(i=0;i<24;i++){
-
-    }
-
-
-    bit_set_free(bs);
-    return 0;
 }

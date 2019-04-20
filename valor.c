@@ -24,7 +24,7 @@
 #include "graph.h"
 #include "progress.h"
 #include <omp.h>
-int CUR_CHR = -1;
+
 FILE *logFile = NULL;
 double CLONE_MEAN;
 double CLONE_STD_DEV;
@@ -88,7 +88,7 @@ int main( int argc, char **argv){
     int first_skipped = 0;
     for( i = 0; i < params->chromosome_count ;i++){
 
-        CUR_CHR = i;
+
         reads[i] = read_10X_chr_intra(in_bams,bamname,snc,i,stats);
         if(reads[i]->concordants->size == 0){
             destroy_intra_bams(reads[i]);
@@ -110,7 +110,7 @@ int main( int argc, char **argv){
         vector_t *regions = recover_molecules(reads[i]->concordants);
 
         if(params->svs_to_find & SV_TRANSLOCATION){
-            append_molecules_to_bed(regions,molecule_bed_path);
+            append_molecules_to_bed(regions,molecule_bed_path,i);
         }
         in_bams->depths[i] = make_molecule_depth_array(regions,snc,i);
 

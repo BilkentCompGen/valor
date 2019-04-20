@@ -41,7 +41,7 @@ vector_t **read_molecules_from_bed(char *filename){
         return molecules;
 }
 
-void append_molecules_to_bed(vector_t *mols, char *filename){
+void append_molecules_to_bed(vector_t *mols, char *filename, int chr){
 	FILE *fptr = fopen(filename,"a+");
 	if(fptr==NULL){
 		fprintf(stderr,"Can't write to %s!\n",filename);
@@ -51,7 +51,7 @@ void append_molecules_to_bed(vector_t *mols, char *filename){
 	
 	for(i=0;i<mols->size;i++){
 		interval_10X *val = vector_get(mols,i);
-		fprintf(fptr,"%d\t%d\t%d\t%lu\n",CUR_CHR,val->start,val->end,val->barcode);
+		fprintf(fptr,"%d\t%d\t%d\t%lu\n",chr,val->start,val->end,val->barcode);
 	}
 	fclose(fptr);
 }

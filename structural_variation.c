@@ -1052,17 +1052,18 @@ int sv_is_proper(void *vsv){
 	int end = -1;
 	int target_start = -1;
 	int target_end = -1;
+	int chr = sv->chr;
 	switch(sv->type){
 		case SV_INVERSION:
 			fprintf(logFile,"%s\t%d\t%d\t%s\t%d\t%d\t%s\t%lf\t",
-            snc->chromosome_names[CUR_CHR],sv->AB.end1,sv->CD.start1,
-            snc->chromosome_names[CUR_CHR],sv->AB.end2,sv->CD.start2,
-            sv_type_name( sv->type), get_depth_region(in_bams->depths[CUR_CHR],sv->AB.end1,sv->AB.start2));
-            if( params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[CUR_CHR],sv->AB.start1,sv->CD.end1)){
+            snc->chromosome_names[chr],sv->AB.end1,sv->CD.start1,
+            snc->chromosome_names[chr],sv->AB.end2,sv->CD.start2,
+            sv_type_name( sv->type), get_depth_region(in_bams->depths[chr],sv->AB.end1,sv->AB.start2));
+            if( params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[chr],sv->AB.start1,sv->CD.end1)){
 		        fprintf(logFile,"sat 5'\n");
                 return 0;
 			}
-			if( params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[CUR_CHR],sv->AB.start2,sv->CD.end2)){
+			if( params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[chr],sv->AB.start2,sv->CD.end2)){
 			
 		        fprintf(logFile,"sat 3'\n");
                 return 0;
@@ -1077,7 +1078,7 @@ int sv_is_proper(void *vsv){
 		        fprintf(logFile,"sup 3'\n");
                 return 0;
 			}
-			if( params->filter_gap && sonic_is_gap(snc, snc->chromosome_names[CUR_CHR], sv->AB.start1, sv->CD.end2)){
+			if( params->filter_gap && sonic_is_gap(snc, snc->chromosome_names[chr], sv->AB.start1, sv->CD.end2)){
 				
 		        fprintf(logFile,"Gap\n");
                 return 0;
@@ -1089,11 +1090,11 @@ int sv_is_proper(void *vsv){
 			end = sv->AB.end2;
 
             fprintf(logFile,"%s\t%d\t%d\t%s\t%d\t%d\t%s\t%d\t%lf\t",
-            snc->chromosome_names[CUR_CHR],start,end,
-            snc->chromosome_names[CUR_CHR],end+1,end+end-start,
-            sv_type_name( sv->type), sv->supports[0],get_depth_region(in_bams->depths[CUR_CHR],sv->AB.end1,sv->AB.start2));
+            snc->chromosome_names[chr],start,end,
+            snc->chromosome_names[chr],end+1,end+end-start,
+            sv_type_name( sv->type), sv->supports[0],get_depth_region(in_bams->depths[chr],sv->AB.end1,sv->AB.start2));
 			if( params->filter_gap && 
-					sonic_is_gap(snc,snc->chromosome_names[CUR_CHR], sv->AB.end1, sv->AB.start2)){
+					sonic_is_gap(snc,snc->chromosome_names[chr], sv->AB.end1, sv->AB.start2)){
                 fprintf(logFile,"gap\n");
 				return 0;
 			}
@@ -1102,18 +1103,18 @@ int sv_is_proper(void *vsv){
                 fprintf(logFile,"sup\n");
                 return 0;
 			}
-		    if( sonic_is_segmental_duplication(snc,snc->chromosome_names[CUR_CHR], sv->AB.start1, sv->AB.end2)){
+		    if( sonic_is_segmental_duplication(snc,snc->chromosome_names[chr], sv->AB.start1, sv->AB.end2)){
                 fprintf(logFile,"dup\n");
                 return 0;
             }
 
-            if(get_depth_region(in_bams->depths[CUR_CHR],start,end) < in_bams->depth_mean[CUR_CHR] + 1 * in_bams->depth_std[CUR_CHR]){
+            if(get_depth_region(in_bams->depths[chr],start,end) < in_bams->depth_mean[chr] + 1 * in_bams->depth_std[chr]){
 
                 fprintf(logFile,"deph\n");
                 return 0;
 			}
 
-			// VALOR_LOG("%s\t%d\t%d\t%lf\t%lf\t%d\n",snc->chromosome_names[CUR_CHR],start,end,get_depth_region(in_bams->depths[CUR_CHR],start,end),get_depth_deviation(in_bams->depths[CUR_CHR],start,end),result);
+			// VALOR_LOG("%s\t%d\t%d\t%lf\t%lf\t%d\n",snc->chromosome_names[chr],start,end,get_depth_region(in_bams->depths[chr],start,end),get_depth_deviation(in_bams->depths[chr],start,end),result);
 			return 1;
 			break;
 
@@ -1122,11 +1123,11 @@ int sv_is_proper(void *vsv){
 			end = sv->AB.start2;
 
             fprintf(logFile,"%s\t%d\t%d\t%s\t%d\t%d\t%s\t%lf\t",
-            snc->chromosome_names[CUR_CHR],start,start+1,
-            snc->chromosome_names[CUR_CHR],end,end+1,
-            sv_type_name( sv->type), get_depth_region(in_bams->depths[CUR_CHR],sv->AB.end1,sv->AB.start2));
+            snc->chromosome_names[chr],start,start+1,
+            snc->chromosome_names[chr],end,end+1,
+            sv_type_name( sv->type), get_depth_region(in_bams->depths[chr],sv->AB.end1,sv->AB.start2));
 			if( params->filter_gap && 
-					sonic_is_gap(snc,snc->chromosome_names[CUR_CHR], sv->AB.start1, sv->AB.end2)){
+					sonic_is_gap(snc,snc->chromosome_names[chr], sv->AB.start1, sv->AB.end2)){
                 fprintf(logFile,"gap\n");
 				return 0;
 			}
@@ -1135,13 +1136,13 @@ int sv_is_proper(void *vsv){
                 fprintf(logFile,"sup\n");
                 return 0;
 			}
-			if( get_depth_region(in_bams->depths[CUR_CHR],sv->AB.end1,sv->AB.start2) > in_bams->depth_mean[CUR_CHR]/2 + 1.5 *in_bams->depth_std[CUR_CHR]){
+			if( get_depth_region(in_bams->depths[chr],sv->AB.end1,sv->AB.start2) > in_bams->depth_mean[chr]/2 + 1.5 *in_bams->depth_std[chr]){
 
                 fprintf(logFile,"deph\n");
                 return 0;
 			}
 
-			// VALOR_LOG("%s\t%d\t%d\t%lf\t%lf\t%d\n",snc->chromosome_names[CUR_CHR],start,end,get_depth_region(in_bams->depths[CUR_CHR],start,end),get_depth_deviation(in_bams->depths[CUR_CHR],start,end),result);
+			// VALOR_LOG("%s\t%d\t%d\t%lf\t%lf\t%d\n",snc->chromosome_names[chr],start,end,get_depth_region(in_bams->depths[chr],start,end),get_depth_deviation(in_bams->depths[chr],start,end),result);
 			return 1;
 			break;
 		case SV_TRANSLOCATION:
@@ -1193,26 +1194,26 @@ int sv_is_proper(void *vsv){
 		target_start = target_end;
 		target_end = temp;
 	}
-	int is_ref_dup_source = sonic_is_segmental_duplication(snc,snc->chromosome_names[CUR_CHR],start,end);
-	int is_ref_dup_target = sonic_is_segmental_duplication(snc,snc->chromosome_names[CUR_CHR],target_start,target_end);
+	int is_ref_dup_source = sonic_is_segmental_duplication(snc,snc->chromosome_names[chr],start,end);
+	int is_ref_dup_target = sonic_is_segmental_duplication(snc,snc->chromosome_names[chr],target_start,target_end);
 
-	int is_ref_gap_source = params->filter_gap && sonic_is_gap(snc,snc->chromosome_names[CUR_CHR],start,end);
-	int is_ref_gap_target = params->filter_gap && sonic_is_gap(snc,snc->chromosome_names[CUR_CHR],target_start,target_end);
-	int is_ref_sat_source = params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[CUR_CHR],start,end);
-	int is_ref_sat_target = params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[CUR_CHR],target_start,target_end);
+	int is_ref_gap_source = params->filter_gap && sonic_is_gap(snc,snc->chromosome_names[chr],start,end);
+	int is_ref_gap_target = params->filter_gap && sonic_is_gap(snc,snc->chromosome_names[chr],target_start,target_end);
+	int is_ref_sat_source = params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[chr],start,end);
+	int is_ref_sat_target = params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[chr],target_start,target_end);
 	int does_cnv_support_dup;
     if(sv->type == SV_TRANSLOCATION || sv->type == SV_INVERTED_TRANSLOCATION){
 
-        does_cnv_support_dup= (is_ref_dup_source  || get_depth_region(in_bams->depths[CUR_CHR],start,end) < 1.5 * in_bams->depth_mean[CUR_CHR] - 1.5 * in_bams->depth_std[CUR_CHR] )&& (get_depth_region(in_bams->depths[CUR_CHR],start,end) > 0.5* in_bams->depth_mean[CUR_CHR] + 1.5 * in_bams->depth_std[CUR_CHR]);
+        does_cnv_support_dup= (is_ref_dup_source  || get_depth_region(in_bams->depths[chr],start,end) < 1.5 * in_bams->depth_mean[chr] - 1.5 * in_bams->depth_std[chr] )&& (get_depth_region(in_bams->depths[chr],start,end) > 0.5* in_bams->depth_mean[chr] + 1.5 * in_bams->depth_std[chr]);
     }
     else{
-        does_cnv_support_dup= get_depth_region(in_bams->depths[CUR_CHR],start,end) > 1.5 * in_bams->depth_mean[CUR_CHR] - 1.5 * in_bams->depth_std[CUR_CHR];
+        does_cnv_support_dup= get_depth_region(in_bams->depths[chr],start,end) > 1.5 * in_bams->depth_mean[chr] - 1.5 * in_bams->depth_std[chr];
     }
     fprintf(logFile,"%s\t%d\t%d\t%s\t%d\t%d\t%s\n",
-            snc->chromosome_names[CUR_CHR],start,end,
-            snc->chromosome_names[CUR_CHR],target_start,target_end,
+            snc->chromosome_names[chr],start,end,
+            snc->chromosome_names[chr],target_start,target_end,
             sv_type_name( sv->type));
-    fprintf(logFile,"%lf\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n" ,get_depth_region(in_bams->depths[CUR_CHR],start,end),does_cnv_support_dup,is_ref_dup_source, is_ref_dup_target, is_ref_gap_source, is_ref_gap_target, is_ref_sat_source, is_ref_sat_target);  
+    fprintf(logFile,"%lf\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n" ,get_depth_region(in_bams->depths[chr],start,end),does_cnv_support_dup,is_ref_dup_source, is_ref_dup_target, is_ref_gap_source, is_ref_gap_target, is_ref_sat_source, is_ref_sat_target);  
 	return !((is_ref_dup_source && is_ref_dup_target) || 
             !does_cnv_support_dup || 
             is_ref_gap_source || 

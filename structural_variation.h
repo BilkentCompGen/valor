@@ -46,7 +46,7 @@ int sv_is_proper(void /*sv_t*/ *sv);
 void sv_destroy(void/*sv_t*/ *dup);
 splitmolecule_t *sv_reduce_breakpoints(sv_t*);
 
-vector_t *find_svs(vector_t *split_molecules,sv_type);
+vector_t *find_svs(vector_t *split_molecules,sv_type, int chr);
 
 void sv_graph_reset(graph_t *g);
 

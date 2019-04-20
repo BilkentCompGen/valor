@@ -6,3 +6,5 @@ valor
 *.bin
 *.sam
 *.cram
+*.bed
+*.log

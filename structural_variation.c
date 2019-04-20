@@ -474,7 +474,7 @@ graph_t *make_sv_graph(vector_t *svs){
 
 #define SV_INIT_LIMIT 10000
 
-vector_t *find_svs(vector_t *split_molecules, sv_type type){
+vector_t *find_svs(vector_t *split_molecules, sv_type type, int chr){
 	int i,j,k;
 	vector_t *svs;
 
@@ -495,10 +495,14 @@ vector_t *find_svs(vector_t *split_molecules, sv_type type){
 
 			if(type&SV_DELETION){
 				sv_t *tmp = sv_init(AB,NULL,SV_DELETION);
-				vector_soft_put(svs,tmp);
+			    tmp->chr = chr;
+                vector_soft_put(svs,tmp);
 			}
 			if(type&SV_TANDEM_DUPLICATION){
 				sv_t *tmp = sv_init(AB,NULL,SV_TANDEM_DUPLICATION);
+
+			            tmp->chr = chr;
+
 				vector_soft_put(svs,tmp);
 			}
 			if(!(type & ( SV_INVERSION | SV_DIRECT_DUPLICATION | SV_INVERTED_DUPLICATION | SV_TRANSLOCATION | SV_INVERTED_TRANSLOCATION))){ continue;}
@@ -511,7 +515,8 @@ vector_t *find_svs(vector_t *split_molecules, sv_type type){
 					if(orient){
 						sv_t *tmp = sv_init(AB,CD,k);
 						tmp->orientation = orient;
-						vector_soft_put(svs,tmp);
+			            tmp->chr = chr;
+                        vector_soft_put(svs,tmp);
 					}
 				}
 			}
@@ -529,11 +534,15 @@ vector_t *find_svs(vector_t *split_molecules, sv_type type){
 			splitmolecule_t *AB = vector_get(split_molecules,i);
 			if(type & SV_DELETION){
 				sv_t *tmp = sv_init(AB,NULL,SV_DELETION);
-				vector_soft_put(osvs[omp_get_thread_num()],tmp);
+		
+			            tmp->chr = chr;
+                vector_soft_put(osvs[omp_get_thread_num()],tmp);
 			}
             if(type&SV_TANDEM_DUPLICATION){
 				sv_t *tmp = sv_init(AB,NULL,SV_TANDEM_DUPLICATION);
-				vector_soft_put(svs,tmp);
+
+			            tmp->chr = chr;
+                vector_soft_put(svs,tmp);
 			}
 
 			if(!(type & ( SV_INVERSION | SV_DIRECT_DUPLICATION | SV_INVERTED_DUPLICATION| SV_TRANSLOCATION | SV_INVERTED_TRANSLOCATION))){ continue;}
@@ -547,7 +556,9 @@ vector_t *find_svs(vector_t *split_molecules, sv_type type){
 					if(orient){
 						sv_t *tmp = sv_init(AB,CD,type);
 						tmp->orientation = orient;
-						vector_soft_put(osvs[omp_get_thread_num()],tmp);
+						
+			            tmp->chr = chr;
+                        vector_soft_put(osvs[omp_get_thread_num()],tmp);
 					}
 				}
 			}

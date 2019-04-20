@@ -144,7 +144,7 @@ int main( int argc, char **argv){
         VALOR_LOG("Split molecule candidate count: %zu\n",split_molecules->size);
 
         printf("Matching split molecules\n");
-        vector_t *variations = find_svs(split_molecules,svs_to_find);
+        vector_t *variations = find_svs(split_molecules,svs_to_find, i);
 
         VALOR_LOG("Matched split molecule pair count: %zu\n", variations->size);
 

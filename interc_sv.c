@@ -13,29 +13,29 @@ int isv_chr_cmp(const ic_sv_t *s1, const ic_sv_t *s2){
 
 int isv_pos_cmp(const ic_sv_t *s1, const ic_sv_t *s2){
     if(s1->AB.start1 != s2->AB.start2){
-		return s1->AB.start1 - s2->AB.start1;
-	}
-	if(s1->AB.end1 != s2->AB.end1){
-		return s1->AB.end1 - s2->AB.end1;
-	}
-	if(s1->AB.start2 != s2->AB.start2){
-		return s1->AB.start2 - s2->AB.start2;
-	}
-	if(s1->AB.end2 != s2->AB.end2){
-		return s1->AB.end2 - s2->AB.end2;
-	}
-	if(s1->CD.start1 != s2->CD.start2){
-		return s1->CD.start1 - s2->CD.start1;
-	}
-	if(s1->CD.end1 != s2->CD.end1){
-		return s1->CD.end1 - s2->CD.end1;
-	}
-	if(s1->CD.start2 != s2->CD.start2){
-		return s1->CD.start2 - s2->CD.start2;
-	}
-	if(s1->CD.end2 != s2->CD.end2){
-		return s1->CD.end2 - s2->CD.end2;
-	}
+        return s1->AB.start1 - s2->AB.start1;
+    }
+    if(s1->AB.end1 != s2->AB.end1){
+        return s1->AB.end1 - s2->AB.end1;
+    }
+    if(s1->AB.start2 != s2->AB.start2){
+        return s1->AB.start2 - s2->AB.start2;
+    }
+    if(s1->AB.end2 != s2->AB.end2){
+        return s1->AB.end2 - s2->AB.end2;
+    }
+    if(s1->CD.start1 != s2->CD.start2){
+        return s1->CD.start1 - s2->CD.start1;
+    }
+    if(s1->CD.end1 != s2->CD.end1){
+        return s1->CD.end1 - s2->CD.end1;
+    }
+    if(s1->CD.start2 != s2->CD.start2){
+        return s1->CD.start2 - s2->CD.start2;
+    }
+    if(s1->CD.end2 != s2->CD.end2){
+        return s1->CD.end2 - s2->CD.end2;
+    }
     if(s1->EF.start1 != s2->EF.start1){
         return s1->EF.start1 - s2->EF.start1;
     }
@@ -50,7 +50,7 @@ int isv_pos_cmp(const ic_sv_t *s1, const ic_sv_t *s2){
         return s1->EF.end2 - s2->EF.end2;
     }
 
-	return 0;
+    return 0;
 }
 
 void inter_split_bed_print(FILE *fptr, inter_split_molecule_t *m,char* comment){
@@ -98,94 +98,94 @@ int interc_sv_compd(const void *v1, const void *v2, size_t size){
     return interc_sv_comp(v1,v2);
 }
 size_t split_molecule_binary_search(vector_t *splits, interval_10X key){
-	if(splits->size == 0){return -1;}
-	long first, last;
-	long mid = 0;
-	first =0;
-	last = splits->size - 1;
+    if(splits->size == 0){return -1;}
+    long first, last;
+    long mid = 0;
+    first =0;
+    last = splits->size - 1;
 
-	while( first < last){
-		mid = (first + last)/2;
-		if(((interval_pair*)vector_get(splits,mid))->start1< key.start){
-			first = mid + 1;
-		}
-		else{
-			last = mid - 1;
-		}
-	}
-//-30000
-	while( mid >= 0 && key.start -30000 < ((interval_pair*) vector_get(splits,mid))->start1){
-		mid--;
-	}
-	return mid +1;
+    while( first < last){
+        mid = (first + last)/2;
+        if(((interval_pair*)vector_get(splits,mid))->start1< key.start){
+            first = mid + 1;
+        }
+        else{
+            last = mid - 1;
+        }
+    }
+    //-30000
+    while( mid >= 0 && key.start -30000 < ((interval_pair*) vector_get(splits,mid))->start1){
+        mid--;
+    }
+    return mid +1;
 }
 
 // So that program can safely assume no NULL vectors.
 void filter_dangling_reads(vector_t *reads){
-	int i;
-	reads->REMOVE_POLICY = REMP_LAZY;
-	bit_set_t *bs = get_bam_info(NULL)->chro_bs;
-	for(i=0;i<reads->size;i++){
-		barcoded_read_pair *p = vector_get(reads,i);
+    int i;
+    reads->REMOVE_POLICY = REMP_LAZY;
+    bit_set_t *bs = get_bam_info(NULL)->chro_bs;
+    for(i=0;i<reads->size;i++){
+        barcoded_read_pair *p = vector_get(reads,i);
 
-		if(bit_set_get_bit(bs,p->r_chr) == 0){
-			vector_remove(reads,i);
-		}
-	}
-	vector_defragment(reads);
-	reads->REMOVE_POLICY = REMP_SORTED;
+        if(bit_set_get_bit(bs,p->r_chr) == 0){
+            vector_remove(reads,i);
+        }
+    }
+    vector_defragment(reads);
+    reads->REMOVE_POLICY = REMP_SORTED;
 }
 size_t interval_pair_binary_search(vector_t *mols, interval_10X interval){
-	if(mols->size == 0){return -1;}
-	long first, last;
-	long mid = 0;
-	first =0;
-	last = mols->size - 1;
+    if(mols->size == 0){return -1;}
+    long first, last;
+    long mid = 0;
+    first =0;
+    last = mols->size - 1;
 
-	while( first < last){
-//		mid = (first + last)/2;
+    while( first < last){
+        //		mid = (first + last)/2;
         mid = (last - first)/2 + first;
-		if(((interval_pair*)vector_get(mols,mid))->start1 < interval.start){
-			first = mid + 1;
-		}
-		else{
-			last = mid - 1;
-		}
-	}
+        if(((interval_pair*)vector_get(mols,mid))->start1 < interval.start){
+            first = mid + 1;
+        }
+        else{
+            last = mid - 1;
+        }
+    }
     int cur_start = ((interval_pair *) vector_get(mols,mid))->start1;
-	mid--;
-	while( mid >= 0 && cur_start > interval.start){
-		mid--;
-	}
-	return mid+1;
+    mid--;
+    while( mid >= 0 && cur_start > interval.start){
+        mid--;
+    }
+    return mid+1;
 }
 
 size_t molecule_barcode_binary_search(vector_t *mols, unsigned long key){
-	if(mols->size == 0){return -1;}
-	long first, last;
-	long mid = 0;
-	first =0;
-	last = mols->size - 1;
+    if(mols->size == 0){return -1;}
+    long first, last;
+    long mid = 0;
+    first =0;
+    last = mols->size - 1;
 
-	while( first < last){
-//		mid = (first + last)/2;
+    while( first < last){
+        //		mid = (first + last)/2;
         mid = (last - first)/2 + first;
-		if(((interval_10X*)vector_get(mols,mid))->barcode < key){
-			first = mid + 1;
-		}
-		else{
-			last = mid - 1;
-		}
-	}
-	unsigned long cur_barcode = ((interval_10X *) vector_get(mols,mid))->barcode;
-	mid--;
-	while( mid >= 0 && cur_barcode == ((interval_10X *) vector_get(mols,mid))->barcode){
-		mid--;
-	}
-	return mid+1;
+        if(((interval_10X*)vector_get(mols,mid))->barcode < key){
+            first = mid + 1;
+        }
+        else{
+            last = mid - 1;
+        }
+    }
+    unsigned long cur_barcode = ((interval_10X *) vector_get(mols,mid))->barcode;
+    mid--;
+    while( mid >= 0 && cur_barcode == ((interval_10X *) vector_get(mols,mid))->barcode){
+        mid--;
+    }
+    return mid+1;
 }
 void inter_sv_call_bed_print(FILE *stream, inter_sv_call_t *sv){
-	sonic *snc = sonic_load(NULL);
+    sonic *snc = sonic_load(NULL);
 
     fprintf(stream,"%s\t%d\t%d\t%s\t%d\t%d\t%s\t%d\t%d\t%d\t%d\n",
             snc->chromosome_names[sv->break_points.chr1],
@@ -203,7 +203,7 @@ void inter_sv_call_bed_print(FILE *stream, inter_sv_call_t *sv){
 }
 
 void ic_sv_bed_print(FILE *stream, ic_sv_t *sv){
-	sonic *snc = sonic_load(NULL);
+    sonic *snc = sonic_load(NULL);
     if( sv->chr_target == sv->AB.chr1){
         fprintf(stream,"%s\t%d\t%d\t%s\t%d\t%d\t%s\n",
                 snc->chromosome_names[sv->chr_source],
@@ -232,7 +232,7 @@ int inter_split_overlaps(inter_split_molecule_t s1, inter_split_molecule_t s2, i
     if( !(s1.chr1 == s2.chr1 && s1.chr2 == s2.chr2)){ return 0;}
 
     return interval_overlaps(&(interval_10X){s1.start1,s1.end1,0},&(interval_10X){s2.start1,s2.end1,0},relax) &&
-            interval_overlaps(&(interval_10X){s1.start2,s1.end2,0},&(interval_10X){s2.start2,s2.end2,0},relax);
+        interval_overlaps(&(interval_10X){s1.start2,s1.end2,0},&(interval_10X){s2.start2,s2.end2,0},relax);
 
 }
 
@@ -244,18 +244,18 @@ int direct_translocation_overlaps(ic_sv_t *i1, ic_sv_t *i2){
         inter_split_overlaps(i1->CD,i2->CD,2*CLONE_MEAN);
 
 }
- 
+
 int invert_translocation_overlaps(ic_sv_t *i1, ic_sv_t *i2){
     return  i1->chr_source == i2->chr_source && i1->chr_target == i2->chr_target &&
         interval_pair_overlaps(&i1->EF,&i2->EF,2*CLONE_MEAN) && 
         inter_split_overlaps(i1->AB,i2->AB,2*CLONE_MEAN) &&
         inter_split_overlaps(i1->CD,i2->CD,2*CLONE_MEAN);
 }
- 
+
 
 int inter_sv_overlaps(ic_sv_t *i1, ic_sv_t *i2){
 
-	if(i1->type != i2->type) { return 0;}
+    if(i1->type != i2->type) { return 0;}
     switch(i1->type){
         case SV_TRANSLOCATION:
             return direct_translocation_overlaps(i1,i2);
@@ -268,89 +268,89 @@ int inter_sv_overlaps(ic_sv_t *i1, ic_sv_t *i2){
     return 0;
 }
 inter_split_molecule_t *inter_split_init(barcoded_read_pair *pair, interval_10X *a, interval_10X *b){
-	inter_split_molecule_t *isplit = malloc(sizeof(inter_split_molecule_t));
+    inter_split_molecule_t *isplit = malloc(sizeof(inter_split_molecule_t));
 
-	isplit->start1 = a->start;
-	isplit->start2 = b->start;
-	isplit->end1 = a->end;
-	isplit->end2 = b->end;
-	isplit->chr1 = pair->l_chr;
-	isplit->chr2 = pair->r_chr;
+    isplit->start1 = a->start;
+    isplit->start2 = b->start;
+    isplit->end1 = a->end;
+    isplit->end2 = b->end;
+    isplit->chr1 = pair->l_chr;
+    isplit->chr2 = pair->r_chr;
     isplit->barcode = pair->barcode;
-	return isplit;
+    return isplit;
 }
 
 int inter_split_indicates_invert_translocation(inter_split_molecule_t s1, inter_split_molecule_t s2){
-	if( !(s1.chr1 == s2.chr1 && s1.chr2 == s2.chr2)){ return 0;}
+    if( !(s1.chr1 == s2.chr1 && s1.chr2 == s2.chr2)){ return 0;}
     if( s1.barcode == s2.barcode) {return 0;}
 
-	interval_10X A = (interval_10X){s1.start1,s1.end1,s1.barcode};  
-	interval_10X B = (interval_10X){s1.start2,s1.end2,s1.barcode};  
-	interval_10X C = (interval_10X){s2.start1,s2.end1,s2.barcode};  
-	interval_10X D = (interval_10X){s2.start2,s2.end2,s2.barcode};  
+    interval_10X A = (interval_10X){s1.start1,s1.end1,s1.barcode};  
+    interval_10X B = (interval_10X){s1.start2,s1.end2,s1.barcode};  
+    interval_10X C = (interval_10X){s2.start1,s2.end1,s2.barcode};  
+    interval_10X D = (interval_10X){s2.start2,s2.end2,s2.barcode};  
     int result = 0;
 
     if(interval_inner_distance(B,D) < TRA_GAP &&
-			interval_inner_distance(B,D) > TRA_OVERLAP &&
+            interval_inner_distance(B,D) > TRA_OVERLAP &&
             interval_outer_distance(A,C) < TRA_MAX_SIZE &&
             interval_outer_distance(A,C) > TRA_MIN_SIZE){
-		result |=INTERC_FORW_COPY;
-	}
-	return result; 
+        result |=INTERC_FORW_COPY;
+    }
+    return result; 
 }
 int inter_split_indicates_direct_translocation(inter_split_molecule_t s1, inter_split_molecule_t s2){
-	if( !(s1.chr1 == s2.chr1 && s1.chr2 == s2.chr2)){ return 0;}
+    if( !(s1.chr1 == s2.chr1 && s1.chr2 == s2.chr2)){ return 0;}
     if( s1.barcode == s2.barcode) {return 0;}
 
-	interval_10X A = (interval_10X){s1.start1,s1.end1,s1.barcode};  
-	interval_10X B = (interval_10X){s1.start2,s1.end2,s1.barcode};  
-	interval_10X C = (interval_10X){s2.start1,s2.end1,s2.barcode};  
-	interval_10X D = (interval_10X){s2.start2,s2.end2,s2.barcode};  
+    interval_10X A = (interval_10X){s1.start1,s1.end1,s1.barcode};  
+    interval_10X B = (interval_10X){s1.start2,s1.end2,s1.barcode};  
+    interval_10X C = (interval_10X){s2.start1,s2.end1,s2.barcode};  
+    interval_10X D = (interval_10X){s2.start2,s2.end2,s2.barcode};  
     int result = 0;
- 
-	if(interval_inner_distance(B,D) < TRA_GAP &&
-			interval_inner_distance(B,D) > TRA_OVERLAP &&
-              interval_outer_distance(A,C) < TRA_MAX_SIZE &&
+
+    if(interval_inner_distance(B,D) < TRA_GAP &&
+            interval_inner_distance(B,D) > TRA_OVERLAP &&
+            interval_outer_distance(A,C) < TRA_MAX_SIZE &&
             interval_outer_distance(A,C) >  TRA_MIN_SIZE){
         result |= INTERC_FORW_COPY;
-	}
-	return result; 
+    }
+    return result; 
 }
 
 
 int inter_split_indicates_translocation(inter_split_molecule_t s1, inter_split_molecule_t s2, sv_type type){
     switch(type){
-    case SV_TRANSLOCATION:
-        return inter_split_indicates_direct_translocation(s1,s2);
-    case SV_INVERTED_TRANSLOCATION:
-        return inter_split_indicates_invert_translocation(s1,s2);
+        case SV_TRANSLOCATION:
+            return inter_split_indicates_direct_translocation(s1,s2);
+        case SV_INVERTED_TRANSLOCATION:
+            return inter_split_indicates_invert_translocation(s1,s2);
 
-    default:
-        fprintf(stderr,"Inter SV with  unknown ordinal: %d!\n",type);
-        exit(-1);
+        default:
+            fprintf(stderr,"Inter SV with  unknown ordinal: %d!\n",type);
+            exit(-1);
     }
     return 0;
 }
 
 ic_sv_t *inter_sv_init(inter_split_molecule_t *a, inter_split_molecule_t *b, interval_pair *tra_del, sv_type type){
     ic_sv_t *new_i = malloc(sizeof(ic_sv_t));
-	memset(new_i,0,sizeof(ic_sv_t));
-	new_i->supports[0] = 1;//TODO fix this
-	new_i->supports[1] = 1;//TODO fix this
-	new_i->supports[2] = 1;//TODO fix this
+    memset(new_i,0,sizeof(ic_sv_t));
+    new_i->supports[0] = 1;//TODO fix this
+    new_i->supports[1] = 1;//TODO fix this
+    new_i->supports[2] = 1;//TODO fix this
 
-	new_i->covered = 0;
-	new_i->tabu = 0;
-	new_i->dv = 0;
-	new_i->inactive = 0;
-	new_i->AB=*a;
-	new_i->CD=*b;
-	new_i->EF=*tra_del;
-	new_i->type=type;
+    new_i->covered = 0;
+    new_i->tabu = 0;
+    new_i->dv = 0;
+    new_i->inactive = 0;
+    new_i->AB=*a;
+    new_i->CD=*b;
+    new_i->EF=*tra_del;
+    new_i->type=type;
     new_i->chr_source = a->chr1;
     new_i->chr_target = a->chr2;
 
-	return new_i;
+    return new_i;
 }
 
 interval_pair *find_matching_split_molecule(vector_t *splits,inter_split_molecule_t *a, inter_split_molecule_t *b){     
@@ -363,7 +363,7 @@ interval_pair *find_matching_split_molecule(vector_t *splits,inter_split_molecul
 
     size_t pos = 0; //TODO use binary search instead
 
-	vector_t *found_splits = vector_init(sizeof(interval_pair),10);
+    vector_t *found_splits = vector_init(sizeof(interval_pair),10);
     found_splits->rmv = do_nothing;
     interval_pair *cand = vector_get(splits,pos);
     while( pos < splits->size && cand->start1 < deletion_interval.end1 + 50000){
@@ -392,20 +392,20 @@ interval_pair *find_matching_split_molecule(vector_t *splits,inter_split_molecul
     }
 
     vector_free(found_splits);
-	return to_return;
+    return to_return;
 }
 
 vector_t *find_interc_translocations(vector_t *sp1, vector_t *sp2, vector_t *molecules,sv_type type){
-	vector_t *tlocs = vector_init(sizeof(ic_sv_t),512);
-	int i,j;
+    vector_t *tlocs = vector_init(sizeof(ic_sv_t),512);
+    int i,j;
 
-	for(i=0;i<sp1->size;i++){
-		inter_split_molecule_t *a = vector_get(sp1,i);
-		for(j=0;j<sp2->size;j++){   
-			inter_split_molecule_t *b = vector_get(sp2,j);
-			int orient = inter_split_indicates_translocation(*a,*b,type);
+    for(i=0;i<sp1->size;i++){
+        inter_split_molecule_t *a = vector_get(sp1,i);
+        for(j=0;j<sp2->size;j++){   
+            inter_split_molecule_t *b = vector_get(sp2,j);
+            int orient = inter_split_indicates_translocation(*a,*b,type);
             interval_pair *del_tra;
-           
+
             if(orient){
                 del_tra = find_matching_split_molecule(molecules,a,b);
                 if(del_tra != NULL){
@@ -413,39 +413,39 @@ vector_t *find_interc_translocations(vector_t *sp1, vector_t *sp2, vector_t *mol
                 }
             }
             free(del_tra);
-		}
-	}
+        }
+    }
 
-	return tlocs;
+    return tlocs;
 }
 
 int is_inter_chr_split(barcoded_read_pair *pair, interval_10X *a, interval_10X *b){
-	if( (pair->barcode !=a->barcode) || (pair->barcode!=b->barcode)){ return 0;}
+    if( (pair->barcode !=a->barcode) || (pair->barcode!=b->barcode)){ return 0;}
 
-	return (in_range(pair->left,a->start,2*MOLECULE_EXT) && in_range(pair->right,b->start,2*MOLECULE_EXT));        
+    return (in_range(pair->left,a->start,2*MOLECULE_EXT) && in_range(pair->right,b->start,2*MOLECULE_EXT));        
 }
 
 size_t ip_binary_search(vector_t *intervals, interval_pair *key){
-	if(intervals->size == 0){return -1;}
-	long first, last;
-	long mid = 0;
-	first =0;
-	last = intervals->size - 1;
-	int counter = 0;	
-	while( first < last){
-		mid = (first + last)/2;
-		if(IDIS_VECTOR_GET(intervals,mid)->end1 < key->start1){
-			first = mid + 1;
-		}
-		else{
-			last = mid - 1;
-		}
-		counter ++;
-	}
+    if(intervals->size == 0){return -1;}
+    long first, last;
+    long mid = 0;
+    first =0;
+    last = intervals->size - 1;
+    int counter = 0;	
+    while( first < last){
+        mid = (first + last)/2;
+        if(IDIS_VECTOR_GET(intervals,mid)->end1 < key->start1){
+            first = mid + 1;
+        }
+        else{
+            last = mid - 1;
+        }
+        counter ++;
+    }
     while(mid>0 && key->end1 > IDIS_VECTOR_GET(intervals,mid)->start1){
         mid--;
     }
-	return mid;
+    return mid;
 }
 
 int split_get_pm_support(interval_pair *split, vector_t *discordants){
@@ -453,14 +453,14 @@ int split_get_pm_support(interval_pair *split, vector_t *discordants){
     int mid = ip_binary_search (discordants,split);
     int j;
     for(j=mid;j < discordants->size;j++){
-		if(interval_pair_overlaps(split,vector_get(discordants,j),CLONE_MEAN/2)){
-			support++;				
-		}
-		if(split->end1 < IDIS_VECTOR_GET(discordants,j)->start1 + CLONE_MEAN/2){
-			break;
-		}
-		if(support > MAX_SUPPORT){ break;}	
-	}
+        if(interval_pair_overlaps(split,vector_get(discordants,j),CLONE_MEAN/2)){
+            support++;				
+        }
+        if(split->end1 < IDIS_VECTOR_GET(discordants,j)->start1 + CLONE_MEAN/2){
+            break;
+        }
+        if(support > MAX_SUPPORT){ break;}	
+    }
     return support;
 }
 
@@ -484,170 +484,170 @@ void filter_unsupported_pm_splits(vector_t *splits, vector_t *discordants){
 
 // returns a vector of inter_split_molecules
 vector_t *find_inter_split_molecules(vector_t *reads, int src_chr, vector_t *mol_a, vector_t **mols_b){
-	vector_t *isms = vector_init(sizeof(inter_split_molecule_t),512);
-	int i;
+    vector_t *isms = vector_init(sizeof(inter_split_molecule_t),512);
+    int i;
     vector_t *mol_b = NULL;
-	for(i=0;i<reads->size;i++){
-		barcoded_read_pair *pair =  vector_get(reads,i);
-		if( pair->barcode == -1){ continue;}
+    for(i=0;i<reads->size;i++){
+        barcoded_read_pair *pair =  vector_get(reads,i);
+        if( pair->barcode == -1){ continue;}
         if( pair->l_chr == src_chr){
             mol_b = mols_b[pair->r_chr];
         }else{
             mol_b = mols_b[pair->l_chr];
         }
-        
-/*
-        size_t k = 0;
 
-        while (k < mol_a->size && ((interval_10X *)vector_get(mol_a,k))->barcode != pair->barcode){
-            k++;
-        }
-        if ( k >= mol_a->size){
-            continue;
-        }
-        size_t t = 0;
-        while (t < mol_b->size && ((interval_10X *)vector_get(mol_b,t))->barcode != pair->barcode){
-            t++;
-        }
-        if ( t >= mol_b->size){
-            continue;
-        }
+        /*
+           size_t k = 0;
+
+           while (k < mol_a->size && ((interval_10X *)vector_get(mol_a,k))->barcode != pair->barcode){
+           k++;
+           }
+           if ( k >= mol_a->size){
+           continue;
+           }
+           size_t t = 0;
+           while (t < mol_b->size && ((interval_10X *)vector_get(mol_b,t))->barcode != pair->barcode){
+           t++;
+           }
+           if ( t >= mol_b->size){
+           continue;
+           }
 
 */
-		size_t k = molecule_barcode_binary_search(mol_a,pair->barcode);
+        size_t k = molecule_barcode_binary_search(mol_a,pair->barcode);
         size_t t = molecule_barcode_binary_search(mol_b,pair->barcode);
         size_t kk = k;
-		size_t tt = t;
+        size_t tt = t;
 
-		while(I10X_VECTOR_GET(mol_a,kk)->barcode <= pair->barcode){	
-			while(I10X_VECTOR_GET(mol_b,tt)->barcode <= pair->barcode){
+        while(I10X_VECTOR_GET(mol_a,kk)->barcode <= pair->barcode){	
+            while(I10X_VECTOR_GET(mol_b,tt)->barcode <= pair->barcode){
 
                 if(I10X_VECTOR_GET(mol_a,kk)->barcode != pair->barcode ||
-                    I10X_VECTOR_GET(mol_b,tt)->barcode != pair->barcode){
-   
-				    tt++;
-				    if(tt >=mol_b->size){ break;}	
+                        I10X_VECTOR_GET(mol_b,tt)->barcode != pair->barcode){
+
+                    tt++;
+                    if(tt >=mol_b->size){ break;}	
                     continue;
                 } 
-                        
+
                 if(is_inter_chr_split(pair,vector_get(mol_a,kk),vector_get(mol_b,tt))){
                     vector_soft_put(isms,inter_split_init(pair,vector_get(mol_a,kk),vector_get(mol_b,tt)));
                 }
                 if(is_inter_chr_split(pair,vector_get(mol_b,tt),vector_get(mol_a,kk))){
                     vector_soft_put(isms,inter_split_init(pair,vector_get(mol_b,tt),vector_get(mol_a,kk)));
-				}	
+                }	
 
-                
-				tt++;
-				if(tt >=mol_b->size){ break;}	
-			}
-			tt = t;
-			kk++;
-			if(kk >= mol_a->size){ break;}
-		}
-	}
-	return isms; 
+
+                tt++;
+                if(tt >=mol_b->size){ break;}	
+            }
+            tt = t;
+            kk++;
+            if(kk >= mol_a->size){ break;}
+        }
+    }
+    return isms; 
 }
 
 
 
 void ic_sv_g_dfs_step(graph_t *g, vector_t *comp, ic_sv_t *sv){
-	sv->covered = 1;
-	vector_put(comp,sv);
-	vector_t *edges = graph_get_edges(g,sv);
-	int i;
-	for(i=0;i<edges->size;i++){
-		ic_sv_t **val = vector_get(edges,i);
-		if(!(*val)->covered){
-			ic_sv_g_dfs_step(g,comp,*val);
-		}
-	}
+    sv->covered = 1;
+    vector_put(comp,sv);
+    vector_t *edges = graph_get_edges(g,sv);
+    int i;
+    for(i=0;i<edges->size;i++){
+        ic_sv_t **val = vector_get(edges,i);
+        if(!(*val)->covered){
+            ic_sv_g_dfs_step(g,comp,*val);
+        }
+    }
 }
 #define BIG_PRIME 1300501
 size_t ic_sv_hf(hashtable_t *table, const void *vsv){
-	const ic_sv_t *sv = vsv;
-	size_t hash = 0;
-	hash+=sv->AB.barcode;
-	hash*=BIG_PRIME;
-	hash= hash % table->size;
-	hash+=sv->CD.barcode;
-	hash*=BIG_PRIME;
-	hash= hash % table->size;
-	hash+=sv->AB.start1;
-	hash*=BIG_PRIME;
-	hash= hash % table->size;
-	hash+=sv->AB.start2;
-	hash*=BIG_PRIME;
-	hash= hash % table->size;
-	hash+=sv->AB.end1;
-	hash*=BIG_PRIME;
-	hash= hash % table->size;
-	hash+=sv->AB.end2;
-	hash*=BIG_PRIME;
-	hash= hash % table->size;
-	hash+=sv->CD.start1;
-	hash*=BIG_PRIME;
-	hash= hash % table->size;
-	hash+=sv->CD.start2;
-	hash*=BIG_PRIME;
-	hash= hash % table->size;
-	hash+=sv->CD.end1;
-	hash*=BIG_PRIME;
-	hash= hash % table->size;
-	hash+=sv->CD.end2;
-	hash*=BIG_PRIME;
-	hash= hash % table->size;
-	hash+=sv->type;
-	hash*=BIG_PRIME;
-	hash= hash % table->size;
+    const ic_sv_t *sv = vsv;
+    size_t hash = 0;
+    hash+=sv->AB.barcode;
+    hash*=BIG_PRIME;
+    hash= hash % table->size;
+    hash+=sv->CD.barcode;
+    hash*=BIG_PRIME;
+    hash= hash % table->size;
+    hash+=sv->AB.start1;
+    hash*=BIG_PRIME;
+    hash= hash % table->size;
+    hash+=sv->AB.start2;
+    hash*=BIG_PRIME;
+    hash= hash % table->size;
+    hash+=sv->AB.end1;
+    hash*=BIG_PRIME;
+    hash= hash % table->size;
+    hash+=sv->AB.end2;
+    hash*=BIG_PRIME;
+    hash= hash % table->size;
+    hash+=sv->CD.start1;
+    hash*=BIG_PRIME;
+    hash= hash % table->size;
+    hash+=sv->CD.start2;
+    hash*=BIG_PRIME;
+    hash= hash % table->size;
+    hash+=sv->CD.end1;
+    hash*=BIG_PRIME;
+    hash= hash % table->size;
+    hash+=sv->CD.end2;
+    hash*=BIG_PRIME;
+    hash= hash % table->size;
+    hash+=sv->type;
+    hash*=BIG_PRIME;
+    hash= hash % table->size;
 
     return hash;
-//return SuperFastHash((vsv),2*sizeof(interval_pair)) % table->size;
+    //return SuperFastHash((vsv),2*sizeof(interval_pair)) % table->size;
 }
 
 vector_t *ic_sv_g_dfs_components(graph_t *g){
-	adjlist_t *al = graph_to_al(g);
-	vector_t *comps = vector_init(sizeof(vector_t),16);
-	comps->rmv  = &vector_free;
-	int i;
+    adjlist_t *al = graph_to_al(g);
+    vector_t *comps = vector_init(sizeof(vector_t),16);
+    comps->rmv  = &vector_free;
+    int i;
 
-	for(i=0;i<al->size;i++){
-		ic_sv_t *sv = al_get_value(al,i);
-		if( !sv->covered){
-			vector_t *comp = vector_init(sizeof(ic_sv_t),40);
+    for(i=0;i<al->size;i++){
+        ic_sv_t *sv = al_get_value(al,i);
+        if( !sv->covered){
+            vector_t *comp = vector_init(sizeof(ic_sv_t),40);
 
-			ic_sv_g_dfs_step(g,comp,sv);
-			vector_soft_put(comps,comp);
-		}
+            ic_sv_g_dfs_step(g,comp,sv);
+            vector_soft_put(comps,comp);
+        }
 
-	}
-	vector_free(al);
-	return comps;
+    }
+    vector_free(al);
+    return comps;
 }
 inter_interval_pair ic_sv_reduce_breakpoints(ic_sv_t *sv){
     if(sv->chr_target == sv->AB.chr1){
         return (inter_interval_pair){.chr1= sv->chr_source,
-                                        .chr2=sv->chr_target,
-                                        .start1=sv->EF.end1,
-                                        .end1=sv->EF.start2,
-                                        .start2=sv->AB.end1,
-                                        .end2= sv->CD.start1,
-                                        .barcode= 0};
+            .chr2=sv->chr_target,
+            .start1=sv->EF.end1,
+            .end1=sv->EF.start2,
+            .start2=sv->AB.end1,
+            .end2= sv->CD.start1,
+            .barcode= 0};
     }else{
         return (inter_interval_pair){.chr1= sv->chr_source,
-                                        .chr2=sv->chr_target,
-                                        .start1=sv->EF.end1,
-                                        .end1=sv->EF.start2,
-                                        .start2=sv->AB.end2,
-                                        .end2= sv->CD.start2,
-                                        .barcode= 0};
+            .chr2=sv->chr_target,
+            .start1=sv->EF.end1,
+            .end1=sv->EF.start2,
+            .start2=sv->AB.end2,
+            .end2= sv->CD.start2,
+            .barcode= 0};
     }
 }
 int ic_sv_call_is_proper(void *vcall){
     inter_sv_call_t *call =vcall;
     bam_info *in_bams = get_bam_info(NULL);
     parameters *params = get_params();
-	sonic *snc = sonic_load(NULL);
+    sonic *snc = sonic_load(NULL);
 
     int start = call->break_points.start1;
     int target_start = call->break_points.start2;
@@ -661,23 +661,23 @@ int ic_sv_call_is_proper(void *vcall){
     int is_ref_dup_source = sonic_is_segmental_duplication(snc,snc->chromosome_names[src_chr],start-CLONE_MEAN/2,start+CLONE_MEAN/2) &&
         sonic_is_segmental_duplication(snc,snc->chromosome_names[src_chr],end-CLONE_MEAN/2,end+CLONE_MEAN/2) ;
 
-int is_ref_dup_target = sonic_is_segmental_duplication(snc,snc->chromosome_names[tgt_chr],target_start-CLONE_MEAN/2,target_end+CLONE_MEAN/2);
+    int is_ref_dup_target = sonic_is_segmental_duplication(snc,snc->chromosome_names[tgt_chr],target_start-CLONE_MEAN/2,target_end+CLONE_MEAN/2);
 
-	int is_ref_gap_source = params->filter_gap && sonic_is_gap(snc,snc->chromosome_names[src_chr],start,end);
-	int is_ref_gap_target = params->filter_gap && sonic_is_gap(snc,snc->chromosome_names[tgt_chr],target_start,target_end);
-	int is_ref_sat_source = params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[src_chr],start,end);
-	int is_ref_sat_target = params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[tgt_chr],target_start,target_end);
+    int is_ref_gap_source = params->filter_gap && sonic_is_gap(snc,snc->chromosome_names[src_chr],start,end);
+    int is_ref_gap_target = params->filter_gap && sonic_is_gap(snc,snc->chromosome_names[tgt_chr],target_start,target_end);
+    int is_ref_sat_source = params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[src_chr],start,end);
+    int is_ref_sat_target = params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[tgt_chr],target_start,target_end);
     double depth = get_depth_region(in_bams->depths[src_chr],start,end);
 
     int does_cnv_support_tra;  
     if(is_ref_dup_source){
         does_cnv_support_tra=  get_depth_region(in_bams->depths[src_chr],start,end) > in_bams->depth_mean[src_chr] - 1.5 * in_bams->depth_std[src_chr];
-   
+
     }else{
 
         does_cnv_support_tra=  (is_ref_dup_source || depth < in_bams->depth_mean[src_chr] + 3 * in_bams->depth_std[src_chr] )&&
             get_depth_region(in_bams->depths[src_chr],start,end) > in_bams->depth_mean[src_chr] - 3 * in_bams->depth_std[src_chr];
-   
+
     }
     fprintf(logFile,"%s\t%d\t%d\t%s\t%d\t%d\t%s\tcall\t%lf\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n",
             snc->chromosome_names[call->break_points.chr1],
@@ -695,7 +695,7 @@ int ic_sv_is_proper(void *vcall){
     ic_sv_t *sv =vcall;
     bam_info *in_bams = get_bam_info(NULL);
     parameters *params = get_params();
-	sonic *snc = sonic_load(NULL);
+    sonic *snc = sonic_load(NULL);
 
     inter_interval_pair break_points = ic_sv_reduce_breakpoints(sv);
     int start = break_points.start1;
@@ -710,22 +710,22 @@ int ic_sv_is_proper(void *vcall){
     int is_ref_dup_source = sonic_is_segmental_duplication(snc,snc->chromosome_names[src_chr],start-CLONE_MEAN/2,start+CLONE_MEAN/2) &&
         sonic_is_segmental_duplication(snc,snc->chromosome_names[src_chr],end-CLONE_MEAN/2,end+CLONE_MEAN/2) ;
 
-int is_ref_dup_target = sonic_is_segmental_duplication(snc,snc->chromosome_names[tgt_chr],target_start-CLONE_MEAN/2,target_end+CLONE_MEAN/2);
-	int is_ref_gap_source = params->filter_gap && sonic_is_gap(snc,snc->chromosome_names[src_chr],start,end);
-	int is_ref_gap_target = params->filter_gap && sonic_is_gap(snc,snc->chromosome_names[tgt_chr],target_start,target_end);
-	int is_ref_sat_source = params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[src_chr],start,end);
-	int is_ref_sat_target = params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[tgt_chr],target_start,target_end);
+    int is_ref_dup_target = sonic_is_segmental_duplication(snc,snc->chromosome_names[tgt_chr],target_start-CLONE_MEAN/2,target_end+CLONE_MEAN/2);
+    int is_ref_gap_source = params->filter_gap && sonic_is_gap(snc,snc->chromosome_names[src_chr],start,end);
+    int is_ref_gap_target = params->filter_gap && sonic_is_gap(snc,snc->chromosome_names[tgt_chr],target_start,target_end);
+    int is_ref_sat_source = params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[src_chr],start,end);
+    int is_ref_sat_target = params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[tgt_chr],target_start,target_end);
     double depth = get_depth_region(in_bams->depths[src_chr],start,end);
 
     int does_cnv_support_tra;  
     if(is_ref_dup_source){
         does_cnv_support_tra=  get_depth_region(in_bams->depths[src_chr],start,end) > in_bams->depth_mean[src_chr] - 1.5 * in_bams->depth_std[src_chr];
-   
+
     }else{
 
         does_cnv_support_tra=  (is_ref_dup_source || depth < in_bams->depth_mean[src_chr] + 3 * in_bams->depth_std[src_chr] )&&
             get_depth_region(in_bams->depths[src_chr],start,end) > in_bams->depth_mean[src_chr] - 3 * in_bams->depth_std[src_chr];
-   
+
     }
 
     return !(is_ref_dup_source && is_ref_dup_target) && !(is_ref_gap_source || is_ref_gap_target) && !(is_ref_sat_source && is_ref_sat_target) && does_cnv_support_tra;
@@ -745,14 +745,14 @@ inter_sv_call_t *ic_sv_cluster_resolve(vector_t *cluster){
         inter_interval_pair sv_bp =  ic_sv_reduce_breakpoints(sv);
 
         if( cnt != 0 && !inter_split_overlaps(bp,sv_bp,CLONE_MEAN)){
-        //    continue;
+            //    continue;
         }
         if(cnt == 0){
             bp.chr1 = sv->chr_source;
             bp.chr2 = sv->chr_target;
             type = sv->type;
         }
-         
+
         cnt++;
 
         bp.start1 = (double)(bp.start1)*((double)(cnt-1)/cnt) + (double)sv_bp.start1/cnt;
@@ -765,7 +765,7 @@ inter_sv_call_t *ic_sv_cluster_resolve(vector_t *cluster){
     }
     inter_sv_call_t *call = malloc(sizeof(inter_sv_call_t));
     call->break_points = bp;
-    
+
     for(j=0;j<3;j++){
         call->supports[j] = supports[j];
     }
@@ -783,7 +783,7 @@ vector_t *cluster_interchromosomal_events(vector_t *predictions){
     sv_graph->hf = &ic_sv_hf;
     sv_graph->key_cmp = &_ic_sv_cmp; 
 
-	parameters *params = get_params();
+    parameters *params = get_params();
     int i,j;
     for(i=0; i<predictions->size; i++){
         graph_put_node(sv_graph,vector_get(predictions,i));
@@ -818,8 +818,8 @@ vector_t *cluster_interchromosomal_events(vector_t *predictions){
 vector_t *cluster_interchromosomal_events_lowmem(vector_t *predictions){
     vector_t *chr_to_eval = bit_set_2_index_vec( get_bam_info(NULL)->chro_bs);
     int j;
- 
-	parameters *params = get_params();
+
+    parameters *params = get_params();
     vector_t *calls = vector_init(sizeof(inter_sv_call_t),predictions->size);
     for(j=0;j<chr_to_eval->size;j++){
         int i = *(int *) vector_get(chr_to_eval,j);
@@ -861,9 +861,9 @@ vector_t *cluster_interchromosomal_events_lowmem(vector_t *predictions){
         }
         vector_free(components);
         graph_free(sv_graph);
-   }
-   vector_free(chr_to_eval);
-   return calls;
+    }
+    vector_free(chr_to_eval);
+    return calls;
 }
 vector_t *resplit_molecules(vector_t *molecules, vector_t *discordants){
     int i;
@@ -875,7 +875,7 @@ vector_t *resplit_molecules(vector_t *molecules, vector_t *discordants){
         if(dis_index == -1){
             continue;
         }
-        
+
 
     }
     return NULL;
@@ -885,20 +885,20 @@ vector_t *resplit_molecules(vector_t *molecules, vector_t *discordants){
 vector_t *find_interchromosomal_events_lowmem(vector_t **molecules, bam_vector_pack **intra_reads, char *bamname){
     int j;
     sonic *snc = sonic_load(NULL);
-    
+
     vector_t *chr_to_eval = bit_set_2_index_vec( get_bam_info(NULL)->chro_bs);
 
     vector_t *all_chr_vec = vector_init(sizeof(vector_t),24*23);
 
     for(j=0;j<chr_to_eval->size;j++){
         int i = *(int *) vector_get(chr_to_eval,j);
-        
+
         bam_info *in_bams = get_bam_info(NULL);
         bam_vector_pack *reads = read_10X_chr_inter(in_bams,bamname,snc,i);
         if(reads == NULL){ 
             continue;
         }
-        
+
         filter_dangling_reads(reads->inter_pm);
         filter_dangling_reads(reads->inter_mp);
         filter_dangling_reads(reads->inter_pp);

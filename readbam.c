@@ -947,6 +947,14 @@ void destroy_intra_bams(bam_vector_pack *reads){
 
     free(reads);
 }
+void destroy_inter_bams(bam_vector_pack *reads){
+
+    vector_free(reads->inter_pm);
+    vector_free(reads->inter_mp);
+    vector_free(reads->inter_pp);
+    vector_free(reads->inter_mm);
+    free(reads);
+}
 void destroy_bams(bam_vector_pack *reads){
     vector_free(reads->concordants);
     vector_free(reads->pp_discordants);

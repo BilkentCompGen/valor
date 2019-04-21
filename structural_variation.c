@@ -542,7 +542,7 @@ vector_t *find_svs(vector_t *split_molecules, sv_type type, int chr){
 				sv_t *tmp = sv_init(AB,NULL,SV_TANDEM_DUPLICATION);
 
 			            tmp->chr = chr;
-                vector_soft_put(svs,tmp);
+                vector_soft_put(osvs[omp_get_thread_num()],tmp);
 			}
 
 			if(!(type & ( SV_INVERSION | SV_DIRECT_DUPLICATION | SV_INVERTED_DUPLICATION| SV_TRANSLOCATION | SV_INVERTED_TRANSLOCATION))){ continue;}

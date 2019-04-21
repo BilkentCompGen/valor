@@ -412,7 +412,7 @@ vector_t *find_interc_translocations(vector_t *sp1, vector_t *sp2, vector_t *mol
                     vector_soft_put(tlocs,inter_sv_init(a,b,del_tra,type));
                 }
             }
-            free(del_tra);
+
         }
     }
 
@@ -889,7 +889,7 @@ vector_t *find_interchromosomal_events_lowmem(vector_t **molecules, bam_vector_p
     vector_t *chr_to_eval = bit_set_2_index_vec( get_bam_info(NULL)->chro_bs);
 
     vector_t *all_chr_vec = vector_init(sizeof(vector_t),24*23);
-
+    all_chr_vec->rmv = vector_free;
     for(j=0;j<chr_to_eval->size;j++){
         int i = *(int *) vector_get(chr_to_eval,j);
 
@@ -909,7 +909,7 @@ vector_t *find_interchromosomal_events_lowmem(vector_t **molecules, bam_vector_p
         vector_t *splits = discover_split_molecules(molecules[i]);
         qsort(splits->items,splits->size,sizeof(void *),interval_pair_comp);
         filter_unsupported_pm_splits(splits,intra_reads[i]->pm_discordants);
-
+        vector_free(intra_reads[i]->pm_discordants);
         printf("Discovering translocations from contig %s\n",snc->chromosome_names[i]);
         printf("Number of pm discordants %zu\n",reads->inter_pm->size);
         printf("Number of mp discordants %zu\n",reads->inter_mp->size);
@@ -956,10 +956,7 @@ vector_t *find_interchromosomal_events_lowmem(vector_t **molecules, bam_vector_p
 
         vector_soft_put(all_chr_vec,direct_calls);
         vector_soft_put(all_chr_vec,invert_calls);
-        direct_calls->rmv = do_nothing;
-        invert_calls->rmv = do_nothing;
-        vector_free(direct_calls);
-        vector_free(invert_calls);
+
         destroy_inter_bams(reads);
     }
     vector_free(chr_to_eval);

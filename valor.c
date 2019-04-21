@@ -371,14 +371,14 @@ int main( int argc, char **argv){
                 inter_sv_call_bed_print(outbedfile,vector_get(sub_vec,i));
             }
         }
-
         vector_free(variants);
         for(k=0;k<snc->number_of_chromosomes;k++){
             vector_free(molecules[k]);
         }
         free(molecules);	
+ 
     }
-
+    
     free(molecule_bed_path);
     free(in_bams->depths);
     free(in_bams->depth_mean);

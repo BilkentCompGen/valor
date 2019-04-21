@@ -1054,6 +1054,222 @@ splitmolecule_t *sv_reduce_breakpoints(sv_t *sv){
 	}
 }
 
+int inversion_is_proper(sv_t *sv){
+	sonic *snc = sonic_load(NULL);
+	bam_info *in_bams = get_bam_info(NULL);
+	parameters *params = get_params();
+	int chr = sv->chr;
+	int ploidy = params->ploidy;
+
+	if( params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[chr],sv->AB.start1,sv->CD.end1)){
+		fprintf(logFile,"sat 5'\n");
+		return 0;
+	}
+	if( params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[chr],sv->AB.start2,sv->CD.end2)){
+	
+		fprintf(logFile,"sat 3'\n");
+		return 0;
+	}
+	if( sv->supports[0] < INVERSION_MIN_REQUIRED_SUPPORT / ploidy){
+		fprintf(logFile,"sup 5'\n");
+		return 0;
+	}
+	if( sv->supports[1] < INVERSION_MIN_REQUIRED_SUPPORT / ploidy){
+		fprintf(logFile,"sup 3'\n");
+		return 0;
+	}
+	if( params->filter_gap && sonic_is_gap(snc, snc->chromosome_names[chr], sv->AB.start1, sv->CD.end2)){
+		
+		fprintf(logFile,"Gap\n");
+		return 0;
+	}
+	fprintf( logFile, "Call\n");
+	return 1;
+}
+int invert_duplication_is_proper(sv_t *sv){
+	parameters *params = get_params();
+	
+	int ploidy = params->ploidy;
+	if( sv->supports[0]<DUPLICATION_MIN_REQUIRED_SUPPORT){
+		return 0;
+	}
+	if( sv->supports[1]<DUPLICATION_MIN_REQUIRED_SUPPORT){
+		return 0;
+	}
+
+	sonic *snc = sonic_load(NULL);
+	bam_info *in_bams = get_bam_info(NULL);
+
+	int start = -1;
+	int end = -1;
+	int target_start = -1;
+	int target_end = -1;
+	int chr = sv->chr;	
+
+	if(sv->orientation ==DUP_FORW_COPY){
+		target_start = sv->AB.start2;
+		target_end = sv->CD.end2;
+		start = sv->CD.start1;
+		end = sv->AB.end1;
+	}else if(sv->orientation == DUP_BACK_COPY){
+		target_start = sv->AB.start1;
+		target_end = sv->CD.end1;
+		start = sv->CD.start2;
+		end = sv->AB.end2;
+	}	
+	if(target_start > target_end){
+		int temp = target_start;
+		target_start = target_end;
+		target_end = temp;
+	}
+	int is_ref_dup_source = sonic_is_segmental_duplication(snc,snc->chromosome_names[chr],start,end);
+	int is_ref_dup_target = sonic_is_segmental_duplication(snc,snc->chromosome_names[chr],target_start,target_end);
+
+	int is_ref_gap_source = params->filter_gap && sonic_is_gap(snc,snc->chromosome_names[chr],start,end);
+	int is_ref_gap_target = params->filter_gap && sonic_is_gap(snc,snc->chromosome_names[chr],target_start,target_end);
+	int is_ref_sat_source = params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[chr],start,end);
+	int is_ref_sat_target = params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[chr],target_start,target_end);
+	int does_cnv_support_dup;
+
+	does_cnv_support_dup= get_depth_region(in_bams->depths[chr],start,end) > 1.5 * in_bams->depth_mean[chr] - 1.5 * in_bams->depth_std[chr];
+
+	return !((is_ref_dup_source && is_ref_dup_target) || 
+            !does_cnv_support_dup || 
+            is_ref_gap_source || 
+            is_ref_gap_target || 
+            is_ref_sat_source || 
+            is_ref_sat_target);
+}
+
+
+int direct_duplication_is_proper(sv_t *sv){
+	parameters *params = get_params();
+	
+	int ploidy = params->ploidy;
+	if( sv->supports[0]<DUPLICATION_MIN_REQUIRED_SUPPORT){
+		return 0;
+	}
+	if( sv->supports[1]<DUPLICATION_MIN_REQUIRED_SUPPORT){
+		return 0;
+	}
+
+	sonic *snc = sonic_load(NULL);
+	bam_info *in_bams = get_bam_info(NULL);
+
+	int start = -1;
+	int end = -1;
+	int target_start = -1;
+	int target_end = -1;
+	int chr = sv->chr;	
+	switch(sv->type){
+	case SV_DIRECT_DUPLICATION:
+	
+		if(sv->orientation ==DUP_FORW_COPY){
+			target_start = sv->AB.end2;
+			target_end = sv->CD.start2;
+			start = sv->AB.start1;
+			end = sv->CD.end1;
+		}else if(sv->orientation == DUP_BACK_COPY){
+			target_start = sv->AB.end1;
+			target_end = sv->CD.start1;
+			start = sv->AB.start2;
+			end = sv->CD.end2;
+		}
+		break;
+	case SV_INVERTED_DUPLICATION:
+		if( sv->supports[0]<DUPLICATION_MIN_REQUIRED_SUPPORT){
+			return 0;
+		}
+		if( sv->supports[1]<DUPLICATION_MIN_REQUIRED_SUPPORT){
+			return 0;
+		}
+		if(sv->orientation ==DUP_FORW_COPY){
+			target_start = sv->AB.start2;
+			target_end = sv->CD.end2;
+			start = sv->CD.start1;
+			end = sv->AB.end1;
+		}else if(sv->orientation == DUP_BACK_COPY){
+			target_start = sv->AB.start1;
+			target_end = sv->CD.end1;
+			start = sv->CD.start2;
+			end = sv->AB.end2;
+		}	
+		break;
+	}
+	if(target_start > target_end){
+		int temp = target_start;
+		target_start = target_end;
+		target_end = temp;
+	}
+	int is_ref_dup_source = sonic_is_segmental_duplication(snc,snc->chromosome_names[chr],start,end);
+	int is_ref_dup_target = sonic_is_segmental_duplication(snc,snc->chromosome_names[chr],target_start,target_end);
+
+	int is_ref_gap_source = params->filter_gap && sonic_is_gap(snc,snc->chromosome_names[chr],start,end);
+	int is_ref_gap_target = params->filter_gap && sonic_is_gap(snc,snc->chromosome_names[chr],target_start,target_end);
+	int is_ref_sat_source = params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[chr],start,end);
+	int is_ref_sat_target = params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[chr],target_start,target_end);
+	int does_cnv_support_dup;
+    if(sv->type == SV_TRANSLOCATION || sv->type == SV_INVERTED_TRANSLOCATION){
+
+        does_cnv_support_dup= (is_ref_dup_source  || get_depth_region(in_bams->depths[chr],start,end) < 1.5 * in_bams->depth_mean[chr] - 1.5 * in_bams->depth_std[chr] )&& (get_depth_region(in_bams->depths[chr],start,end) > 0.5* in_bams->depth_mean[chr] + 1.5 * in_bams->depth_std[chr]);
+    }
+    else{
+        does_cnv_support_dup= get_depth_region(in_bams->depths[chr],start,end) > 1.5 * in_bams->depth_mean[chr] - 1.5 * in_bams->depth_std[chr];
+    }
+    fprintf(logFile,"%s\t%d\t%d\t%s\t%d\t%d\t%s\n",
+            snc->chromosome_names[chr],start,end,
+            snc->chromosome_names[chr],target_start,target_end,
+            sv_type_name( sv->type));
+    fprintf(logFile,"%lf\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n" ,get_depth_region(in_bams->depths[chr],start,end),does_cnv_support_dup,is_ref_dup_source, is_ref_dup_target, is_ref_gap_source, is_ref_gap_target, is_ref_sat_source, is_ref_sat_target);  
+	return !((is_ref_dup_source && is_ref_dup_target) || 
+            !does_cnv_support_dup || 
+            is_ref_gap_source || 
+            is_ref_gap_target || 
+            is_ref_sat_source || 
+            is_ref_sat_target);
+}
+
+int deletion_is_proper(sv_t *sv){
+
+	sonic *snc = sonic_load(NULL);
+	bam_info *in_bams = get_bam_info(NULL);
+	parameters *params = get_params();
+	int chr = sv->chr;
+	int ploidy = params->ploidy;
+
+	int start = sv->AB.end1;
+	int end = sv->AB.start2;
+
+	if( params->filter_gap && 
+			sonic_is_gap(snc,snc->chromosome_names[chr], sv->AB.start1, sv->AB.end2)){
+		return 0;
+	}
+	if( sv->supports[0] < DELETION_MIN_REQUIRED_SUPPORT){
+		return 0;
+	}
+	if( get_depth_region(in_bams->depths[chr],sv->AB.end1,sv->AB.start2) > in_bams->depth_mean[chr]/2 + 1.5 *in_bams->depth_std[chr]){
+		return 0;
+	}
+	return 1;
+}
+
+int sv_is_proper(void *vsv){
+	sv_t *sv = vsv;
+	switch(sv->type){
+	case SV_DELETION:
+		return deletion_is_proper(sv);
+	case SV_INVERSION:
+		return inversion_is_proper(sv);
+	case SV_DIRECT_DUPLICATION:
+		return direct_duplication_is_proper(sv);
+	case SV_INVERTED_DUPLICATION:
+		return invert_duplication_is_proper(sv); 
+	default:
+		fprintf(stderr,"Sv type with ordinal %d is not implemented", (int)sv->type);
+		exit(-1);
+	}
+}
+/*
 int sv_is_proper(void *vsv){
 	sv_t *sv = vsv;
 	sonic *snc = sonic_load(NULL);
@@ -1233,4 +1449,4 @@ int sv_is_proper(void *vsv){
             is_ref_sat_target);
 }
 
-
+*/

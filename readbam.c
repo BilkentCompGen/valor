@@ -4,7 +4,7 @@
 #include "valorconfig.h"
 #include "sonic.h"
 #include "hashtable.h"
-#include "dna_4X_encoding.h"
+
 #include <stdint.h>
 #include <stdlib.h>
 

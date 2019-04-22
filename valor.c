@@ -70,6 +70,8 @@ int main( int argc, char **argv){
     printvalorconfig(logFile);
     char *molecule_bed_path = malloc((strlen(params->outprefix) + strlen("-molecules.bed") + 1) * sizeof(char));
     sprintf(molecule_bed_path,"%s-molecules.bed",params->outprefix);                                            
+    FILE *reset_molecule_bed = fopen(molecule_bed_path,"w+");
+    fclose(reset_molecule_bed);
     //////                                                                                                        
     //
     bam_info *in_bams = get_bam_info(snc);

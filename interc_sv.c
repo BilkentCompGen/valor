@@ -359,10 +359,10 @@ interval_pair *find_matching_split_molecule(vector_t *splits,inter_split_molecul
 
 
 
-    interval_pair deletion_interval = (interval_pair){.start1=start-CLONE_MEAN/2,.end1=start,end,.end2=end+CLONE_MEAN/2,.barcode=0};
-
-    size_t pos = 0; //TODO use binary search instead
-
+    interval_pair deletion_interval = (interval_pair){.start1=start-CLONE_MEAN/2,.end1=start,.start2=end,.end2=end+CLONE_MEAN/2,.barcode=0};
+    interval_10X to_search ={deletion_interval.end1,deletion_interval.start2,0};
+//    size_t pos = 0; //TODO use binary search instead
+    size_t pos = split_molecule_binary_search(splits,to_search);
     vector_t *found_splits = vector_init(sizeof(interval_pair),10);
     found_splits->rmv = do_nothing;
     interval_pair *cand = vector_get(splits,pos);
@@ -395,10 +395,16 @@ interval_pair *find_matching_split_molecule(vector_t *splits,inter_split_molecul
     return to_return;
 }
 
-vector_t *find_interc_translocations(vector_t *sp1, vector_t *sp2, vector_t *molecules,sv_type type){
-    vector_t *tlocs = vector_init(sizeof(ic_sv_t),512);
-    int i,j;
+vector_t **find_interc_translocations(vector_t *sp1, vector_t *sp2, vector_t *molecules,sv_type type){
 
+    parameters *params = get_params();
+    int ccount = params->chromosome_count;
+    vector_t **tlocs = getMem(sizeof(vector_t *) * ccount);
+//    vector_t *tlocs = vector_init(sizeof(ic_sv_t),512);
+    int i,j;
+    for(i=0;i<ccount;i++){
+        tlocs[i] = vector_init(sizeof(ic_sv_t),8);
+    }
     for(i=0;i<sp1->size;i++){
         inter_split_molecule_t *a = vector_get(sp1,i);
         for(j=0;j<sp2->size;j++){   
@@ -409,7 +415,8 @@ vector_t *find_interc_translocations(vector_t *sp1, vector_t *sp2, vector_t *mol
             if(orient){
                 del_tra = find_matching_split_molecule(molecules,a,b);
                 if(del_tra != NULL){
-                    vector_soft_put(tlocs,inter_sv_init(a,b,del_tra,type));
+                    ic_sv_t *sv = inter_sv_init(a,b,del_tra,type);
+                    vector_soft_put(tlocs[sv->chr_target],sv);
                 }
             }
 
@@ -775,89 +782,46 @@ inter_sv_call_t *ic_sv_cluster_resolve(vector_t *cluster){
 }
 
 
-
-vector_t *cluster_interchromosomal_events(vector_t *predictions){
-
-    vector_t *calls = vector_init(sizeof(inter_sv_call_t),predictions->size);
-    graph_t *sv_graph = graph_init(predictions->size *2, sizeof(ic_sv_t));
-    sv_graph->hf = &ic_sv_hf;
-    sv_graph->key_cmp = &_ic_sv_cmp; 
-
-    parameters *params = get_params();
-    int i,j;
-    for(i=0; i<predictions->size; i++){
-        graph_put_node(sv_graph,vector_get(predictions,i));
-    }
-
-    for(i=0; i<predictions->size; i++){
-        ic_sv_t *a = vector_get(predictions,i);
-        for(j=i+1; j<predictions->size; j++){
-            ic_sv_t *b = vector_get(predictions,j);
-            if(inter_sv_overlaps(a,b)){
-                graph_put_edge(sv_graph,a,b);
-                graph_put_edge(sv_graph,b,a);
-            }
-        }
-    }
-    graph_trim(sv_graph);
-    vector_t *components = ic_sv_g_dfs_components(sv_graph);
-
-    for(i=0;i<components->size;i++){
-        vector_t *comp = vector_get(components,i);
-        if(comp->size < MIN_INTER_CLUSTER_SIZE) { continue;}
-        icclique_t *clique = icclique_find_icclique(sv_graph,comp,0,params->quasi_clique_lambda,params->quasi_clique_gamma);
-        if(clique == NULL || clique->v_prime <= 0){icclique_free(clique);break;}
-
-        vector_soft_put(calls, ic_sv_cluster_resolve(clique->items)); 
-        icclique_free(clique);
-    }
-    vector_free(components);
-    graph_free(sv_graph);
-    return calls;
-}
-vector_t *cluster_interchromosomal_events_lowmem(vector_t *predictions){
+vector_t *cluster_interchromosomal_events_lowmem(vector_t **predictions){
     vector_t *chr_to_eval = bit_set_2_index_vec( get_bam_info(NULL)->chro_bs);
     int j;
-
+    sonic *snc = sonic_load(NULL);
     parameters *params = get_params();
-    vector_t *calls = vector_init(sizeof(inter_sv_call_t),predictions->size);
+    vector_t *calls = vector_init(sizeof(inter_sv_call_t),512);
     for(j=0;j<chr_to_eval->size;j++){
         int i = *(int *) vector_get(chr_to_eval,j);
-        graph_t *sv_graph = graph_init(predictions->size *2, sizeof(ic_sv_t));
+        printf("\tclustering candidates to chr %s\n",snc->chromosome_names[i]);
+        graph_t *sv_graph = graph_init(predictions[i]->size *2, sizeof(ic_sv_t));
         sv_graph->hf = &ic_sv_hf;
         sv_graph->key_cmp = &_ic_sv_cmp; 
         int k;
-        for(k=0; k<predictions->size; k++){
-            ic_sv_t *sv = vector_get(predictions,k);
-            if(sv->chr_target == i){
-                graph_put_node(sv_graph,vector_get(predictions,k));
-            }
+        
+        for(k=0; k<predictions[i]->size; k++){
+            graph_put_node(sv_graph,vector_get(predictions[i],k));
         }
-        adjlist_t *nodes = graph_to_al(sv_graph);
-        for(i=0; i<nodes->size; i++){
-            pair_t *ap = vector_get(nodes,i);
-            ic_sv_t *a = ap->key;
-            for(j=i+1; j<nodes->size; j++){
-                pair_t *bp = vector_get(nodes,j);
-                ic_sv_t *b = bp->key;
+        for(k=0; k<predictions[i]->size; k++){
+            ic_sv_t *a = vector_get(predictions[i],k);
+            int t;
+            for(t=k+1; t<predictions[i]->size; t++){
+                ic_sv_t *b = vector_get(predictions[i],t);
+
                 if(inter_sv_overlaps(a,b)){
                     graph_put_edge(sv_graph,a,b);
                     graph_put_edge(sv_graph,b,a);
                 }
             }
         }
-        vector_free(nodes);
         graph_trim(sv_graph);
         vector_t *components = ic_sv_g_dfs_components(sv_graph);
 
-        for(i=0;i<components->size;i++){
-            vector_t *comp = vector_get(components,i);
+        for(k=0;k<components->size;k++){
+            vector_t *comp = vector_get(components,k);
             if(comp->size < MIN_INTER_CLUSTER_SIZE) { continue;}
-            icclique_t *clique = icclique_find_icclique(sv_graph,comp,0,params->quasi_clique_lambda,params->quasi_clique_gamma);
-            if(clique == NULL || clique->v_prime <= 0){icclique_free(clique);break;}
-
-            vector_soft_put(calls, ic_sv_cluster_resolve(clique->items)); 
-            icclique_free(clique);
+//            icclique_t *clique = icclique_find_icclique(sv_graph,comp,0,params->quasi_clique_lambda,params->quasi_clique_gamma);
+//            if(clique == NULL || clique->v_prime <= 0){icclique_free(clique);break;}
+            vector_soft_put(calls,ic_sv_cluster_resolve(comp));
+//            vector_soft_put(calls, ic_sv_cluster_resolve(clique->items)); 
+   //         icclique_free(clique);
         }
         vector_free(components);
         graph_free(sv_graph);
@@ -885,7 +849,7 @@ vector_t *resplit_molecules(vector_t *molecules, vector_t *discordants){
 vector_t *find_interchromosomal_events_lowmem(vector_t **molecules, bam_vector_pack **intra_reads, char *bamname){
     int j;
     sonic *snc = sonic_load(NULL);
-
+    parameters *params = get_params();
     vector_t *chr_to_eval = bit_set_2_index_vec( get_bam_info(NULL)->chro_bs);
 
     vector_t *all_chr_vec = vector_init(sizeof(vector_t),24*23);
@@ -927,28 +891,43 @@ vector_t *find_interchromosomal_events_lowmem(vector_t **molecules, bam_vector_p
         printf("Number of pp splits %zu\n",pp_seps->size);
         printf("Number of mm splits %zu\n",mm_seps->size);
 
-        vector_t *direct_tra =  find_interc_translocations(pm_seps,mp_seps,splits,SV_TRANSLOCATION);
-        vector_t *invert_tra =  find_interc_translocations(pp_seps,mm_seps,splits,SV_INVERTED_TRANSLOCATION);
+        vector_t **direct_tra =  find_interc_translocations(pm_seps,mp_seps,splits,SV_TRANSLOCATION);
+        vector_t **invert_tra =  find_interc_translocations(pp_seps,mm_seps,splits,SV_INVERTED_TRANSLOCATION);
         vector_free(splits);
-        //vector_filter(direct_tra,ic_sv_is_proper);
-        //vector_filter(invert_tra,ic_sv_is_proper);
-        printf("Number of pm-mp variant candidates %zu\n",direct_tra->size);
-        printf("Number of pp-mm variant candidates %zu\n",invert_tra->size);
+
+        int kc;
+        for(kc=0;kc<params->chromosome_count;kc++){
+            if(direct_tra[kc]->size > 0){
+                vector_filter(direct_tra[kc],ic_sv_is_proper);
+                printf("pm-mp variant candidates %s->%s: %zu\n",snc->chromosome_names[i],snc->chromosome_names[kc],direct_tra[kc]->size);
+            }
+            if(invert_tra[kc]->size > 0){
+                vector_filter(invert_tra[kc],ic_sv_is_proper);;
+                printf("pp-mm variant candidates %s->%s: %zu\n",snc->chromosome_names[i],snc->chromosome_names[kc],invert_tra[kc]->size);
+            }
+        }
+
+        printf("From chromosome %s:\n",snc->chromosome_names[i]);
         vector_t *direct_calls = cluster_interchromosomal_events_lowmem(direct_tra);
         vector_t *invert_calls = cluster_interchromosomal_events_lowmem(invert_tra);
-
-        printf("Number of pm-mp variant clusters %zu\n",direct_calls->size);
-        printf("Number of pp-mm variant clusters %zu\n",invert_calls->size);
+       
+        printf("Total Number of pm-mp variant clusters: %zu\n",direct_calls->size);
+        printf("Total Number of pp-mm variant clusters: %zu\n",invert_calls->size);
 
         vector_filter(direct_calls,ic_sv_call_is_proper);
         vector_filter(invert_calls,ic_sv_call_is_proper);
 
-        printf("Number of pm-mp variant calls %zu\n",direct_calls->size);
-        printf("Number of pp-mm variant calls %zu\n",invert_calls->size);
+        printf("Total Number of pm-mp variant calls: %zu\n",direct_calls->size);
+        printf("Total Number of pp-mm variant calls: %zu\n",invert_calls->size);
 
-        vector_free(direct_tra);
-        vector_free(invert_tra);
+        for(kc=0;kc<params->chromosome_count;kc++){
+            vector_free(direct_tra[kc]);
+            vector_free(invert_tra[kc]);
+        }
 
+        free(direct_tra);
+        free(invert_tra);
+        
         vector_free(pm_seps);
         vector_free(mp_seps);
         vector_free(pp_seps);

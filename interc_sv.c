@@ -738,6 +738,50 @@ int ic_sv_is_proper(void *vcall){
     return !(is_ref_dup_source && is_ref_dup_target) && !(is_ref_gap_source || is_ref_gap_target) && !(is_ref_sat_source && is_ref_sat_target) && does_cnv_support_tra;
 }
 
+inter_sv_call_t *ic_sv_component_resolve(vector_t *cluster){
+    inter_interval_pair bp = {0};
+
+    int supports[3] = {0};
+    int i;
+    int j;
+    sv_type type = -1;
+    int cnt = 0;
+    for(i = 0;i< cluster->size;i++){
+        ic_sv_t *sv = vector_get(cluster,i);
+
+        inter_interval_pair sv_bp =  ic_sv_reduce_breakpoints(sv);
+
+        if( cnt != 0 && !inter_split_overlaps(bp,sv_bp,CLONE_MEAN)){
+            //    continue;
+        }
+        if(cnt == 0){
+            bp.chr1 = sv->chr_source;
+            bp.chr2 = sv->chr_target;
+            type = sv->type;
+        }
+
+        cnt++;
+
+        bp.start1 = (double)(bp.start1)*((double)(cnt-1)/cnt) + (double)sv_bp.start1/cnt;
+        bp.start2 = (double)(bp.start2)*((double)(cnt-1)/cnt) + (double)sv_bp.start2/cnt;
+        bp.end1 = (double)(bp.end1)*((double)(cnt-1)/cnt) + (double)sv_bp.end1/cnt;
+        bp.end2 = (double)(bp.end2)*((double)(cnt-1)/cnt) + (double)sv_bp.end2/cnt;
+        for(j=0;j<3;j++){
+            supports[j]+= sv->supports[j];
+        }   
+    }
+    inter_sv_call_t *call = malloc(sizeof(inter_sv_call_t));
+    call->break_points = bp;
+
+    for(j=0;j<3;j++){
+        call->supports[j] = supports[j];
+    }
+    call->cluster_size = cnt;
+    call->type = type;
+    return call;
+}
+
+
 inter_sv_call_t *ic_sv_cluster_resolve(vector_t *cluster){
     inter_interval_pair bp = {0};
 
@@ -790,6 +834,9 @@ vector_t *cluster_interchromosomal_events_lowmem(vector_t **predictions){
     vector_t *calls = vector_init(sizeof(inter_sv_call_t),512);
     for(j=0;j<chr_to_eval->size;j++){
         int i = *(int *) vector_get(chr_to_eval,j);
+        if(predictions[i]->size <= 0){
+            continue;
+        }
         printf("\tclustering candidates to chr %s\n",snc->chromosome_names[i]);
         graph_t *sv_graph = graph_init(predictions[i]->size *2, sizeof(ic_sv_t));
         sv_graph->hf = &ic_sv_hf;
@@ -819,7 +866,7 @@ vector_t *cluster_interchromosomal_events_lowmem(vector_t **predictions){
             if(comp->size < MIN_INTER_CLUSTER_SIZE) { continue;}
 //            icclique_t *clique = icclique_find_icclique(sv_graph,comp,0,params->quasi_clique_lambda,params->quasi_clique_gamma);
 //            if(clique == NULL || clique->v_prime <= 0){icclique_free(clique);break;}
-            vector_soft_put(calls,ic_sv_cluster_resolve(comp));
+            vector_soft_put(calls,ic_sv_component_resolve(comp));
 //            vector_soft_put(calls, ic_sv_cluster_resolve(clique->items)); 
    //         icclique_free(clique);
         }
@@ -897,18 +944,23 @@ vector_t *find_interchromosomal_events_lowmem(vector_t **molecules, bam_vector_p
 
         int kc;
         for(kc=0;kc<params->chromosome_count;kc++){
+            
+            vector_filter(direct_tra[kc],ic_sv_is_proper);
+            vector_filter(invert_tra[kc],ic_sv_is_proper);;
             if(direct_tra[kc]->size > 0){
-                vector_filter(direct_tra[kc],ic_sv_is_proper);
+
                 printf("pm-mp variant candidates %s->%s: %zu\n",snc->chromosome_names[i],snc->chromosome_names[kc],direct_tra[kc]->size);
             }
             if(invert_tra[kc]->size > 0){
-                vector_filter(invert_tra[kc],ic_sv_is_proper);;
+
                 printf("pp-mm variant candidates %s->%s: %zu\n",snc->chromosome_names[i],snc->chromosome_names[kc],invert_tra[kc]->size);
             }
         }
 
-        printf("From chromosome %s:\n",snc->chromosome_names[i]);
+        printf("From chromosome %s:\nDirect calls:\n",snc->chromosome_names[i]);
         vector_t *direct_calls = cluster_interchromosomal_events_lowmem(direct_tra);
+        
+        printf("Inverted calls:\n");
         vector_t *invert_calls = cluster_interchromosomal_events_lowmem(invert_tra);
        
         printf("Total Number of pm-mp variant clusters: %zu\n",direct_calls->size);

@@ -1195,6 +1195,10 @@ int direct_duplication_is_proper(sv_t *sv){
 			end = sv->AB.end2;
 		}	
 		break;
+    default:
+        //Should never enter here
+        fprintf(stderr,"not duplicaiton %d\n",sv->type);
+        exit(-1);
 	}
 	if(target_start > target_end){
 		int temp = target_start;

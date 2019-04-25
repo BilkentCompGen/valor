@@ -159,7 +159,30 @@ size_t interval_pair_binary_search(vector_t *mols, interval_10X interval){
     }
     return mid+1;
 }
+size_t discordant_barcode_binary_search(vector_t *mols, unsigned long key){
+    if(mols->size == 0){return -1;}
+    long first, last;
+    long mid = 0;
+    first =0;
+    last = mols->size - 1;
 
+    while( first < last){
+        //		mid = (first + last)/2;
+        mid = (last - first)/2 + first;
+        if(((interval_pair*)vector_get(mols,mid))->barcode < key){
+            first = mid + 1;
+        }
+        else{
+            last = mid - 1;
+        }
+    }
+    unsigned long cur_barcode = ((interval_pair *) vector_get(mols,mid))->barcode;
+    mid--;
+    while( mid >= 0 && cur_barcode == ((interval_pair *) vector_get(mols,mid))->barcode){
+        mid--;
+    }
+    return mid+1;
+}
 size_t molecule_barcode_binary_search(vector_t *mols, unsigned long key){
     if(mols->size == 0){return -1;}
     long first, last;
@@ -353,12 +376,9 @@ ic_sv_t *inter_sv_init(inter_split_molecule_t *a, inter_split_molecule_t *b, int
     return new_i;
 }
 
-interval_pair *find_matching_split_molecule(vector_t *splits,inter_split_molecule_t *a, inter_split_molecule_t *b){     
+interval_pair *find_matching_split_molecule(vector_t *splits,inter_split_molecule_t *a, inter_split_molecule_t *b, int *count){     
     int end = MAX(a->end1,b->end1);
     int start = MIN(a->start1,b->start1);
-
-
-
     interval_pair deletion_interval = (interval_pair){.start1=start-CLONE_MEAN/2,.end1=start,.start2=end,.end2=end+CLONE_MEAN/2,.barcode=0};
     interval_10X to_search ={deletion_interval.end1,deletion_interval.start2,0};
 //    size_t pos = 0; //TODO use binary search instead
@@ -375,6 +395,8 @@ interval_pair *find_matching_split_molecule(vector_t *splits,inter_split_molecul
         cand = vector_get(splits,pos);
         pos++;
     }
+    
+    *count = found_splits->size;
     if(found_splits->size < TRA_MIN_INTRA_SPLIT){
         return NULL;
     }
@@ -413,9 +435,11 @@ vector_t **find_interc_translocations(vector_t *sp1, vector_t *sp2, vector_t *mo
             interval_pair *del_tra;
 
             if(orient){
-                del_tra = find_matching_split_molecule(molecules,a,b);
+                int count;
+                del_tra = find_matching_split_molecule(molecules,a,b,&count);
                 if(del_tra != NULL){
                     ic_sv_t *sv = inter_sv_init(a,b,del_tra,type);
+                    sv->supports[2] = count;
                     vector_soft_put(tlocs[sv->chr_target],sv);
                 }
             }
@@ -710,12 +734,17 @@ int ic_sv_is_proper(void *vcall){
     int end = break_points.end1;
     int target_end = break_points.end2;
 
+    if(target_start > target_end){
+        int tmp = target_start;
+        target_start = target_end;
+        target_end = target_start;
+    }
     int src_chr = break_points.chr1;
     int tgt_chr = break_points.chr2;
 
 
-    int is_ref_dup_source = sonic_is_segmental_duplication(snc,snc->chromosome_names[src_chr],start-CLONE_MEAN/2,start+CLONE_MEAN/2) &&
-        sonic_is_segmental_duplication(snc,snc->chromosome_names[src_chr],end-CLONE_MEAN/2,end+CLONE_MEAN/2) ;
+    int is_ref_dup_source = sonic_is_segmental_duplication(snc,snc->chromosome_names[src_chr],start-CLONE_MEAN,start+CLONE_MEAN) &&
+        sonic_is_segmental_duplication(snc,snc->chromosome_names[src_chr],end-CLONE_MEAN,end+CLONE_MEAN) ;
 
     int is_ref_dup_target = sonic_is_segmental_duplication(snc,snc->chromosome_names[tgt_chr],target_start-CLONE_MEAN/2,target_end+CLONE_MEAN/2);
     int is_ref_gap_source = params->filter_gap && sonic_is_gap(snc,snc->chromosome_names[src_chr],start,end);
@@ -879,17 +908,33 @@ vector_t *cluster_interchromosomal_events_lowmem(vector_t **predictions){
 vector_t *resplit_molecules(vector_t *molecules, vector_t *discordants){
     int i;
 
-
+    vector_t *resplit = vector_init(sizeof(interval_pair),16);
     for(i=0;i<molecules->size;i++){
         interval_10X *mol = vector_get(molecules,i);
-        int dis_index = interval_pair_binary_search(discordants, *mol);
+        int dis_index = discordant_barcode_binary_search(discordants, mol->barcode);
         if(dis_index == -1){
             continue;
         }
-
-
+        interval_pair *disco = vector_get(discordants,dis_index);
+        int min_len = INT_MAX;
+        interval_pair *best = NULL;
+        while(dis_index < discordants->size && disco->barcode == mol->barcode){
+            if(disco->start1 > mol->start && disco->end2 < mol->end){
+                int len = disco->start2-disco->end1;
+                if(len < min_len){
+                    best = disco;
+                    min_len = len;
+                }
+            }
+            dis_index++;
+            disco = vector_get(discordants,dis_index);
+        }
+        if(best != NULL){
+            interval_pair new_split = {.start1=mol->start,.end1=best->end1,.start2=best->start2,.end2=mol->end,.barcode=mol->barcode};
+            vector_put(resplit,&new_split);
+        }
     }
-    return NULL;
+    return resplit;
 }
 
 

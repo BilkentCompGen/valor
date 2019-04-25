@@ -1010,8 +1010,8 @@ vector_t *find_interchromosomal_events_lowmem(vector_t **molecules, bam_vector_p
         qsort(molecules[i]->items,molecules[i]->size,sizeof(void *),barcode_comp);
 
         vector_t *splits = discover_split_molecules(molecules[i]);
-        qsort(intra_reads->pm_discordants[i]->items,intra_reads->pm_discordants->size,sizeof(void *),discordant_barcode_comp);
-        vector_t *recovered_splits = resplit_molecules(molecules[i],intra_reads->pm_discordants[i]);
+        qsort(intra_reads[i]->pm_discordants->items,intra_reads[i]->pm_discordants->size,sizeof(void *),discordant_barcode_comp);
+        vector_t *recovered_splits = resplit_molecules(molecules[i],intra_reads[i]->pm_discordants);
 
         vector_soft_transfer(splits,recovered_splits);
         vector_free(recovered_splits);

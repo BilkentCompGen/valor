@@ -284,6 +284,10 @@ int inter_sv_overlaps(ic_sv_t *i1, ic_sv_t *i2){
             return direct_translocation_overlaps(i1,i2);
         case SV_INVERTED_TRANSLOCATION:
             return invert_translocation_overlaps(i1,i2);
+        case SV_RECIPROCAL:
+            return direct_translocation_overlaps(i1,i2);
+        case SV_INVERTED_RECIPROCAL:
+            return invert_translocation_overlaps(i1,i2);
         default:
             fprintf(stderr,"Invalid Inter SV ordinal: %d\n",i1->type);
             exit(-1);
@@ -339,6 +343,43 @@ int inter_split_indicates_direct_translocation(inter_split_molecule_t s1, inter_
     }
     return result; 
 }
+int inter_split_indicates_invert_reciprocal(inter_split_molecule_t s1, inter_split_molecule_t s2){
+    if( !(s1.chr1 == s2.chr1 && s1.chr2 == s2.chr2)){ return 0;}
+    if( s1.barcode == s2.barcode) {return 0;}
+
+    interval_10X A = (interval_10X){s1.start1,s1.end1,s1.barcode};  
+    interval_10X B = (interval_10X){s1.start2,s1.end2,s1.barcode};  
+    interval_10X C = (interval_10X){s2.start1,s2.end1,s2.barcode};  
+    interval_10X D = (interval_10X){s2.start2,s2.end2,s2.barcode};  
+    int result = 0;
+
+    if(interval_inner_distance(B,D) < TRA_GAP &&
+            interval_inner_distance(B,D) > TRA_OVERLAP &&
+            interval_inner_distance(A,C) < TRA_GAP&&
+            interval_inner_distance(A,C) > TRA_OVERLAP){
+        result |=INTERC_FORW_COPY;
+    }
+    return result; 
+}
+
+int inter_split_indicates_reciprocal(inter_split_molecule_t s1, inter_split_molecule_t s2){
+    if( !(s1.chr1 == s2.chr1 && s1.chr2 == s2.chr2)){ return 0;}
+    if( s1.barcode == s2.barcode) {return 0;}
+
+    interval_10X A = (interval_10X){s1.start1,s1.end1,s1.barcode};  
+    interval_10X B = (interval_10X){s1.start2,s1.end2,s1.barcode};  
+    interval_10X C = (interval_10X){s2.start1,s2.end1,s2.barcode};  
+    interval_10X D = (interval_10X){s2.start2,s2.end2,s2.barcode};  
+    int result = 0;
+
+    if(interval_inner_distance(B,D) < TRA_GAP &&
+            interval_inner_distance(B,D) > TRA_OVERLAP &&
+            interval_inner_distance(A,C) < TRA_GAP &&
+            interval_inner_distance(A,C) >  TRA_OVERLAP){
+        result |= INTERC_FORW_COPY;
+    }
+    return result; 
+}
 
 
 int inter_split_indicates_translocation(inter_split_molecule_t s1, inter_split_molecule_t s2, sv_type type){
@@ -347,6 +388,12 @@ int inter_split_indicates_translocation(inter_split_molecule_t s1, inter_split_m
             return inter_split_indicates_direct_translocation(s1,s2);
         case SV_INVERTED_TRANSLOCATION:
             return inter_split_indicates_invert_translocation(s1,s2);
+
+        case SV_RECIPROCAL:
+            return inter_split_indicates_reciprocal(s1,s2);
+        case SV_INVERTED_RECIPROCAL:
+            return inter_split_indicates_invert_reciprocal(s1,s2);
+
         default:
             fprintf(stderr,"Inter SV with  unknown ordinal: %d!\n",type);
             exit(-1);
@@ -988,21 +1035,32 @@ vector_t *find_interchromosomal_events_lowmem(vector_t **molecules, bam_vector_p
         printf("Number of mp splits %zu\n",mp_seps->size);
         printf("Number of pp splits %zu\n",pp_seps->size);
         printf("Number of mm splits %zu\n",mm_seps->size);
-
         vector_t **direct_tra =  find_interc_translocations(pm_seps,mp_seps,splits,SV_TRANSLOCATION);
         vector_t **invert_tra =  find_interc_translocations(pp_seps,mm_seps,splits,SV_INVERTED_TRANSLOCATION);
-        vector_free(splits);
+        vector_t **direct_rec =  find_interc_translocations(pm_seps,mp_seps,splits,SV_RECIPROCAL);
+        vector_t **invert_rec =  find_interc_translocations(pp_seps,mm_seps,splits,SV_INVERTED_RECIPROCAL);
+               
+       vector_free(splits);
 
         int kc;
         for(kc=0;kc<params->chromosome_count;kc++){
-            
             vector_filter(direct_tra[kc],ic_sv_is_proper);
-            vector_filter(invert_tra[kc],ic_sv_is_proper);;
+            vector_filter(invert_tra[kc],ic_sv_is_proper);
+            vector_filter(direct_rec[kc],ic_sv_is_proper);
+            vector_filter(invert_rec[kc],ic_sv_is_proper);
             if(direct_tra[kc]->size > 0){
 
                 printf("pm-mp variant candidates %s->%s: %zu\n",snc->chromosome_names[i],snc->chromosome_names[kc],direct_tra[kc]->size);
             }
             if(invert_tra[kc]->size > 0){
+
+                printf("pp-mm variant candidates %s->%s: %zu\n",snc->chromosome_names[i],snc->chromosome_names[kc],invert_tra[kc]->size);
+            }
+            if(direct_rec[kc]->size > 0){
+
+                printf("pm-mp variant candidates %s->%s: %zu\n",snc->chromosome_names[i],snc->chromosome_names[kc],direct_tra[kc]->size);
+            }
+            if(invert_rec[kc]->size > 0){
 
                 printf("pp-mm variant candidates %s->%s: %zu\n",snc->chromosome_names[i],snc->chromosome_names[kc],invert_tra[kc]->size);
             }
@@ -1013,24 +1071,42 @@ vector_t *find_interchromosomal_events_lowmem(vector_t **molecules, bam_vector_p
         
         printf("Inverted calls:\n");
         vector_t *invert_calls = cluster_interchromosomal_events_lowmem(invert_tra);
+    
+        printf("Direct reciprocal calls:\n",snc->chromosome_names[i]);
+        vector_t *direct_reciprocal_calls = cluster_interchromosomal_events_lowmem(direct_rec);
+        
+        printf("Inverted reciprocal calls:\n");
+        vector_t *invert_reciprocal_calls = cluster_interchromosomal_events_lowmem(invert_rec);
        
+      
         printf("Total Number of pm-mp variant clusters: %zu\n",direct_calls->size);
         printf("Total Number of pp-mm variant clusters: %zu\n",invert_calls->size);
 
         vector_filter(direct_calls,ic_sv_call_is_proper);
         vector_filter(invert_calls,ic_sv_call_is_proper);
+        vector_filter(direct_reciprocal_calls,ic_sv_call_is_proper);
+        vector_filter(invert_reciprocal_calls,ic_sv_call_is_proper);
 
         printf("Total Number of pm-mp variant calls: %zu\n",direct_calls->size);
         printf("Total Number of pp-mm variant calls: %zu\n",invert_calls->size);
 
+
+        printf("Total Number of reciprocal pm-mp variant calls: %zu\n",direct_reciprocal_calls->size);
+        printf("Total Number of reciprocal pp-mm variant calls: %zu\n",invert_reciprocal_calls->size);
+
+
         for(kc=0;kc<params->chromosome_count;kc++){
             vector_free(direct_tra[kc]);
-            vector_free(invert_tra[kc]);
+            vector_free(direct_tra[kc]);
+            vector_free(invert_rec[kc]);
+            vector_free(invert_rec[kc]);
         }
 
         free(direct_tra);
         free(invert_tra);
-        
+        free(direct_rec);
+        free(invert_rec);
+
         vector_free(pm_seps);
         vector_free(mp_seps);
         vector_free(pp_seps);
@@ -1038,6 +1114,8 @@ vector_t *find_interchromosomal_events_lowmem(vector_t **molecules, bam_vector_p
 
         vector_soft_put(all_chr_vec,direct_calls);
         vector_soft_put(all_chr_vec,invert_calls);
+        vector_soft_put(all_chr_vec,direct_reciprocal_calls);
+        vector_soft_put(all_chr_vec,invert_reciprocal_calls);
 
         destroy_inter_bams(reads);
     }

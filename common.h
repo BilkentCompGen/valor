@@ -57,7 +57,9 @@ typedef enum SV_TYPE{
         SV_DIRECT_DUPLICATION = 8,
         SV_INVERTED_DUPLICATION = 16,
         SV_TRANSLOCATION = 32,
-        SV_INVERTED_TRANSLOCATION = 64
+        SV_INVERTED_TRANSLOCATION = 64,
+        SV_RECIPROCAL=128,
+        SV_INVERTED_RECIPROCAL=256,
 }sv_type;
 
 sv_type atosv(char *str);

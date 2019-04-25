@@ -29,6 +29,10 @@ const char *sv_type_name(sv_type type){
 			return "translocation";
 		case SV_INVERTED_TRANSLOCATION:
 			return "inverted-translocation";
+		case SV_RECIPROCAL:
+			return "reciprocal";
+		case SV_INVERTED_RECIPROCAL:
+			return "inverted-reciprocal";
 		default:
 			return "unknown";
 	}
@@ -454,7 +458,8 @@ int what_is_min_cluster_size(sv_type type){
 			return DUPLICATION_MIN_CLUSTER_SIZE;
         case SV_TRANSLOCATION:
         case SV_INVERTED_TRANSLOCATION:
-
+		case SV_RECIPROCAL:
+		case SV_INVERTED_RECIPROCAL:
 			return TRANSLOCATION_MIN_CLUSTER_SIZE;
         case SV_TANDEM_DUPLICATION:
             return TANDEM_DUPLICATION_MIN_CLUSTER_SIZE;

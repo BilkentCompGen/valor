@@ -42,7 +42,9 @@ int interval_start_comp(const void *v1, const void *v2);
 
 int interval_comp(const void *v1, const void *v2);
 
+
 int barcode_comp(const void *v1, const void *v2);
+int discordant_barcode_comp(const void *v1, const void *v2);
 
 int interval_pair_comp(const void *v1, const void *v2);
 

@@ -347,7 +347,6 @@ int inter_split_indicates_translocation(inter_split_molecule_t s1, inter_split_m
             return inter_split_indicates_direct_translocation(s1,s2);
         case SV_INVERTED_TRANSLOCATION:
             return inter_split_indicates_invert_translocation(s1,s2);
-
         default:
             fprintf(stderr,"Inter SV with  unknown ordinal: %d!\n",type);
             exit(-1);
@@ -674,6 +673,7 @@ inter_interval_pair ic_sv_reduce_breakpoints(ic_sv_t *sv){
             .barcode= 0};
     }
 }
+
 int ic_sv_call_is_proper(void *vcall){
     inter_sv_call_t *call =vcall;
     bam_info *in_bams = get_bam_info(NULL);
@@ -963,6 +963,12 @@ vector_t *find_interchromosomal_events_lowmem(vector_t **molecules, bam_vector_p
         qsort(molecules[i]->items,molecules[i]->size,sizeof(void *),barcode_comp);
 
         vector_t *splits = discover_split_molecules(molecules[i]);
+        qsort(intra_reads->pm_discordants[i]->items,intra_reads->pm_discordants->size,sizeof(void *),discordant_barcode_comp);
+        vector_t *recovered_splits = resplit_molecules(molecules[i],intra_reads->pm_discordants[i]);
+
+        vector_soft_transfer(splits,recovered_splits);
+        vector_free(recovered_splits);
+
         qsort(splits->items,splits->size,sizeof(void *),interval_pair_comp);
         filter_unsupported_pm_splits(splits,intra_reads[i]->pm_discordants);
         vector_free(intra_reads[i]->pm_discordants);

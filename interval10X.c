@@ -43,7 +43,14 @@ int interval_pair_comp(const void *v1, const void *v2){
 	return p1->start1 - p2->start1;
 }
 
-
+int discordant_barcode_comp(const void *v1, const void *v2){
+	interval_pair *i1 = (*(void **)v1);
+	interval_pair *i2 = (*(void **)v2);
+	if ( i1->barcode == i2->barcode){
+		return interval_pair_comp(v1,v2);
+	}
+	return i1->barcode > i2->barcode?1:-1;
+}
 //Distance for inversions
 int i_distance(int start1, int start2, int end1, int end2){
 	if(start1 < start2){

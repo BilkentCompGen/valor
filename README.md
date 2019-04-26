@@ -37,7 +37,8 @@ Optional Parameters:
       
 	-l, --log_file [logfile name]: default is [output prefix]-valor.log
 	-t, --threads [thread count]: sets number of threads to be used (default is 1)
-	
+    -p, --ploidy  [Number of chromosome sets]      : Default is 2
+    -y, --single-copy-chr  [Chromosome name]      : sets copy number of a chromosome to 1 (example -y X -y Y for male humans).	
 Help Parameters:
         
 	-v, --version                  : Print version and exit.

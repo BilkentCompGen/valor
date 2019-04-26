@@ -35,7 +35,7 @@ int parse_command_line( int argc, char** argv, parameters* params)
 		{"out"    , required_argument,	 0, 'o'},
 		{"svs_to_find", required_argument,0,'f'},
 		{"ploidy", required_argument,0,'p'},
-		{"single-haplotype", required_argument,0,'y'},
+		{"single-copy-chr", required_argument,0,'y'},
 		{"low_mem", no_argument,	 0, 'm'},
 		{"log_file", required_argument,	 0, 'l'},
 		{"contig_count", required_argument,	 0, 'c'},
@@ -169,7 +169,9 @@ void print_help( void)
 	fprintf( stdout, "\t-o, --out   [output folder]    : Folder to put stuff in\n");
 
 	fprintf( stdout, "\t-s, --sonic  [sonic file]      : Sonic file. Check: https://github.com/calkan/sonic.\n");
+
 	fprintf( stdout, "\t-p, --ploidy  [Number of chromosome sets]      : Default is 2.\n");
+	fprintf( stdout, "\t-y, --single-copy-chr  [Chromosome name]      : sets copy number of a chromosome to 1 (example -y X -y Y for male humans).\n");
 
 	fprintf( stdout, "\t-f, --svs_to_find   [sv type]: Comma separated list of SV types (i.e. DUP,IDUP,INV).\n");
 	fprintf( stdout, "Optional Parameters:\n");

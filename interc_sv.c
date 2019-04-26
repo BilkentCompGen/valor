@@ -400,8 +400,28 @@ int inter_split_indicates_translocation(inter_split_molecule_t s1, inter_split_m
     }
     return 0;
 }
+ic_sv_t *inter_reciprocal_init(inter_split_molecule_t *a, inter_split_molecule_t *b, sv_type type){
+    ic_sv_t *new_i = malloc(sizeof(ic_sv_t));
+    memset(new_i,0,sizeof(ic_sv_t));
+    new_i->supports[0] = 1;//TODO fix this
+    new_i->supports[1] = 1;//TODO fix this
+    new_i->supports[2] = 1;//TODO fix this
 
-ic_sv_t *inter_sv_init(inter_split_molecule_t *a, inter_split_molecule_t *b, interval_pair *tra_del, sv_type type){
+    new_i->covered = 0;
+    new_i->tabu = 0;
+    new_i->dv = 0;
+    new_i->inactive = 0;
+    new_i->AB=*a;
+    new_i->CD=*b;
+    new_i->type=type;
+    new_i->chr_source = a->chr1;
+    new_i->chr_target = a->chr2;
+
+    return new_i;
+}
+
+
+ic_sv_t *inter_translocation_init(inter_split_molecule_t *a, inter_split_molecule_t *b, interval_pair *tra_del, sv_type type){
     ic_sv_t *new_i = malloc(sizeof(ic_sv_t));
     memset(new_i,0,sizeof(ic_sv_t));
     new_i->supports[0] = 1;//TODO fix this
@@ -482,10 +502,16 @@ vector_t **find_interc_translocations(vector_t *sp1, vector_t *sp2, vector_t *mo
 
             if(orient){
                 int count;
-                del_tra = find_matching_split_molecule(molecules,a,b,&count);
-                if(del_tra != NULL){
-                    ic_sv_t *sv = inter_sv_init(a,b,del_tra,type);
-                    sv->supports[2] = count;
+                if(type == SV_TRANSLOCATION || type == SV_INVERTED_TRANSLOCATION){
+                    del_tra = find_matching_split_molecule(molecules,a,b,&count);
+                    if(del_tra != NULL){
+                        ic_sv_t *sv = inter_translocation_init(a,b,del_tra,type);
+                        sv->supports[2] = count;
+                        vector_soft_put(tlocs[sv->chr_target],sv);
+                    }
+                }
+                else{
+                    ic_sv_t *sv = inter_reciprocal_init(a,b,type);
                     vector_soft_put(tlocs[sv->chr_target],sv);
                 }
             }
@@ -1071,7 +1097,7 @@ vector_t *find_interchromosomal_events_lowmem(vector_t **molecules, bam_vector_p
         printf("Inverted calls:\n");
         vector_t *invert_calls = cluster_interchromosomal_events_lowmem(invert_tra);
     
-        printf("Direct reciprocal calls:\n",snc->chromosome_names[i]);
+        printf("Direct reciprocal calls:\n");
         vector_t *direct_reciprocal_calls = cluster_interchromosomal_events_lowmem(direct_rec);
         
         printf("Inverted reciprocal calls:\n");

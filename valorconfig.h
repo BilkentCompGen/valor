@@ -39,7 +39,7 @@ extern double CLONE_STD_DEV;
 /*************INTER TRANSLOCATION INFORMION****************************/
 #define TRA_OVERLAP (-CLONE_MEAN/3)
 #define TRA_GAP (CLONE_MEAN/3)
-#define TRA_MIN_SIZE 2*CLONE_MEAN //1000
+#define TRA_MIN_SIZE 1.5*CLONE_MEAN //1000
 #define TRA_MAX_SIZE 7000000
 #define VALOR_MOBILE_ELEMENTS "Alu:L1:SVA:HERV"
 

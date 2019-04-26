@@ -388,10 +388,12 @@ int inter_split_indicates_translocation(inter_split_molecule_t s1, inter_split_m
             return inter_split_indicates_direct_translocation(s1,s2);
         case SV_INVERTED_TRANSLOCATION:
             return inter_split_indicates_invert_translocation(s1,s2);
+
         case SV_RECIPROCAL:
             return inter_split_indicates_reciprocal(s1,s2);
         case SV_INVERTED_RECIPROCAL:
             return inter_split_indicates_invert_reciprocal(s1,s2);
+
         default:
             fprintf(stderr,"Inter SV with  unknown ordinal: %d!\n",type);
             exit(-1);
@@ -541,8 +543,6 @@ int split_get_pm_support(interval_pair *split, vector_t *discordants){
 
 void filter_unsupported_pm_splits(vector_t *splits, vector_t *discordants){
     int i;
-
-
     splits->REMOVE_POLICY = REMP_LAZY;
     for(i=0;i<splits->size;i++){
         interval_pair *split = vector_get(splits,i);
@@ -718,6 +718,7 @@ inter_interval_pair ic_sv_reduce_breakpoints(ic_sv_t *sv){
             .barcode= 0};
     }
 }
+
 int ic_sv_call_is_proper(void *vcall){
     inter_sv_call_t *call =vcall;
     bam_info *in_bams = get_bam_info(NULL);
@@ -781,7 +782,7 @@ int ic_sv_is_proper(void *vcall){
     if(target_start > target_end){
         int tmp = target_start;
         target_start = target_end;
-        target_end = target_start;
+        target_end = tmp;
     }
     int src_chr = break_points.chr1;
     int tgt_chr = break_points.chr2;
@@ -1007,6 +1008,13 @@ vector_t *find_interchromosomal_events_lowmem(vector_t **molecules, bam_vector_p
         qsort(molecules[i]->items,molecules[i]->size,sizeof(void *),barcode_comp);
 
         vector_t *splits = discover_split_molecules(molecules[i]);
+        qsort(intra_reads[i]->pm_discordants->items,intra_reads[i]->pm_discordants->size,sizeof(void *),discordant_barcode_comp);
+        vector_t *recovered_splits = resplit_molecules(molecules[i],intra_reads[i]->pm_discordants);
+
+        qsort(intra_reads[i]->pm_discordants->items,intra_reads[i]->pm_discordants->size,sizeof(void *),interval_pair_comp);
+        vector_soft_transfer(splits,recovered_splits);
+        vector_free(recovered_splits);
+
         qsort(splits->items,splits->size,sizeof(void *),interval_pair_comp);
         filter_unsupported_pm_splits(splits,intra_reads[i]->pm_discordants);
         vector_free(intra_reads[i]->pm_discordants);
@@ -1088,8 +1096,8 @@ vector_t *find_interchromosomal_events_lowmem(vector_t **molecules, bam_vector_p
 
         for(kc=0;kc<params->chromosome_count;kc++){
             vector_free(direct_tra[kc]);
-            vector_free(direct_tra[kc]);
-            vector_free(invert_rec[kc]);
+            vector_free(invert_tra[kc]);
+            vector_free(direct_rec[kc]);
             vector_free(invert_rec[kc]);
         }
 

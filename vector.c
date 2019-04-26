@@ -81,6 +81,8 @@ vector_t *vector_select(vector_t *vector, int (*check)(void *)){
 	return selected;
 }
 
+
+
 vector_t *vector_init(size_t item_sizeof, size_t initial_limit){
 	vector_t *new_vector = (vector_t *) getMem( sizeof(vector_t));
 	new_vector->item_sizeof = item_sizeof;
@@ -124,6 +126,17 @@ int vector_put(vector_t *vector, void *item){
 	memcpy( vector->items[vector->size],item,vector->item_sizeof);
 	vector->size = vector->size + 1;
 	return 0;
+}
+
+void vector_soft_transfer(vector_t *target, vector_t *source){
+    int i;
+    for(i=0;i<source->size;i++){
+        vector_soft_put(target,vector_get(source,i));
+    }
+    void (*tmp_rmv)(void *) = source->rmv;
+    source->rmv = do_nothing;
+    vector_clear(source);
+    source->rmv = tmp_rmv;
 }
 
 void vector_update_remove_policy(vector_t *vector, int policy){

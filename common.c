@@ -443,23 +443,23 @@ int chr_atoi(char *chromosome){
 }
 
 
-int what_is_min_cluster_size(sv_type type){
-	switch(type){
+int what_is_min_cluster_size(sv_type type,int ploidy){
+    double dploidy = ploidy;
+    switch(type){
 		case SV_DELETION:
-
-			return DELETION_MIN_CLUSTER_SIZE;
+			return DELETION_MIN_CLUSTER_SIZE / dploidy;
 		case SV_INVERSION:
-			return INVERSION_MIN_CLUSTER_SIZE;
+			return INVERSION_MIN_CLUSTER_SIZE / dploidy;
 		case SV_DIRECT_DUPLICATION:
         case SV_INVERTED_DUPLICATION:
-			return DUPLICATION_MIN_CLUSTER_SIZE;
+			return DUPLICATION_MIN_CLUSTER_SIZE / dploidy;
         case SV_TRANSLOCATION:
         case SV_INVERTED_TRANSLOCATION:
 		case SV_RECIPROCAL:
 		case SV_INVERTED_RECIPROCAL:
-			return TRANSLOCATION_MIN_CLUSTER_SIZE;
+			return TRANSLOCATION_MIN_CLUSTER_SIZE / dploidy;
         case SV_TANDEM_DUPLICATION:
-            return TANDEM_DUPLICATION_MIN_CLUSTER_SIZE;
+            return TANDEM_DUPLICATION_MIN_CLUSTER_SIZE / dploidy;
         default:
 			return -1;
 	}

@@ -80,7 +80,7 @@ typedef struct _params
     int sample_size;
     int min_qual;
     int ploidy;
-    
+    int *chr_copy_count; 
     double quasi_clique_lambda;
     double quasi_clique_gamma;
 

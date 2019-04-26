@@ -930,7 +930,7 @@ vector_t *cluster_interchromosomal_events_lowmem(vector_t **predictions){
     vector_t *chr_to_eval = bit_set_2_index_vec( get_bam_info(NULL)->chro_bs);
     int j;
     sonic *snc = sonic_load(NULL);
-    parameters *params = get_params();
+//    parameters *params = get_params();
     vector_t *calls = vector_init(sizeof(inter_sv_call_t),512);
     for(j=0;j<chr_to_eval->size;j++){
         int i = *(int *) vector_get(chr_to_eval,j);

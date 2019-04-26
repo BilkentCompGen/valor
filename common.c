@@ -74,9 +74,6 @@ parameters *init_params(void){
     params->max_frag_size = MAX_FRAG_SIZE;
     params->filter_gap = VALOR_FILTER_GAP;        //true
     params->filter_satellite = VALOR_FILTER_SAT;   //true
-
-
-
     return params;
 }
 

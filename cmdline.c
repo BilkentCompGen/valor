@@ -35,6 +35,7 @@ int parse_command_line( int argc, char** argv, parameters* params)
 		{"out"    , required_argument,	 0, 'o'},
 		{"svs_to_find", required_argument,0,'f'},
 		{"ploidy", required_argument,0,'p'},
+		{"single-haplotype", required_argument,0,'y'},
 		{"low_mem", no_argument,	 0, 'm'},
 		{"log_file", required_argument,	 0, 'l'},
 		{"contig_count", required_argument,	 0, 'c'},
@@ -48,6 +49,8 @@ int parse_command_line( int argc, char** argv, parameters* params)
 	}
  	int o;
 	int index;
+	vector_t *haplotype_chrs = vector_init(sizeof(char)*128,128);
+	char *buffer;
 	while( ( o = getopt_long( argc, argv, "i:s:t:hvo:f:p:ml:c:", long_options, &index)) != -1)
 	{
 		switch( o)
@@ -64,8 +67,11 @@ int parse_command_line( int argc, char** argv, parameters* params)
 			case 'p':
 				params->ploidy= atoi(optarg);
 			break;
-
-
+			case 'y':
+				buffer = malloc(128);
+				strncpy(buffer,optarg,127);
+				vector_soft_put(haplotype_chrs,buffer);
+			break;
 			case 'f':
 				params->svs_to_find = parse_svs(optarg);
 			break;
@@ -129,6 +135,25 @@ int parse_command_line( int argc, char** argv, parameters* params)
 		sprintf( tmp_logfilename, "%s-%s", params->outprefix, VALOR_DEFAULT_LOG_FILE);
 		set_str( &( params->logfile), tmp_logfilename);
 		free( tmp_logfilename);
+	}
+	int i;
+	sonic *snc = sonic_load(params->sonic_file);
+	params->chr_copy_count = malloc(sizeof(int) * params->chromosome_count);
+	for(i=0;i<params->chromosome_count;i++){
+		params->chr_copy_count[i] = params->ploidy;
+	}
+	int j;
+	for(i=0;i<haplotype_chrs->size;i++){
+		for(j=0;j<snc->number_of_chromosomes;j++){
+			if(strncmp(vector_get(haplotype_chrs,i),snc->chromosome_names[j],128)  ==0){
+				params->chr_copy_count[j] =1;
+				break;
+			}
+		}
+		if(j==snc->number_of_chromosomes){
+			fprintf(stderr,"contig %s does not exist in the reference",(char *)vector_get(haplotype_chrs,i));
+			ret |= RETURN_ERROR;
+		}
 	}
 	return ret;
 }

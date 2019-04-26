@@ -1056,7 +1056,7 @@ splitmolecule_t *sv_reduce_breakpoints(sv_t *sv){
 
 int inversion_is_proper(sv_t *sv){
 	sonic *snc = sonic_load(NULL);
-	bam_info *in_bams = get_bam_info(NULL);
+	//bam_info *in_bams = get_bam_info(NULL);
 	parameters *params = get_params();
 	int chr = sv->chr;
 	int ploidy = params->ploidy;

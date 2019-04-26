@@ -131,6 +131,6 @@ double getMemUsage();
 
 #define VALOR_LOG(...) fprintf(logFile,__VA_ARGS__)
 
-int what_is_min_cluster_size(sv_type type);
+int what_is_min_cluster_size(sv_type type, int ploidy);
 int chr_atoi(char *chromosome);
 #endif

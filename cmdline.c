@@ -51,7 +51,7 @@ int parse_command_line( int argc, char** argv, parameters* params)
 	int index;
 	vector_t *haplotype_chrs = vector_init(sizeof(char)*128,128);
 	char *buffer;
-	while( ( o = getopt_long( argc, argv, "i:s:t:hvo:f:p:ml:c:", long_options, &index)) != -1)
+	while( ( o = getopt_long( argc, argv, "i:s:t:hvo:f:p:y:ml:c:", long_options, &index)) != -1)
 	{
 		switch( o)
 		{

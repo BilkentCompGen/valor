@@ -202,7 +202,7 @@ int main( int argc, char **argv){
             size_t initial_size = garbage->size;
             qsort(garbage->items, garbage->size, sizeof(sv_t *),&sv_comp);
             sv_type _type = ((sv_t *)vector_get(garbage,0))->type;
-            if(garbage->size < what_is_min_cluster_size(_type)){continue;}
+            if(garbage->size < what_is_min_cluster_size(_type,params->chr_copy_count[i])){continue;}
             graph_t *garbage_graph = sv_graph;//= make_sv_graph(garbage);
             int iteration_no = 0;
             while(garbage_graph->number_of_items > 2){
@@ -215,7 +215,7 @@ int main( int argc, char **argv){
                 clique_free(c);
 
                 if(svc_garbage==NULL){break;}
-                if(svc_garbage->items->size < what_is_min_cluster_size(_type)){
+                if(svc_garbage->items->size < what_is_min_cluster_size(_type,params->chr_copy_count[i])){
                     sv_graph_reset(garbage_graph);
                     sv_cluster_graph_fix(svc_garbage,garbage,sv_graph);
                     sv_cluster_destroy(svc_garbage);
@@ -247,7 +247,7 @@ int main( int argc, char **argv){
 
 
             sv_t *first = vector_get(svc->items,0);
-            if(svc->items->size < what_is_min_cluster_size(first->type)){
+            if(svc->items->size < what_is_min_cluster_size(first->type,params->chr_copy_count[i])){
                 fprintf(logFile,"%s\t%d\t%d\t%s\t%d\t%d\t%s\t%zu\t%d\tSmall CLSTR\n",
                     snc->chromosome_names[i],
                     svc->break_points->start1,

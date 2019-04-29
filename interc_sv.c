@@ -227,27 +227,40 @@ void inter_sv_call_bed_print(FILE *stream, inter_sv_call_t *sv){
 
 void ic_sv_bed_print(FILE *stream, ic_sv_t *sv){
     sonic *snc = sonic_load(NULL);
-    if( sv->chr_target == sv->AB.chr1){
-        fprintf(stream,"%s\t%d\t%d\t%s\t%d\t%d\t%s\n",
-                snc->chromosome_names[sv->chr_source],
-                sv->EF.end1,
-                sv->EF.start2,
-                snc->chromosome_names[sv->chr_target],
-                sv->AB.end1,
-                sv->CD.start1,
-                sv_type_name(sv->type)
-               );
-    }else{
+    if(sv->type == SV_RECIPROCAL || sv->type == SV_INVERTED_RECIPROCAL){
 
         fprintf(stream,"%s\t%d\t%d\t%s\t%d\t%d\t%s\n",
-                snc->chromosome_names[sv->chr_source],
-                sv->EF.end1,
-                sv->EF.start2,
-                snc->chromosome_names[sv->chr_target],
-                sv->AB.end2,
-                sv->CD.start1,
-                sv_type_name(sv->type)
-               );
+                    snc->chromosome_names[sv->chr_source],
+                    sv->AB.end1,
+                    sv->CD.start1,
+                    snc->chromosome_names[sv->chr_target],
+                    sv->AB.end2,
+                    sv->CD.start2,
+                    sv_type_name(sv->type));
+    }
+    else{
+        if( sv->chr_target == sv->AB.chr1){
+            fprintf(stream,"%s\t%d\t%d\t%s\t%d\t%d\t%s\n",
+                    snc->chromosome_names[sv->chr_source],
+                    sv->EF.end1,
+                    sv->EF.start2,
+                    snc->chromosome_names[sv->chr_target],
+                    sv->AB.end1,
+                    sv->CD.start1,
+                    sv_type_name(sv->type)
+                   );
+        }else{
+
+            fprintf(stream,"%s\t%d\t%d\t%s\t%d\t%d\t%s\n",
+                    snc->chromosome_names[sv->chr_source],
+                    sv->EF.end1,
+                    sv->EF.start2,
+                    snc->chromosome_names[sv->chr_target],
+                    sv->AB.end2,
+                    sv->CD.start1,
+                    sv_type_name(sv->type)
+                   );
+        }
     }
 }
 int inter_split_overlaps(inter_split_molecule_t s1, inter_split_molecule_t s2, int relax){
@@ -258,7 +271,12 @@ int inter_split_overlaps(inter_split_molecule_t s1, inter_split_molecule_t s2, i
         interval_overlaps(&(interval_10X){s1.start2,s1.end2,0},&(interval_10X){s2.start2,s2.end2,0},relax);
 
 }
+int reciprocal_overlaps(ic_sv_t *i1, ic_sv_t *i2){
+    return  i1->chr_source == i2->chr_source && i1->chr_target == i2->chr_target &&
+        inter_split_overlaps(i1->AB,i2->AB,2*CLONE_MEAN) &&
+        inter_split_overlaps(i1->CD,i2->CD,2*CLONE_MEAN);
 
+}
 
 int direct_translocation_overlaps(ic_sv_t *i1, ic_sv_t *i2){
     return  i1->chr_source == i2->chr_source && i1->chr_target == i2->chr_target &&
@@ -285,9 +303,9 @@ int inter_sv_overlaps(ic_sv_t *i1, ic_sv_t *i2){
         case SV_INVERTED_TRANSLOCATION:
             return invert_translocation_overlaps(i1,i2);
         case SV_RECIPROCAL:
-            return direct_translocation_overlaps(i1,i2);
+            return reciprocal_overlaps(i1,i2);
         case SV_INVERTED_RECIPROCAL:
-            return invert_translocation_overlaps(i1,i2);
+            return reciprocal_overlaps(i1,i2);
         default:
             fprintf(stderr,"Invalid Inter SV ordinal: %d\n",i1->type);
             exit(-1);
@@ -511,7 +529,9 @@ vector_t **find_interc_translocations(vector_t *sp1, vector_t *sp2, vector_t *mo
                     }
                 }
                 else{
+
                     ic_sv_t *sv = inter_reciprocal_init(a,b,type);
+
                     vector_soft_put(tlocs[sv->chr_target],sv);
                 }
             }
@@ -726,22 +746,49 @@ vector_t *ic_sv_g_dfs_components(graph_t *g){
     return comps;
 }
 inter_interval_pair ic_sv_reduce_breakpoints(ic_sv_t *sv){
-    if(sv->chr_target == sv->AB.chr1){
-        return (inter_interval_pair){.chr1= sv->chr_source,
-            .chr2=sv->chr_target,
-            .start1=sv->EF.end1,
-            .end1=sv->EF.start2,
-            .start2=sv->AB.end1,
-            .end2= sv->CD.start1,
-            .barcode= 0};
+    if(sv->type == SV_RECIPROCAL){
+        return (inter_interval_pair){
+            .chr1=sv->chr_source,
+                .start1=sv->AB.end1,
+                .end1 = sv->CD.start1,
+                .chr2 = sv->chr_target,
+                .start2=sv->AB.end2,
+                .end2 = sv->CD.start2,
+                .barcode = 0
+        };
+    }
+    else if(sv->type == SV_INVERTED_RECIPROCAL){
+
+
+        return (inter_interval_pair){
+            .chr1=sv->chr_source,
+                .start1=sv->AB.end1,
+                .end1=sv->CD.start1,
+                .chr2 = sv->chr_target,
+                .start2= sv->CD.end2,
+                .end2 = sv->AB.start2,
+                .barcode=0
+        };
+
     }else{
-        return (inter_interval_pair){.chr1= sv->chr_source,
-            .chr2=sv->chr_target,
-            .start1=sv->EF.end1,
-            .end1=sv->EF.start2,
-            .start2=sv->AB.end2,
-            .end2= sv->CD.start2,
-            .barcode= 0};
+
+        if(sv->chr_target == sv->AB.chr1){
+            return (inter_interval_pair){.chr1= sv->chr_source,
+                .chr2=sv->chr_target,
+                .start1=sv->EF.end1,
+                .end1=sv->EF.start2,
+                .start2=sv->AB.end1,
+                .end2= sv->CD.start1,
+                .barcode= 0};
+        }else{
+            return (inter_interval_pair){.chr1= sv->chr_source,
+                .chr2=sv->chr_target,
+                .start1=sv->EF.end1,
+                .end1=sv->EF.start2,
+                .start2=sv->AB.end2,
+                .end2= sv->CD.start2,
+                .barcode= 0};
+        }
     }
 }
 
@@ -835,6 +882,34 @@ int ic_sv_is_proper(void *vcall){
 
     }
 
+    if(sv->type == SV_RECIPROCAL || sv->type == SV_INVERTED_RECIPROCAL){
+        fprintf(logFile,"%s\t%d\t%d\t%s\t%d\t%d\t%s\t",
+                    snc->chromosome_names[sv->chr_source],
+                    sv->AB.end1,
+                    sv->CD.start1,
+                    snc->chromosome_names[sv->chr_target],
+                    sv->AB.end2,
+                    sv->CD.start2,
+                    sv_type_name(sv->type));
+    }
+    if(is_ref_dup_source && is_ref_dup_target){
+        fprintf(logFile,"dup\t");
+    }
+    if(is_ref_gap_source){
+
+        fprintf(logFile,"gap src\t");
+    }
+    if(is_ref_gap_target){
+
+        fprintf(logFile,"gap tgt\t");
+    }
+    if(is_ref_sat_source && is_ref_sat_target){
+        fprintf(logFile,"sat\t");
+    }
+    if(does_cnv_support_tra){
+        fprintf(logFile,"cnv\t");
+    }
+    fprintf(logFile,"\n");
     return !(is_ref_dup_source && is_ref_dup_target) && !(is_ref_gap_source || is_ref_gap_target) && !(is_ref_sat_source && is_ref_sat_target) && does_cnv_support_tra;
 }
 
@@ -1068,7 +1143,26 @@ vector_t *find_interchromosomal_events_lowmem(vector_t **molecules, bam_vector_p
        vector_free(splits);
 
         int kc;
+
         for(kc=0;kc<params->chromosome_count;kc++){
+
+            if(direct_tra[kc]->size > 0){
+
+                printf("pm-mp variant candidates %s->%s: %zu\n",snc->chromosome_names[i],snc->chromosome_names[kc],direct_tra[kc]->size);
+            }
+            if(invert_tra[kc]->size > 0){
+
+                printf("pp-mm variant candidates %s->%s: %zu\n",snc->chromosome_names[i],snc->chromosome_names[kc],invert_tra[kc]->size);
+            }
+            if(direct_rec[kc]->size > 0){
+
+                printf("pm-mp variant candidates %s->%s: %zu\n",snc->chromosome_names[i],snc->chromosome_names[kc],direct_tra[kc]->size);
+            }
+            if(invert_rec[kc]->size > 0){
+
+                printf("pp-mm variant candidates %s->%s: %zu\n",snc->chromosome_names[i],snc->chromosome_names[kc],invert_tra[kc]->size);
+            }
+
             vector_filter(direct_tra[kc],ic_sv_is_proper);
             vector_filter(invert_tra[kc],ic_sv_is_proper);
             vector_filter(direct_rec[kc],ic_sv_is_proper);

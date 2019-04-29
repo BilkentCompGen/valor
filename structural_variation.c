@@ -1060,7 +1060,7 @@ int inversion_is_proper(sv_t *sv){
 	parameters *params = get_params();
 	int chr = sv->chr;
 
-
+    fprintf(logFile,"%s\t%d\t%d\t",snc->chromosome_names[chr],sv->AB.start1,sv->CD.end1);
     double ploidy = params->chr_copy_count[chr];
 	if( params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[chr],sv->AB.start1,sv->CD.end1)){
 		fprintf(logFile,"sat 5'\n");
@@ -1079,10 +1079,24 @@ int inversion_is_proper(sv_t *sv){
 		fprintf(logFile,"sup 3'\n");
 		return 0;
 	}
-	if( params->filter_gap && sonic_is_gap(snc, snc->chromosome_names[chr], sv->AB.start1, sv->CD.end2)){
-		
-		fprintf(logFile,"Gap\n");
-		return 0;
+
+	
+	if(sonic_is_gap(snc, snc->chromosome_names[chr], sv->AB.start1-CLONE_MEAN, sv->CD.end1+CLONE_MEAN) ||
+					sonic_is_gap(snc, snc->chromosome_names[chr], sv->AB.start2-CLONE_MEAN, sv->CD.end2+CLONE_MEAN)){
+			fprintf(logFile,"Gap\n");
+			return 0;
+		}
+
+		if(sonic_is_gap(snc, snc->chromosome_names[chr], sv->AB.start1, sv->CD.end2)){
+			int _start = sv->AB.start1;
+			int _end = sv->CD.end2;
+			sonic_interval *interval = sonic_intersect(snc,snc->chromosome_names[chr],_start,_end,SONIC_GAP);
+			if(((double)interval->end-interval->start)/((double)_end-_start)>0.25){
+			
+				fprintf(logFile,"Gap%%\n");
+				return 0;
+		}
+
 	}
 	fprintf( logFile, "Call\n");
 	return 1;

@@ -206,7 +206,7 @@ int main( int argc, char **argv){
             graph_t *garbage_graph = sv_graph;//= make_sv_graph(garbage);
             int iteration_no = 0;
             while(garbage_graph->number_of_items > 2){
-                if(garbage->size < initial_size /4){break;}
+                if(garbage->size < initial_size /2 ){break;}
 
                 clique_t *c = clique_find_clique(garbage_graph,garbage,0,params->quasi_clique_lambda,params->quasi_clique_gamma);
 

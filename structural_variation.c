@@ -697,7 +697,7 @@ void update_duplication_supports_b(sv_t *dup, vector_t *pm_reads, vector_t *mp_r
 		midCD = scl_binary_search(mp_reads,&(dup->AB));
 		for(j=midAB;j<pm_reads->size;j++){
 			//			printf("midAB: %d, j %d",midAB,j);
-			if(interval_pair_overlaps(&(dup->CD),vector_get(pm_reads,j),MAX_FRAG_SIZE)){
+			if(interval_pair_overlaps(&(dup->CD),vector_get(pm_reads,j),CLONE_MEAN)){
 				pm_support++;				
 			}
 			//			printf("\n");
@@ -708,7 +708,7 @@ void update_duplication_supports_b(sv_t *dup, vector_t *pm_reads, vector_t *mp_r
 		}
 
 		for(j=midCD;j<mp_reads->size;j++){
-			if(interval_pair_overlaps(&(dup->AB),vector_get(mp_reads,j),MAX_FRAG_SIZE)){
+			if(interval_pair_overlaps(&(dup->AB),vector_get(mp_reads,j),CLONE_MEAN)){
 				mp_support++;				
 			}
 			if(dup->AB.end1 < IDIS_VECTOR_GET(mp_reads,j)->start1){
@@ -722,7 +722,7 @@ void update_duplication_supports_b(sv_t *dup, vector_t *pm_reads, vector_t *mp_r
 		midAB = scl_binary_search(pm_reads,&(dup->AB));
 		midCD = scl_binary_search(mp_reads,&(dup->CD));
 		for(j=midAB;j<pm_reads->size;j++){
-			if(interval_pair_overlaps(&(dup->AB),vector_get(pm_reads,j),MAX_FRAG_SIZE)){
+			if(interval_pair_overlaps(&(dup->AB),vector_get(pm_reads,j),CLONE_MEAN)){
 				pm_support++;				
 			}
 			if(dup->AB.end1 < IDIS_VECTOR_GET(pm_reads,j)->start1){
@@ -732,7 +732,7 @@ void update_duplication_supports_b(sv_t *dup, vector_t *pm_reads, vector_t *mp_r
 		}
 
 		for(j=midCD;j<mp_reads->size;j++){
-			if(interval_pair_overlaps(&(dup->CD),vector_get(mp_reads,j),MAX_FRAG_SIZE)){
+			if(interval_pair_overlaps(&(dup->CD),vector_get(mp_reads,j),CLONE_MEAN)){
 				mp_support++;				
 			}
 			if(dup->CD.end1 < IDIS_VECTOR_GET(mp_reads,j)->start1){
@@ -835,7 +835,7 @@ void update_inversion_supports_b(sv_t *inv, vector_t *pp_reads, vector_t *mm_rea
 
 	for(j=midAB;j<pp_reads->size;j++){
 
-		if(interval_pair_overlaps(&(inv->AB),vector_get(pp_reads,j),CLONE_MEAN)){
+		if(interval_pair_overlaps(&(inv->AB),vector_get(pp_reads,j),CLONE_MEAN/2)){
 			pp_support++;				
 		}
 		if(inv->AB.end1 < IDIS_VECTOR_GET(pp_reads,j)->start1){
@@ -846,7 +846,7 @@ void update_inversion_supports_b(sv_t *inv, vector_t *pp_reads, vector_t *mm_rea
 	}
 
 	for(j=midCD;j<mm_reads->size;j++){
-		if(interval_pair_overlaps(&(inv->CD),vector_get(mm_reads,j),CLONE_MEAN)){
+		if(interval_pair_overlaps(&(inv->CD),vector_get(mm_reads,j),CLONE_MEAN/2)){
 			mm_support++;				
 		}
 		if(inv->CD.end1 < IDIS_VECTOR_GET(mm_reads,j)->start1){
@@ -883,7 +883,7 @@ void update_inversion_supports(vector_t *inversions, vector_t *pp_reads, vector_
 
 		for(j=midAB;j<pp_reads->size;j++){
 
-			if(interval_pair_overlaps(&(SV_VECTOR_GET(inversions,i)->AB),vector_get(pp_reads,j),MAX_FRAG_SIZE)){
+			if(interval_pair_overlaps(&(SV_VECTOR_GET(inversions,i)->AB),vector_get(pp_reads,j),CLONE_MEAN)){
 				pp_support++;				
 			}
 			if(SV_VECTOR_GET(inversions,i)->AB.end1 < IDIS_VECTOR_GET(pp_reads,j)->start1){
@@ -894,7 +894,7 @@ void update_inversion_supports(vector_t *inversions, vector_t *pp_reads, vector_
 		}
 
 		for(j=midCD;j<mm_reads->size;j++){
-			if(interval_pair_overlaps(&(SV_VECTOR_GET(inversions,i)->CD),vector_get(mm_reads,j),MAX_FRAG_SIZE)){
+			if(interval_pair_overlaps(&(SV_VECTOR_GET(inversions,i)->CD),vector_get(mm_reads,j),CLONE_MEAN)){
 				mm_support++;				
 			}
 			if(SV_VECTOR_GET(inversions,i)->CD.end1 < IDIS_VECTOR_GET(mm_reads,j)->start1){
@@ -1081,8 +1081,8 @@ int inversion_is_proper(sv_t *sv){
 	}
 
 	
-	if(sonic_is_gap(snc, snc->chromosome_names[chr], sv->AB.start1-CLONE_MEAN, sv->CD.end1+CLONE_MEAN) ||
-					sonic_is_gap(snc, snc->chromosome_names[chr], sv->AB.start2-CLONE_MEAN, sv->CD.end2+CLONE_MEAN)){
+	if(sonic_is_gap(snc, snc->chromosome_names[chr], sv->AB.start1-CLONE_MEAN/2, sv->CD.end1+CLONE_MEAN/2) ||
+					sonic_is_gap(snc, snc->chromosome_names[chr], sv->AB.start2-CLONE_MEAN/2, sv->CD.end2+CLONE_MEAN/2)){
 			fprintf(logFile,"Gap\n");
 			return 0;
 		}
@@ -1136,10 +1136,17 @@ int invert_duplication_is_proper(sv_t *sv){
 		end = sv->AB.end2;
 	}	
 	if(target_start > target_end){
-		int temp = target_start;
-		target_start = target_end;
-		target_end = temp;
-	}
+//		int temp = target_start;
+//		target_start = target_end;
+//		target_end = temp;
+	
+        int avg = (target_start - target_end)/2 + target_end;
+
+        target_start = avg - CLONE_MEAN /2;
+        target_end = avg + CLONE_MEAN /2;
+    }
+
+
 	int is_ref_dup_source = sonic_is_segmental_duplication(snc,snc->chromosome_names[chr],start,end);
 	int is_ref_dup_target = sonic_is_segmental_duplication(snc,snc->chromosome_names[chr],target_start,target_end);
 
@@ -1149,8 +1156,9 @@ int invert_duplication_is_proper(sv_t *sv){
 	int is_ref_sat_target = params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[chr],target_start,target_end);
 	int does_cnv_support_dup;
 
-	does_cnv_support_dup= get_depth_region(in_bams->depths[chr],start,end) > (3.0/ploidy) * in_bams->depth_mean[chr] - (3.0/ploidy) * in_bams->depth_std[chr];
+//	does_cnv_support_dup= get_depth_region(in_bams->depths[chr],start,end) > (3.0/ploidy) * in_bams->depth_mean[chr] - (3.0/ploidy) * in_bams->depth_std[chr];
 
+	does_cnv_support_dup= get_depth_region(in_bams->depths[chr],start,end) > in_bams->depth_mean[chr] + (3.0/ploidy) * in_bams->depth_std[chr];
 	return !((is_ref_dup_source && is_ref_dup_target) || 
             !does_cnv_support_dup || 
             is_ref_gap_source || 
@@ -1192,10 +1200,14 @@ int direct_duplication_is_proper(sv_t *sv){
     }
 
 	if(target_start > target_end){
-		int temp = target_start;
-		target_start = target_end;
-		target_end = temp;
-	}
+//		int temp = target_start;
+//		target_start = target_end;
+//		target_end = temp;
+        int avg = (target_start - target_end)/2 + target_end;
+
+        target_start = avg - CLONE_MEAN /2;
+        target_end = avg + CLONE_MEAN /2;
+    }
 	int is_ref_dup_source = sonic_is_segmental_duplication(snc,snc->chromosome_names[chr],start,end);
 	int is_ref_dup_target = sonic_is_segmental_duplication(snc,snc->chromosome_names[chr],target_start,target_end);
 
@@ -1203,7 +1215,9 @@ int direct_duplication_is_proper(sv_t *sv){
 	int is_ref_gap_target = params->filter_gap && sonic_is_gap(snc,snc->chromosome_names[chr],target_start,target_end);
 	int is_ref_sat_source = params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[chr],start,end);
 	int is_ref_sat_target = params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[chr],target_start,target_end);
-	int does_cnv_support_dup= get_depth_region(in_bams->depths[chr],start,end) > (3.0/ploidy) * in_bams->depth_mean[chr] - (3.0/ploidy) * in_bams->depth_std[chr];
+
+	int does_cnv_support_dup= get_depth_region(in_bams->depths[chr],start,end) >  in_bams->depth_mean[chr] + (3.0/ploidy) * in_bams->depth_std[chr];
+//	int does_cnv_support_dup= get_depth_region(in_bams->depths[chr],start,end) > (3.0/ploidy) * in_bams->depth_mean[chr] - (3.0/ploidy) * in_bams->depth_std[chr];
 
     fprintf(logFile,"%s\t%d\t%d\t%s\t%d\t%d\t%s\n",
             snc->chromosome_names[chr],start,end,
@@ -1233,7 +1247,7 @@ int deletion_is_proper(sv_t *sv){
 	if( sv->supports[0] < DELETION_MIN_REQUIRED_SUPPORT/ploidy){
 		return 0;
 	}
-	if( get_depth_region(in_bams->depths[chr],sv->AB.end1,sv->AB.start2) > (1.0 /ploidy) * in_bams->depth_mean[chr]  + (3.0 / ploidy) * in_bams->depth_std[chr]){
+	if( get_depth_region(in_bams->depths[chr],sv->AB.end1,sv->AB.start2) > (1 - 1.0 /ploidy) * in_bams->depth_mean[chr]  + (3.0 / ploidy) * in_bams->depth_std[chr]){
 		return 0;
 	}
 	return 1;

@@ -3,6 +3,8 @@
 #include "clique_inter.h"
 #define SCL_INIT_LIMIT 400
 #include "cnv.h"
+#include <limits.h>
+
 
 int isv_chr_cmp(const ic_sv_t *s1, const ic_sv_t *s2){
     if( s1->chr_source == s2->chr_source){
@@ -881,7 +883,7 @@ int ic_sv_is_proper(void *vcall){
             get_depth_region(in_bams->depths[src_chr],start,end) > in_bams->depth_mean[src_chr] - 3 * in_bams->depth_std[src_chr];
 
     }
-
+/*
     if(sv->type == SV_RECIPROCAL || sv->type == SV_INVERTED_RECIPROCAL){
         fprintf(logFile,"%s\t%d\t%d\t%s\t%d\t%d\t%s\t",
                     snc->chromosome_names[sv->chr_source],
@@ -910,6 +912,7 @@ int ic_sv_is_proper(void *vcall){
         fprintf(logFile,"cnv\t");
     }
     fprintf(logFile,"\n");
+    */
     return !(is_ref_dup_source && is_ref_dup_target) && !(is_ref_gap_source || is_ref_gap_target) && !(is_ref_sat_source && is_ref_sat_target) && does_cnv_support_tra;
 }
 
@@ -1111,6 +1114,7 @@ vector_t *find_interchromosomal_events_lowmem(vector_t **molecules, bam_vector_p
         vector_t *splits = discover_split_molecules(molecules[i]);
         qsort(intra_reads[i]->pm_discordants->items,intra_reads[i]->pm_discordants->size,sizeof(void *),discordant_barcode_comp);
         vector_t *recovered_splits = resplit_molecules(molecules[i],intra_reads[i]->pm_discordants);
+        fprintf(logFile,"%zu small splits are recovered.\n",recovered_splits->size);
 
         qsort(intra_reads[i]->pm_discordants->items,intra_reads[i]->pm_discordants->size,sizeof(void *),interval_pair_comp);
         vector_soft_transfer(splits,recovered_splits);

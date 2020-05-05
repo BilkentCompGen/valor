@@ -7,7 +7,9 @@ VAriation with LOng Range information
 
 Citation
 ============
-	VALOR2: characterization of large-scale structural variants using linked-reads. Fatih Karaoglanoglu*, Camir Ricketts*, Ezgi Ebren, Marzieh Eslami Rasekh,  Iman Hajirasouliha*, Can Alkan*. Genome Biology, 21 (1): 72, 2020.
+	VALOR2: characterization of large-scale structural variants using linked-reads. 
+	Fatih Karaoglanoglu, Camir Ricketts, Ezgi Ebren, Marzieh Eslami Rasekh,
+	Iman Hajirasouliha, Can Alkan. Genome Biology, 21 (1): 72, 2020.
 
 Requirements
 ============

@@ -3,6 +3,12 @@ VALOR
 
 VAriation with LOng Range information
 
+*This repository includes code for VALOR2. The original version 1 is deprecated but also available in the rasekh-etal directory for archival purposes.*
+
+Citation
+============
+	VALOR2: characterization of large-scale structural variants using linked-reads. Fatih Karaoglanoglu*, Camir Ricketts*, Ezgi Ebren, Marzieh Eslami Rasekh,  Iman Hajirasouliha*, Can Alkan*. Genome Biology, 21 (1): 72, 2020.
+
 Requirements
 ============
 

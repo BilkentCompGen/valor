@@ -443,7 +443,7 @@ void sv_graph_reset(graph_t *g){
 
 	for(i=0;i<g->size;i++){
 		for(j=0;j<g->buckets[i]->size;j++){
-			pair_t *pair = vector_get(g->buckets[i],j);
+			pair_t *pair = bucket_get(g->buckets[i],j);
 			sv_reset(pair->key);
 		}
 	}

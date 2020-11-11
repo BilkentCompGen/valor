@@ -8,9 +8,9 @@ vector_t *set_to_vector(set_t *set){
     int i,j;
     vector_t *v = vector_init(sizeof(set->key_size),set->number_of_items);
     for(i=0;i<set->size;i++){
-        vector_t *bucket = set->buckets[i];
+        bucket_t *bucket = set->buckets[i];
         for(j=0;j<bucket->size;j++){
-            pair_t *dummy = vector_get(bucket,j);
+            pair_t *dummy = bucket_get(bucket,j);
             vector_put(v,dummy->key);
         }
     }

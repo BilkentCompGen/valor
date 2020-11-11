@@ -17,8 +17,25 @@ typedef struct __pair_t{
 } pair_t;
 #define pair_vector_get(V,I) (pair_t *)vector_get((V),(I))
 
+typedef struct __bucket_t{
+	void **items;
+	size_t item_sizeof;
+	size_t limit;
+	size_t size;
+} bucket_t;
+
+
+#define BUCKET_VECTOR_TYPE bucket_t
+
+BUCKET_VECTOR_TYPE *bucket_init(size_t item_sizeof, size_t initial_limit);
+
+void *bucket_tail(BUCKET_VECTOR_TYPE *vector);
+int bucket_put(bucket_t *vector, void *item);
+void *bucket_get( BUCKET_VECTOR_TYPE *vector, size_t index);
+void bucket_tabularasa(bucket_t *vector);
+int bucket_remove(BUCKET_VECTOR_TYPE *vector, size_t index);
 typedef struct __hashtable_t{
-	vector_t **buckets;
+	BUCKET_VECTOR_TYPE **buckets;
 	size_t size;
 	size_t key_size;
 	size_t value_size;

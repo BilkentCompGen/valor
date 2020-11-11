@@ -1,7 +1,58 @@
 #include "hashtable.h"
 
+BUCKET_VECTOR_TYPE *bucket_init(size_t item_sizeof, size_t initial_limit){
+	BUCKET_VECTOR_TYPE *new_vector = getMem( sizeof(BUCKET_VECTOR_TYPE));
+	new_vector->item_sizeof = item_sizeof;
+	new_vector->items = (void **)  getMem( sizeof(void *) * initial_limit);
+	new_vector->limit = initial_limit;
+	new_vector->size = 0;
+	return new_vector;
+}
+void *bucket_tail(BUCKET_VECTOR_TYPE *vector){
+	return vector->items[vector->size-1];
+}
+
+int bucket_put(bucket_t *vector, void *item){
+	if(vector->limit == vector->size){
+		size_t new_limit = vector->limit +( vector->limit>>1) + 1;
+		resizeMem((void **)&(vector->items),vector->limit * sizeof(void *),sizeof(void *) * new_limit);
+		vector->limit = new_limit;
+	}
+	vector->items[vector->size] = getMem(vector->item_sizeof);
+
+	memcpy( vector->items[vector->size],item,vector->item_sizeof);
+	vector->size = vector->size + 1;
+	return 0;
+}
 
 
+void *bucket_get( BUCKET_VECTOR_TYPE *vector, size_t index){
+	#ifdef __DEBUG__
+	if(vector->size <= index){
+		fprintf(stderr,"Access out of index\n");
+		return NULL;
+	}
+	#endif
+	return vector->items[index];
+}
+
+void bucket_tabularasa(bucket_t *vector){
+	int i;
+	for(i=0;i<vector->size;i++){
+		vector->items[i] = NULL;
+	}
+
+	vector->size = 0;
+}
+int bucket_remove(BUCKET_VECTOR_TYPE *vector, size_t index){
+	if(vector->items[index] == NULL || vector->size <= index){
+		return -1;
+	}
+    vector->size--;
+    free(vector->items[index]);
+    vector->items[index] = vector->items[vector->size];
+	return 0;
+}
 size_t SuperFastStringHash(hashtable_t *table, const void *key){
 	return SuperFastHash(key,strlen(key)) % table->size;
 }
@@ -96,11 +147,11 @@ int ht_iter_next(ht_iter_t *iter){
 }
 
 void *ht_iter_get_key(ht_iter_t *iter){
-	return ((pair_t *) vector_get(iter->ht->buckets[iter->bucket_no],iter->index))->key;
+	return ((pair_t *) bucket_get(iter->ht->buckets[iter->bucket_no],iter->index))->key;
 }
 
 void *ht_iter_get_value(ht_iter_t *iter){
-	return ((pair_t *) vector_get(iter->ht->buckets[iter->bucket_no],iter->index))->value;
+	return ((pair_t *) bucket_get(iter->ht->buckets[iter->bucket_no],iter->index))->value;
 }
 
 void ht_iter_free(ht_iter_t *iter){
@@ -121,7 +172,7 @@ void pair_free(hashtable_t *table, pair_t *pair){
 hashtable_t *ht_init( size_t table_size,size_t key_size, size_t item_size){
 	hashtable_t *new_table = getMem(sizeof(hashtable_t));
 	new_table->size = table_size;
-	new_table->buckets = getMem(sizeof(vector_t *) * table_size);
+	new_table->buckets = getMem(sizeof(BUCKET_VECTOR_TYPE *) * table_size);
 
 	int i;
 	new_table->value_size = item_size;
@@ -134,7 +185,7 @@ hashtable_t *ht_init( size_t table_size,size_t key_size, size_t item_size){
 	new_table->key_rmv = &free;
 	new_table->val_rmv = &free;
 	for(i=0;i<table_size;i++){
-		new_table->buckets[i] = vector_init(sizeof(pair_t),INIT_BUCKET_SIZE);
+		new_table->buckets[i] = bucket_init(sizeof(pair_t),INIT_BUCKET_SIZE);
 	}
 	return new_table;
 }
@@ -145,11 +196,11 @@ void ht_update_load_factor(hashtable_t *table, double load_factor){
 
 pair_t *ht_get_wcmp(hashtable_t *table, void *key, int(* cmp)(const void *, const void *)){
 	size_t bucket_index = table->hf(table,key);
-	vector_t *bucket = table->buckets[bucket_index];
+	BUCKET_VECTOR_TYPE *bucket = table->buckets[bucket_index];
 	int i;
 	pair_t *tpair;
 	for(i=0;i<bucket->size;i++){
-		tpair = vector_get(bucket,i);
+		tpair = bucket_get(bucket,i);
 		if(cmp(tpair->key,key) == 0){
 			return tpair;
 		}
@@ -162,11 +213,11 @@ pair_t *ht_get_wcmp(hashtable_t *table, void *key, int(* cmp)(const void *, cons
 
 pair_t *ht_get(hashtable_t *table, void *key){
 	size_t bucket_index = table->hf(table,key);
-	vector_t *bucket = table->buckets[bucket_index];
+	BUCKET_VECTOR_TYPE *bucket = table->buckets[bucket_index];
 	int i;
 	pair_t *tpair;
 	for(i=0;i<bucket->size;i++){
-		tpair = vector_get(bucket,i);
+		tpair = bucket_get(bucket,i);
 		if(table->key_cmp(tpair->key,key,table->key_size) == 0){
 			return tpair;
 		}
@@ -189,26 +240,26 @@ int ht_has_key(hashtable_t *table, void *key){
 //For internal use
 void __ht_put_pair(hashtable_t *table, pair_t *pair){
 	size_t bucket_index = table->hf(table,pair->key);
-	vector_t *bucket = table->buckets[bucket_index];
+	BUCKET_VECTOR_TYPE *bucket = table->buckets[bucket_index];
 	int i;
 	pair_t *tpair;
 	for(i=0;i<bucket->size;i++){
-		tpair = vector_get(bucket,i);
+		tpair = bucket_get(bucket,i);
 		if(table->key_cmp(tpair->key,pair->key,table->key_size) == 0){
 			memcpy(tpair->value,pair->value,table->value_size);
 		}
 	}
-	vector_put(bucket, pair);
+	bucket_put(bucket, pair);
 	table->number_of_items++;
 }
 void *ht_soft_put(hashtable_t *table, void *key){
 	ht_load_factor_check(table);
 	size_t bucket_index = table->hf(table,key);
-	vector_t *bucket = table->buckets[bucket_index];
+	BUCKET_VECTOR_TYPE *bucket = table->buckets[bucket_index];
 	int i;
 	pair_t *tpair;
 	for(i=0;i<bucket->size;i++){
-		tpair = vector_get(bucket,i);
+		tpair = bucket_get(bucket,i);
 
 		if(table->key_cmp(tpair->key,key,table->key_size) == 0){
 			return tpair->value;
@@ -221,8 +272,8 @@ void *ht_soft_put(hashtable_t *table, void *key){
 	pair_t new_pair;
 	new_pair.key = new_key;
 	new_pair.value = new_val;
-	vector_put(bucket, &new_pair);
-	tpair = vector_tail(bucket);
+	bucket_put(bucket, &new_pair);
+	tpair = bucket_tail(bucket);
 	table->number_of_items++;
 	return tpair->value;
 }
@@ -231,11 +282,11 @@ void *ht_soft_put(hashtable_t *table, void *key){
 void *ht_put(hashtable_t *table, void *key){
 	ht_load_factor_check(table);
 	size_t bucket_index = table->hf(table,key);
-	vector_t *bucket = table->buckets[bucket_index];
+	BUCKET_VECTOR_TYPE *bucket = table->buckets[bucket_index];
 	int i;
 	pair_t *tpair;
 	for(i=0;i<bucket->size;i++){
-		tpair = vector_get(bucket,i);
+		tpair = bucket_get(bucket,i);
 
 		if(table->key_cmp(tpair->key,key,table->key_size) == 0){
 			return tpair->value;
@@ -248,23 +299,23 @@ void *ht_put(hashtable_t *table, void *key){
 	pair_t new_pair;
 	new_pair.key = new_key;
 	new_pair.value = new_val;
-	vector_put(bucket, &new_pair);
-	tpair = vector_tail(bucket);
+	bucket_put(bucket, &new_pair);
+	tpair = bucket_tail(bucket);
 	table->number_of_items++;
 	return tpair->value;
 }
 
 void ht_remove(hashtable_t *table, void *key){
 	size_t bucket_index = table->hf(table,key);
-	vector_t *bucket = table->buckets[bucket_index];
+	BUCKET_VECTOR_TYPE *bucket = table->buckets[bucket_index];
 	int i;
 	pair_t *tpair;
 	for(i=0;i<bucket->size;i++){
-		tpair = vector_get(bucket,i);
+		tpair = bucket_get(bucket,i);
 		if(table->key_cmp(tpair->key,key,table->key_size) == 0){
 			table->key_rmv(tpair->key);
 			table->val_rmv(tpair->value);
-			vector_remove(bucket,i);
+			bucket_remove(bucket,i);
 			table->number_of_items--;
 			return;
 		}
@@ -294,9 +345,9 @@ vector_t *ht_to_vector(hashtable_t *table){
 	vector_t *set = vector_init(sizeof(pair_t),table->size);
 	set->rmv = do_nothing;
 	for(i=0;i<table->size;i++){
-		vector_t *bucket = table->buckets[i];
+		BUCKET_VECTOR_TYPE *bucket = table->buckets[i];
 		for(j=0;j<bucket->size;j++){
-			vector_soft_put(set,vector_get(bucket,j));
+			vector_soft_put(set,bucket_get(bucket,j));
 		}
 	}
 	return set;
@@ -312,12 +363,12 @@ void ht_expand(hashtable_t *table){
 		vector_free(table->buckets[i]);
 	}
 
-	resizeMem((void **)&(table->buckets),sizeof(vector_t*)*table->size,sizeof(vector_t*)*new_size);
+	resizeMem((void **)&(table->buckets),sizeof(BUCKET_VECTOR_TYPE*)*table->size,sizeof(BUCKET_VECTOR_TYPE*)*new_size);
 
 	table->size = new_size;
 	for(i=0;i<new_size;i++){
 		table->buckets[i] =
-			vector_init(sizeof(pair_t),INIT_BUCKET_SIZE);
+			bucket_init(sizeof(pair_t),INIT_BUCKET_SIZE);
 	} 
 
 	pair_t *tpair;
@@ -336,12 +387,12 @@ void ht_shrink(hashtable_t *table){
 	size_t new_size = (table->number_of_items<<1);
 	int i;
 	for(i=0;i<table->size;i++){
-		vector_tabularasa(table->buckets[i]);
+		bucket_tabularasa(table->buckets[i]);
 	}
 	for(i=new_size;i<table->size;i++){
 		vector_free(table->buckets[i]);
 	}
-	resizeMem((void **)&table->buckets,sizeof(vector_t *)*table->size,sizeof(vector_t *)*new_size);
+	resizeMem((void **)&table->buckets,sizeof(BUCKET_VECTOR_TYPE *)*table->size,sizeof(BUCKET_VECTOR_TYPE *)*new_size);
 	pair_t *tpair;
 
 	for(i=0;i<pairs->size;i++){
@@ -366,9 +417,9 @@ void ht_load_factor_check(hashtable_t *table){
 void ht_free(hashtable_t *table){
 	int i,j;
 	for(i=0;i<table->size;i++){
-		vector_t *bucket = table->buckets[i];
+		BUCKET_VECTOR_TYPE *bucket = table->buckets[i];
 		for(j=0;j<bucket->size;j++){
-			pair_free(table,vector_get(bucket,j));
+			pair_free(table,bucket_get(bucket,j));
 		}
 		vector_free(bucket);
 	}

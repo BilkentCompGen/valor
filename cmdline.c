@@ -23,7 +23,7 @@ sv_type parse_svs(char * optt){
 	return sv_to_find;
 }
 
-int parse_command_line( int argc, char** argv, parameters* params)
+int parse_command_line( int argc, char** argv, parameters* params, sonic *snc)
 {
 	static struct option long_options[] = 
 	{
@@ -130,14 +130,14 @@ int parse_command_line( int argc, char** argv, parameters* params)
 		ret|= RETURN_ERROR;
 	
 	}
-	if( params->logfile == NULL){
+	if( params->outprefix != NULL && params->logfile == NULL){
 	        char *tmp_logfilename = (char *) malloc(sizeof(char *) * (strlen(VALOR_DEFAULT_LOG_FILE)+strlen(params->outprefix)+2));
 		sprintf( tmp_logfilename, "%s-%s", params->outprefix, VALOR_DEFAULT_LOG_FILE);
 		set_str( &( params->logfile), tmp_logfilename);
 		free( tmp_logfilename);
 	}
 	int i;
-	sonic *snc = sonic_load(params->sonic_file);
+	snc = sonic_load(params->sonic_file);
 	params->chr_copy_count = malloc(sizeof(int) * params->chromosome_count);
 	for(i=0;i<params->chromosome_count;i++){
 		params->chr_copy_count[i] = params->ploidy;

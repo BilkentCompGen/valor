@@ -32,7 +32,8 @@ double CLONE_STD_DEV;
 int main( int argc, char **argv){
 
     parameters * params = init_params();
-    if(parse_command_line(argc,argv,params)){
+    sonic *snc = NULL;
+    if(parse_command_line(argc,argv,params, snc)){
         return 0;
     }
 #ifdef _OPENMP
@@ -63,7 +64,7 @@ int main( int argc, char **argv){
     printf("Logfile: %s\n", params->logfile);
 
 
-    sonic *snc = sonic_load(params->sonic_file);
+
     printf("Reading BAM file: %s\n", bamname);
 
     logFile = safe_fopen(params->logfile,"w+");                                                                    

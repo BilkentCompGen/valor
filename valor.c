@@ -29,13 +29,36 @@ FILE *logFile = NULL;
 double CLONE_MEAN;
 double CLONE_STD_DEV;
 
+void set_haplotypes(sonic *snc, parameters *params){
+    int i;
+	params->chr_copy_count = malloc(sizeof(int) * params->chromosome_count);
+	for(i=0;i<params->chromosome_count;i++){
+		params->chr_copy_count[i] = params->ploidy;
+	}
+	int j;
+	for(i=0;i<params->haplotype_chrs->size;i++){
+		for(j=0;j<snc->number_of_chromosomes;j++){
+			if(strncmp(vector_get(params->haplotype_chrs,i),snc->chromosome_names[j],128)  ==0){
+				params->chr_copy_count[j] =1;
+				break;
+			}
+		}
+		if(j==snc->number_of_chromosomes){
+			fprintf(stderr,"contig %s does not exist in the reference",(char *)vector_get(params->haplotype_chrs,i));
+
+		}
+	}
+}
+
 int main( int argc, char **argv){
 
-    parameters * params = init_params();
-    sonic *snc = NULL;
-    if(parse_command_line(argc,argv,params, snc)){
-        return 0;
-    }
+    parameters *params = parse_args(argc, argv);
+    sonic *snc = sonic_load(params->sonic_file);
+    set_haplotypes(snc, params);
+
+//    if(parse_command_line(argc,argv,params, snc)){
+//        return 0;
+//    }
 #ifdef _OPENMP
     omp_set_num_threads(params->threads);
 #endif

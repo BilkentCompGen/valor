@@ -17,6 +17,14 @@ vector_t *set_to_vector(set_t *set){
     return v;
 }
 
+int set_soft_put(set_t *set, void *item){
+    if( set_has(set, item)){
+        return 0;
+    }
+    ht_soft_put(set,item);
+    return 1;
+}
+
 int set_put(set_t *set, void *item){
     if( set_has(set, item)){
         return 0;
@@ -29,7 +37,7 @@ void set_remove(set_t *set, void *item){
     ht_remove(set,item);
 }
 
-int set_has(set_t *set, void *item){
+int set_has(set_t *set, const void *item){
     return ht_has_key(set,item);
 }
 

@@ -9,6 +9,7 @@
 #include "interval10X.h"
 #include "vector.h"
 #include "common.h"
+#include "cmdline.h"
 
 #define PROGRESS_DISTANCE 5001
 #define RX_N90_THRESHOLD 2

@@ -62,40 +62,12 @@ typedef enum SV_TYPE{
         SV_INVERTED_RECIPROCAL=256,
 }sv_type;
 
-sv_type atosv(char *str);
+sv_type atosv(const char *str);
 
 const char *sv_type_name(sv_type);
-typedef struct _params
-{
-	char* bam_file; /* paths to comma separated input BAM files as a single string before being tokenized */
-	char* outprefix; /* prefix for the output files */
-	char *sonic_file;
-	char *logfile;
-	sv_type svs_to_find;
-	unsigned int threads; 
-	int chromosome_count;	 
-    int barcode_len;    //
-    int max_frag_size;  //
-    int max_support;
-    int sample_size;
-    int min_qual;
-    int ploidy;
-    int *chr_copy_count; 
-    double quasi_clique_lambda;
-    double quasi_clique_gamma;
 
 
-    _Bool filter_gap;  //
-    _Bool filter_satellite; //
-	_Bool low_mem;
-} parameters;
 
-
-/* Parameter related VALOR functions */
-parameters *get_params(void);
-parameters *init_params(void);
-void free_params(void *);
-void print_params( parameters*);
 
 /* FILE opening and error printing functions. For opening regular and BAM/SAM
  files safely */

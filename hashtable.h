@@ -2,8 +2,8 @@
 #define __HTABLE
 #include <string.h>
 #include <stdlib.h>
-
 #include "common.h"
+
 #include "vector.h"
 
 #define INIT_BUCKET_SIZE 4
@@ -76,13 +76,13 @@ vector_t *ht_to_vector(hashtable_t *table);
 size_t ht_default_hash_function(hashtable_t *table, const void *key);
 
 void *ht_soft_put(hashtable_t *table, void *key);
-void *ht_put(hashtable_t *table, void *key);
-void ht_remove(hashtable_t *table, void *key);
+void *ht_put(hashtable_t *table, const void *key);
+void ht_remove(hashtable_t *table, const void *key);
 
-pair_t *ht_get(hashtable_t *table, void *key);
-pair_t *ht_get_wcmp(hashtable_t *table, void *key, int (*cmp)(const void *, const void *));
-void *ht_get_value(hashtable_t *table, void *key);
-int ht_has_key(hashtable_t *table, void *key);
+pair_t *ht_get(hashtable_t *table, const void *key);
+pair_t *ht_get_wcmp(hashtable_t *table, const void *key, int (*cmp)(const void *, const void *));
+void *ht_get_value(hashtable_t *table, const void *key);
+int ht_has_key(hashtable_t *table, const void *key);
 void ht_free(hashtable_t *table);
 
 void ht_set_key_remove_function(hashtable_t *table, void (*rmv)(void *));

@@ -1,80 +1,81 @@
 #ifndef __VALORCONFIG
 #define __VALORCONFIG
-
 #ifndef VALOR_DEFAULT_LOG_FILE
 #define VALOR_DEFAULT_LOG_FILE "valor.log"
 #endif
 #include <stdio.h>
-#define MAX_FRAG_SIZE  1000 // max segment size (distance between paired end reads)
-#define VALOR_FILTER_GAP 1
-#define VALOR_FILTER_SAT 1
-#define BARCODE_LEN 16
+
+void printvalorconfig(FILE *file);
+extern double SV_OVERLAP_RATIO;
+#define CLONE_MAX   (CLONE_MEAN + 3 * CLONE_STD_DEV)
+#define CLONE_MIN   (3 * MAX_FRAG_SIZE)
+extern int MAX_FRAG_SIZE;
+extern int VALOR_FILTER_GAP;
+extern int VALOR_FILTER_SAT;
+extern int BARCODE_LEN;
 /**************CLONE INFORMATION**************************/
-//#define CLONE_MEAN  30000
-//#define CLONE_STD_DEV 40000
 extern double CLONE_MEAN;
 extern double CLONE_STD_DEV;
-#define MOLECULE_EXT 80000
-#define CLONE_MAX  (CLONE_MEAN + 3 * CLONE_STD_DEV)
-#define CLONE_MIN 3 * MAX_FRAG_SIZE // (CLONE_MEAN - 3 * CLONE_STD_DEV)
-//#define CLONE_MIN (CLONE_MEAN - 3 * CLONE_STD_DEV)
-#define CLONE_MAX_DIST 3000000000
-#define CLONE_MIN_DIST 70000 
-#define MOLECULE_BIN_SIZE 8000
+extern int MOLECULE_EXT;
+
+extern long CLONE_MAX_DIST;
+extern int CLONE_MIN_DIST;
+extern int MOLECULE_BIN_SIZE;
 /*************INVERSION INFORMATION****************************/
-#define INV_MIN_SIZE  80000 // 80K
-#define INV_MAX_SIZE  15000000 // 10M
-#define INV_GAP  (CLONE_MEAN/4)
-#define INV_OVERLAP (-CLONE_MEAN/4) // 1 molecule size
-#define INVERSION_MIN_REQUIRED_SUPPORT 12
-#define INVERSION_MIN_CLUSTER_SIZE 24
+extern int INV_MIN_SIZE;
+extern int INV_MAX_SIZE;
+#define INV_GAP (SV_OVERLAP_RATIO * CLONE_MEAN)
+#define INV_OVERLAP (- SV_OVERLAP_RATIO * CLONE_MEAN)
+extern int INVERSION_MIN_REQUIRED_SUPPORT;
+extern int INVERSION_MIN_CLUSTER_SIZE;
 /*************DUPLICATION INFORMION****************************/
 
-#define DUP_OVERLAP (-CLONE_MEAN/4)
-#define DUP_GAP (CLONE_MEAN/4)
-#define DUP_MIN_SIZE CLONE_MEAN //1000
-#define DUP_MAX_SIZE 7000000
-#define DUP_MAX_DIST 10000000
-#define DUP_MIN_DIST 100000
+#define DUP_GAP (SV_OVERLAP_RATIO * CLONE_MEAN)
+#define DUP_OVERLAP (- SV_OVERLAP_RATIO * CLONE_MEAN)
+
+extern int DUP_MIN_SIZE;
+extern int DUP_MAX_SIZE;
+extern int DUP_MAX_DIST;
+extern int DUP_MIN_DIST;
 /*************INTER TRANSLOCATION INFORMION****************************/
-#define TRA_OVERLAP (-CLONE_MEAN/3)
-#define TRA_GAP (CLONE_MEAN/3)
-#define TRA_MIN_SIZE 1.5*CLONE_MEAN
-#define TRA_MAX_SIZE 7000000
-#define VALOR_MOBILE_ELEMENTS "Alu:L1:SVA:HERV"
+#define TRA_GAP (SV_OVERLAP_RATIO * CLONE_MEAN)
+#define TRA_OVERLAP (- SV_OVERLAP_RATIO * CLONE_MEAN)
+extern int TRA_MIN_SIZE;
+extern int TRA_MAX_SIZE;
+extern char* VALOR_MOBILE_ELEMENTS;
 
-#define DUPLICATION_MIN_CLUSTER_SIZE 24
-#define TRANSLOCATION_MIN_CLUSTER_SIZE 16
-#define DUPLICATION_MIN_REQUIRED_SUPPORT 24
+extern int DUPLICATION_MIN_CLUSTER_SIZE;
+extern int TRANSLOCATION_MIN_CLUSTER_SIZE;
+extern int DUPLICATION_MIN_REQUIRED_SUPPORT;
 
-#define TANDEM_DUPLICATION_MIN_CLUSTER_SIZE 4
-#define TANDEM_DUPLICATION_MIN_SUPPORT 1
+extern int TANDEM_DUPLICATION_MIN_CLUSTER_SIZE;
+extern int TANDEM_DUPLICATION_MIN_SUPPORT;
 /*************DELETION INFORMATION****************************/
-#define DELETION_MIN_REQUIRED_SUPPORT 8
-#define DELETION_MIN_CLUSTER_SIZE 8
+extern int DELETION_MIN_REQUIRED_SUPPORT;
+extern int DELETION_MIN_CLUSTER_SIZE;
 
 /*************INTER_CHR_EVENTS****************************/
-#define MIN_INTER_CLUSTER_SIZE 12
-#define TRA_MIN_INTRA_SPLIT 8
+extern int MIN_INTER_CLUSTER_SIZE;
+extern int TRA_MIN_INTRA_SPLIT;
 /*************GRAPH PROPERTIES****************************/
-#define QCLIQUE_LAMBDA 0.5
-#define QCLIQUE_GAMMA 0.6
+extern double QCLIQUE_LAMBDA;
+extern double QCLIQUE_GAMMA;
 #define MAX_INVERSIONS_IN_GRAPH 120500
 /************** MOLECULE RECOVERY******************/
-#define WINDOW_SIZE  (MAX_FRAG_SIZE) // min window size
-#define MIN_COVERAGE  0 // min coverage of window size
-#define MAX_COVERAGE 50
-#define EXTENSION (10 * MAX_FRAG_SIZE) // extension wing
-#define MIN_REQUIRED_READS_IN_MOLECULE 7
+
+extern int MIN_COVERAGE;
+extern int MAX_COVERAGE;
+extern int EXTENSION;
+extern int MIN_REQUIRED_READS_IN_MOLECULE;
 /*--------------READS---------------------*/
-#define MIN_QUAL 1
-#define MAX_ALTERNATIVE_CHECK_QUAL 8
-#define READ_SAMPLE_SIZE 1000000
-#define FILTER1XK 1
-#define MAX_SUPPORT 100
-#define ALTERNATIVE_MAPPING_BIT 256
-#define ALTERNATIVE_MAPPING_FLAG "SA"
-#define CHECK_ALTERNATIVE_MAPPINGS 0
-void printvalorconfig(FILE *);
+extern int MIN_QUAL;
+extern int MAX_ALTERNATIVE_CHECK_QUAL;
+extern int READ_SAMPLE_SIZE;
+extern int FILTER1XK;
+extern int MAX_SUPPORT;
+extern int ALTERNATIVE_MAPPING_BIT;
+extern char* ALTERNATIVE_MAPPING_FLAG;
+extern int CHECK_ALTERNATIVE_MAPPINGS;
 
 #endif
+

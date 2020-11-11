@@ -37,23 +37,12 @@ const char *sv_type_name(sv_type type){
 			return "unknown";
 	}
 }
-void free_params(void /*parameters*/ *vp){
-	parameters *p = vp;
-	free(p->sonic_file);
-	free(p->logfile);
-	free(p->outprefix);
-	free(p->bam_file);
-	free(p);
-}
 
-parameters *get_params(void){
-	static parameters *params = NULL;
-	if(params == NULL){ params = malloc(sizeof(parameters));}
-	return params;
-}
+
+
+/*
 parameters *init_params(void){
 
-	/* initialize parameters */
 	parameters *params =  get_params();
 
 	params->sonic_file = NULL;
@@ -76,15 +65,8 @@ parameters *init_params(void){
     params->filter_satellite = VALOR_FILTER_SAT;   //true
     return params;
 }
+*/
 
-void print_params( parameters* params)
-{
-	printf("\n");
-
-	printf( "%-30s%s\n","BAM input:",params->bam_file);
-	fprintf( logFile,"%-30s%s\n","BAM input:",params->bam_file);
-
-}
 
 void print_error( char* msg)
 {
@@ -466,7 +448,7 @@ int what_is_min_cluster_size(sv_type type,int ploidy){
 }
 
 // DUP,IDUP,DEL,TRA,INV
-sv_type atosv(char *str){
+sv_type atosv(const char *str){
 	if(strcmp(str,"ALL")==0){
 		return SV_INVERSION | SV_DIRECT_DUPLICATION | SV_INVERTED_DUPLICATION | SV_DELETION | SV_TRANSLOCATION | SV_INVERTED_TRANSLOCATION;
 	}

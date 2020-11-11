@@ -16,7 +16,7 @@ void printvalorconfig(FILE *file){
     fprintf(file,"SPLIT MOLECULE MIN DISTANCE: %d\n" , CLONE_MIN_DIST);
     fprintf(file,"MOLECULE DEPT BIN SIZE: %d\n" , MOLECULE_BIN_SIZE);
 
-    fprintf(file,"WINDOW SIZE : %d\n" , WINDOW_SIZE);
+
     fprintf(file,"MIN COVERAGE : %d\n" , MIN_COVERAGE);
     fprintf(file,"MAX COVERAGE : %d\n" , MAX_COVERAGE);
 

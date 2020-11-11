@@ -194,7 +194,7 @@ void ht_update_load_factor(hashtable_t *table, double load_factor){
 	table->optimal_load_factor = load_factor;
 }
 
-pair_t *ht_get_wcmp(hashtable_t *table, void *key, int(* cmp)(const void *, const void *)){
+pair_t *ht_get_wcmp(hashtable_t *table, const void *key, int(* cmp)(const void *, const void *)){
 	size_t bucket_index = table->hf(table,key);
 	BUCKET_VECTOR_TYPE *bucket = table->buckets[bucket_index];
 	int i;
@@ -211,7 +211,7 @@ pair_t *ht_get_wcmp(hashtable_t *table, void *key, int(* cmp)(const void *, cons
 
 
 
-pair_t *ht_get(hashtable_t *table, void *key){
+pair_t *ht_get(hashtable_t *table, const void *key){
 	size_t bucket_index = table->hf(table,key);
 	BUCKET_VECTOR_TYPE *bucket = table->buckets[bucket_index];
 	int i;
@@ -225,7 +225,7 @@ pair_t *ht_get(hashtable_t *table, void *key){
 	return NULL;
 }
 
-void *ht_get_value(hashtable_t *table, void *key){
+void *ht_get_value(hashtable_t *table, const void *key){
 	pair_t *p = ht_get(table,key);
 	if(p!=NULL){
 		return p->value;
@@ -233,7 +233,7 @@ void *ht_get_value(hashtable_t *table, void *key){
 	return NULL;
 }
 
-int ht_has_key(hashtable_t *table, void *key){
+int ht_has_key(hashtable_t *table, const void *key){
 	return ht_get(table,key)!=NULL;
 }
 
@@ -252,7 +252,7 @@ void __ht_put_pair(hashtable_t *table, pair_t *pair){
 	bucket_put(bucket, pair);
 	table->number_of_items++;
 }
-void *ht_soft_put(hashtable_t *table, void *key){
+void *ht_soft_put(hashtable_t *table,  void *key){
 	ht_load_factor_check(table);
 	size_t bucket_index = table->hf(table,key);
 	BUCKET_VECTOR_TYPE *bucket = table->buckets[bucket_index];
@@ -279,7 +279,7 @@ void *ht_soft_put(hashtable_t *table, void *key){
 }
 
 
-void *ht_put(hashtable_t *table, void *key){
+void *ht_put(hashtable_t *table, const void *key){
 	ht_load_factor_check(table);
 	size_t bucket_index = table->hf(table,key);
 	BUCKET_VECTOR_TYPE *bucket = table->buckets[bucket_index];
@@ -305,7 +305,7 @@ void *ht_put(hashtable_t *table, void *key){
 	return tpair->value;
 }
 
-void ht_remove(hashtable_t *table, void *key){
+void ht_remove(hashtable_t *table, const void *key){
 	size_t bucket_index = table->hf(table,key);
 	BUCKET_VECTOR_TYPE *bucket = table->buckets[bucket_index];
 	int i;

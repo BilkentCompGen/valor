@@ -4,7 +4,7 @@
 #include "graph.h"
 #include "interval10X.h"
 #include "readbam.h"
-
+#include "cmdline.h"
 
 
 

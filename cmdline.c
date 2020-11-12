@@ -90,7 +90,7 @@ void set_valor_option(parameters *param, const char *oc, const char *optarg){
         CLONE_MIN_DIST = atoi(optarg);
     }
     else if(!strcmp(oc,"maximum-split-distance")){
-        CLONE_MAX_DIST = atoi(optarg);
+        CLONE_MAX_DIST = atol(optarg);
     }
     else if(!strcmp(oc,"molecule-bin-size")){
         MOLECULE_BIN_SIZE = atoi(optarg);
@@ -207,6 +207,12 @@ void set_valor_option(parameters *param, const char *oc, const char *optarg){
     }
     else if(!strcmp(oc,"molecule-discovery-window" )){
         MOLECULE_EXT = atoi(optarg);
+    }
+    else if(!strcmp(oc,"stats-sample-size")){
+       READ_SAMPLE_SIZE = atoi(optarg); 
+    }
+    else if(!strcmp(oc,"max-discordant-support")){
+       MAX_SUPPORT = atoi(optarg); 
     }
     else{ //This should only run when setting the defaults, if the option is not handled. getopt will not let invalid options to be evaluated.
         fprintf(stderr, "Unknown argument %s with value %s. Please revise the running command!\n", oc, optarg);
@@ -408,7 +414,7 @@ void print_help(FILE *stream, arg_manager *argm){
 
 
 parameters *parse_args(int argc, char **argv){
-    parameters *param = malloc( sizeof(parameters));
+    parameters *param = get_params();
     memset(param,0, sizeof(parameters));
     char *valor_art =   "\t\t┌────────────────────────┐ \n"
                         "\t\t│         VALOR2         │▒\n"
@@ -478,7 +484,12 @@ parameters *parse_args(int argc, char **argv){
     add_long_argument( argm, "maximum-molecule-coverage"  , required_argument, 0, ai++, "Maximum coverage for a valid molecule", "50");
     add_long_argument( argm, "min-required-reads-in-molecule" , required_argument, 0, ai++, "Minimum number of reads per molecule", "7");
 
+    add_long_argument( argm, "max-frag-size"  , required_argument, 0, ai++, "Maximum read fragment size", "1000");
+    add_long_argument( argm, "max-discordant-support"  , required_argument, 0, ai++, "Maximum read fragment size", "100");
+
+
     add_long_argument( argm, "min-alignment-quality", required_argument, 0, ai++, "Minimum alignment quality to a read to be used", "1");
+    add_long_argument( argm, "stats-sample-size", required_argument, 0, ai++, "Number of read pairs to calculate read statistics", "1000000");
 
     add_short_argument( argm, no_argument, 'v', "Verbose", "");
     add_long_argument( argm, "help", no_argument, 0, 'h', "Shows this help screen", "");

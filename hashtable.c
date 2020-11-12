@@ -8,6 +8,18 @@ BUCKET_VECTOR_TYPE *bucket_init(size_t item_sizeof, size_t initial_limit){
 	new_vector->size = 0;
 	return new_vector;
 }
+
+void bucket_free( void *v){
+    BUCKET_VECTOR_TYPE *vector = v;
+	if(vector==NULL){return;}
+	int i;
+	for(i = 0; i< vector->size;i++){
+		free(vector->items[i]);
+	}
+	freeMem(vector->items,vector->limit * sizeof(void *));
+	freeMem(vector,sizeof(vector_t));
+}
+
 void *bucket_tail(BUCKET_VECTOR_TYPE *vector){
 	return vector->items[vector->size-1];
 }
@@ -421,7 +433,7 @@ void ht_free(hashtable_t *table){
 		for(j=0;j<bucket->size;j++){
 			pair_free(table,bucket_get(bucket,j));
 		}
-		vector_free(bucket);
+		bucket_free(bucket);
 	}
 	free(table->buckets);
 	free(table);

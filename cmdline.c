@@ -337,14 +337,16 @@ void add_long_argument( arg_manager *argm, char *larg, int has_arg, int *flag, i
     optt->o.val     = sarg;
     optt->default_value = 0;
 
-    char colon = ':';
-    vector_put(argm->opt_str_builder, &sarg);
-    if(has_arg == required_argument){
-        vector_put(argm->opt_str_builder, &colon);
-    }
-    else if(has_arg == optional_argument){
-        vector_put(argm->opt_str_builder, &colon);
-        vector_put(argm->opt_str_builder, &colon);
+    if( sarg <= 'z'){
+        char colon = ':';
+        vector_put(argm->opt_str_builder, &sarg);
+        if(has_arg == required_argument){
+            vector_put(argm->opt_str_builder, &colon);
+        }
+        else if(has_arg == optional_argument){
+            vector_put(argm->opt_str_builder, &colon);
+            vector_put(argm->opt_str_builder, &colon);
+        }
     }
     if(default_value == 0){
         avec = argm->mandatory;
@@ -430,14 +432,15 @@ parameters *parse_args(int argc, char **argv){
     add_long_argument( argm, "threads", required_argument, 0, 't', "Number of threads", "8");
     add_long_argument( argm, "preset" , required_argument, 0, 'x', "Presets" , "None");
 
-    add_long_argument( argm, "no-gap-filter", no_argument, 0, 'g', "Dont Filter Gaps (This will slow down VALOR2 significantly, don't use if you don't know what you are doing.)", "False");
-    add_long_argument( argm, "no-satellite-filter", no_argument, 0, 'g', "Dont Filter Satellites (This will slow down VALOR2 significantly, don't use if you don't know what you are doing.)", "False");
+
 
     add_long_argument( argm, "barcode-len" , required_argument, 0, 'b', "barcode length" , "16");
     add_long_argument( argm, "read-coverage", required_argument, 0, 'z', "Expected read coverage of the input bam file", "40");
 
     int ai = 123;
 
+    add_long_argument( argm, "no-gap-filter", no_argument, 0, ai++, "Dont Filter Gaps (This will slow down VALOR2 significantly, don't use if you don't know what you are doing.)", "False");
+    add_long_argument( argm, "no-satellite-filter", no_argument, 0, ai++, "Dont Filter Satellites (This will slow down VALOR2 significantly, don't use if you don't know what you are doing.)", "False");
     add_long_argument( argm, "molecule-discovery-window" , required_argument, 0, ai++, "Initial molecule discovery window" , "80000");
     add_long_argument( argm, "molecule-extension-distance" , required_argument, 0, ai++, "Extension distance after initial discovery window" , "10000");
     add_long_argument( argm, "minimum-split-distance" , required_argument, 0, ai++, "Minimum split distance (2 * Expected Molecule Size)" , "80000");
@@ -519,16 +522,17 @@ parameters *parse_args(int argc, char **argv){
 
     int verbosity = 0;
     int o;
-    int index;
+    int index = 0;
     param->haplotype_chrs = vector_init(sizeof(char)*128,128);
     char *buffer;
     const char *oc = 0;
 
     set_t *used_args = set_init(128,0);
     used_args->key_cmp = vstrncmp;
-
+    used_args->hf = SuperFastStringHash;
+    //printf("%s\n",opt_string);
 //// i:s:o:f:p:y:l:c:t:x:gvb:z:{:|:}:~::▒:▒:▒:▒:▒:▒:▒:▒:▒:▒:▒:▒:▒:hV
-    while( ( o = getopt_long_only( argc, argv, opt_string, long_options, &index)) != -1){
+    while( ( o = getopt_long( argc, argv, opt_string, long_options, &index)) != -1){
         switch( o){
             case 'y':
                 buffer = malloc(128);
@@ -547,23 +551,28 @@ parameters *parse_args(int argc, char **argv){
                 exit(1);
             break;
             default:
-                if( index >= num_options){
-                    for(i=0;i<num_options;++i){
-                        if(long_options[i].val == o){
-                            index = i;
-                            break;
-                        }
+                if( index >= num_options || index < 0){
+                    fprintf(stderr, "Wrong index : %d, with value %s, with o: %d\n",index,optarg,o);
+                }
+                for(i=0;i<num_options;++i){
+                    if(long_options[i].val == o){
+                        index = i;
+                        break;
                     }
+
                 }
    
                 oc = long_options[index].name;
                 char *arg_name = malloc(strlen(oc) + 1);
 				strncpy(arg_name,oc,strlen(oc));
-               
+
+                //printf("%d, %s: %s\n",o,arg_name,optarg);
                 set_soft_put(used_args,arg_name);
+                //printf("%lu\n",used_args->number_of_items);
                 set_valor_option(param, oc, optarg);
             break;
         }
+
     }
     int failed = 0;
     for(i = 0; i < argm->mandatory->size; i+=1){

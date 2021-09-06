@@ -1015,12 +1015,12 @@ vector_t *cluster_interchromosomal_events_lowmem(vector_t **predictions){
         if(predictions[i]->size <= 0){
             continue;
         }
-        printf("\tclustering candidates to chr %s\n",snc->chromosome_names[i]);
+        printf("\tclustering %ld candidates to chr %s\n", predictions[i]->size ,snc->chromosome_names[i]);
         graph_t *sv_graph = graph_init(predictions[i]->size *2, sizeof(ic_sv_t));
         sv_graph->hf = &ic_sv_hf;
         sv_graph->key_cmp = &_ic_sv_cmp; 
         int k;
-        
+       
         for(k=0; k<predictions[i]->size; k++){
             graph_put_node(sv_graph,vector_get(predictions[i],k));
         }

@@ -235,9 +235,15 @@ sv_type parse_svs(char * optt){
 	return sv_to_find;
 }
 
+typedef struct {
+    char *name;
+    int         has_arg;
+    int        *flag;
+    int         val;
+} optclone;
 
 typedef struct opt_and_help{
-    struct option o;
+    optclone o;
     char *default_value;
     char *help;
 } opt_and_help;
@@ -245,6 +251,7 @@ typedef struct opt_and_help{
 
 void free_opt_and_help( void *voah){
     opt_and_help *oah = voah;
+    free(oah->o.name);
     free(oah->default_value);
     free(oah->help);
     free(oah);
@@ -302,7 +309,8 @@ void add_short_argument( arg_manager *argm, int has_arg, int sarg, char *help, c
     vector_t *avec;
     opt_and_help *optt = malloc(sizeof(opt_and_help));
 
-    optt->o.name    = "";
+    optt->o.name    = malloc(1);
+    optt->o.name[0] = 0;
     optt->o.has_arg = has_arg;
     optt->o.flag    = 0;
     optt->o.val     = sarg;
@@ -333,11 +341,14 @@ void add_short_argument( arg_manager *argm, int has_arg, int sarg, char *help, c
 
 }
 
-void add_long_argument( arg_manager *argm, char *larg, int has_arg, int *flag, int sarg, char *help, char* default_value){
+void add_long_argument( arg_manager *argm, const char *larg, int has_arg, int *flag, int sarg, char *help, char* default_value){
     vector_t *avec;
     opt_and_help *optt = malloc(sizeof(opt_and_help));
 
-    optt->o.name    = larg;
+    int larg_size = strlen(larg);
+    optt->o.name    = malloc(larg_size + 1);
+    strncpy(optt->o.name, larg, larg_size);
+    optt->o.name[larg_size]=0; 
     optt->o.has_arg = has_arg;
     optt->o.flag    = flag;
     optt->o.val     = sarg;
@@ -576,8 +587,8 @@ parameters *parse_args(int argc, char **argv){
                 oc = long_options[index].name;
                 char *arg_name = malloc(strlen(oc) + 1);
 				strncpy(arg_name,oc,strlen(oc));
-
-                //printf("%d, %s: %s\n",o,arg_name,optarg);
+                arg_name[strlen(oc)]=0;
+                printf("%d, %s: %s\n",o,arg_name,optarg);
                 set_soft_put(used_args,arg_name);
                 //printf("%lu\n",used_args->number_of_items);
                 set_valor_option(param, oc, optarg);
@@ -596,6 +607,7 @@ parameters *parse_args(int argc, char **argv){
 
     }
     //FREE
+    set_free(used_args);
     if( failed){
         print_help(stderr,argm);
 

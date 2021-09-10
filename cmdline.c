@@ -72,6 +72,20 @@ void free_params(void /*parameters*/ *vp){
 int vstrncmp(const void *v1, const void *v2, size_t len){
     return strncmp((const char*) v1, (const char*) v2, len);
 }
+
+sv_type parse_svs( const char * optt){
+
+	vector_t *sv_strings = dang_string_tokenize(optt, ",");
+	sv_type sv_to_find = 0;
+
+	int i;
+	for(i=0;i<sv_strings->size;i++){
+		sv_to_find|=atosv(vector_get(sv_strings,i));
+	}
+	vector_free(sv_strings);
+	return sv_to_find;
+}
+
 // #### TODO move these to params ####
 void set_valor_option(parameters *param, const char *oc, const char *optarg){
     if(!strcmp(oc,"input")){
@@ -181,7 +195,7 @@ void set_valor_option(parameters *param, const char *oc, const char *optarg){
         // Handle outside
     }
     else if(!strcmp(oc, "svs-to-find")){
-        param->svs_to_find = atosv(optarg);
+        param->svs_to_find = parse_svs(optarg);
     }
     else if(!strcmp(oc, "ploidy")){
         param->ploidy = atoi(optarg);
@@ -222,18 +236,7 @@ void set_valor_option(parameters *param, const char *oc, const char *optarg){
 
 
 
-sv_type parse_svs(char * optt){
 
-	vector_t *sv_strings = dang_string_tokenize(optt, ",");
-	sv_type sv_to_find = 0;
-
-	int i;
-	for(i=0;i<sv_strings->size;i++){
-		sv_to_find|=atosv(vector_get(sv_strings,i));
-	}
-	vector_free(sv_strings);
-	return sv_to_find;
-}
 
 typedef struct {
     char *name;

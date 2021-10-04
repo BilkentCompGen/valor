@@ -142,6 +142,9 @@ void set_valor_option(parameters *param, const char *oc, const char *optarg){
     else if(!strcmp(oc,"inversion-min-support")){
         INVERSION_MIN_REQUIRED_SUPPORT = atoi(optarg);
     }
+    else if(!strcmp(oc,"translocation-min-cluster-size")){
+        TRANSLOCATION_MIN_CLUSTER_SIZE = atoi(optarg);
+    }
     else if(!strcmp(oc,"inversion-min-cluster-size")){
         INVERSION_MIN_CLUSTER_SIZE = atoi(optarg);
     }
@@ -485,6 +488,7 @@ parameters *parse_args(int argc, char **argv){
    
     add_long_argument( argm, "translocation-min-size" , required_argument, 0, ai++, "Minimum translocation size to discover " , "80000");
     add_long_argument( argm, "translocation-max-size" , required_argument, 0, ai++, "Maximum translocation size to discover (Smaller == Faster) " , "15000000");
+    add_long_argument( argm, "translocation-min-cluster-size" , required_argument, 0, ai++, "Minimum number of unique translocation split molecules" , "16");
     
     add_long_argument( argm, "sv-overlap-ratio" , required_argument, 0, ai++, "Minimum molecule overlap ratio to consider 2 SVs overlapping" , "0.25");
 
@@ -568,6 +572,7 @@ parameters *parse_args(int argc, char **argv){
                 print_help(stdout,argm);
                 free(long_options);
                 free_argument_manager(argm);
+                free(opt_string);
                 exit(1);
             case 'v':
                 ++verbosity;
@@ -599,6 +604,7 @@ parameters *parse_args(int argc, char **argv){
         }
 
     }
+    free(opt_string);
     int failed = 0;
     for(i = 0; i < argm->mandatory->size; i+=1){
         struct option *ooo =vector_get(argm->mandatory,i);

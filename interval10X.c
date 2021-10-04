@@ -182,7 +182,7 @@ int interval_can_pair(interval_10X *i1, interval_10X *i2){
 
 
 
-#define SCL_INIT_LIMIT 16
+#define SCL_INIT_LIMIT 10000
 
 
 vector_t *discover_split_molecules(vector_t *regions){

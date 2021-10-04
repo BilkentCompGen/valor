@@ -14,8 +14,7 @@
 #define PROGRESS_DISTANCE 5001
 #define RX_N90_THRESHOLD 2
 //What should be the initial size for each array?
-#define INITIAL_ARRAY_SIZE 650
-
+#define INITIAL_ARRAY_SIZE 10000
 
 vector_t **read_molecules_from_bed(char *filename){
         sonic *snc = sonic_load(NULL);

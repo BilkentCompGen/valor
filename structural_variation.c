@@ -28,6 +28,9 @@ void sv_fprint(FILE *stream, int chr, sv_t *t){
 int _svcmp(const void *v1, const void *v2, size_t size){
 	const sv_t *s1 = v1;
 	const sv_t *s2 = v2;
+    if(s1->type != s2->type){
+        return s1->type - s2->type;
+    }
 	if(s1->AB.start1 != s2->AB.start2){
 		return s1->AB.start1 - s2->AB.start1;
 	}
@@ -112,10 +115,10 @@ int sv_equals(const void *i1, const void *i2){
 void sv_g_dfs_step(graph_t *g, vector_t *comp, sv_t *sv){
 	sv->covered = 1;
 	vector_put(comp,sv);
-	vector_t *edges = graph_get_edges(g,sv);
+	bucket_t *edges = graph_get_edges(g,sv);
 	int i;
 	for(i=0;i<edges->size;i++){
-		sv_t **val = vector_get(edges,i);
+		sv_t **val = bucket_get(edges,i);
 		if(!(*val)->covered){
 			sv_g_dfs_step(g,comp,*val);
 		}
@@ -404,18 +407,17 @@ int g_remove_all(graph_t *g, vector_t *component,vector_t *items){
 	}
 
 	for(i=0;i<component->size;i++){
-		vector_t *edges = graph_get_edges(g,vector_get(component,i));
+		bucket_t *edges = graph_get_edges(g,vector_get(component,i));
 		if(edges==NULL){continue;}
-		edges->REMOVE_POLICY = REMP_LAZY;
+
 		for(j=0;j<edges->size;j++){
-			sv_t **ptr = vector_get(edges,j);
+			sv_t **ptr = bucket_get(edges,j);
 
 			if((*ptr)->dv==MAGIC_NODE_MARKER){
-				vector_remove(edges,j);
+				bucket_lazy_remove(edges,j);
 			}
 		}
-		vector_defragment(edges);
-		edges->REMOVE_POLICY = REMP_FAST;
+		bucket_defragment(edges);
 	}
 
 	for(i=0;i<items->size;i++){

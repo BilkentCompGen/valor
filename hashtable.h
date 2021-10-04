@@ -29,10 +29,15 @@ typedef struct __bucket_t{
 
 BUCKET_VECTOR_TYPE *bucket_init(size_t item_sizeof, size_t initial_limit);
 
+void bucket_free( void *v);
+int bucket_contains(BUCKET_VECTOR_TYPE *vector, void *item);
 void *bucket_tail(BUCKET_VECTOR_TYPE *vector);
-int bucket_put(bucket_t *vector, void *item);
+
+void bucket_defragment(BUCKET_VECTOR_TYPE *);
+int bucket_lazy_remove(BUCKET_VECTOR_TYPE *vector, size_t index);
+int bucket_put(BUCKET_VECTOR_TYPE *vector, void *item);
 void *bucket_get( BUCKET_VECTOR_TYPE *vector, size_t index);
-void bucket_tabularasa(bucket_t *vector);
+void bucket_tabularasa(BUCKET_VECTOR_TYPE *vector);
 int bucket_remove(BUCKET_VECTOR_TYPE *vector, size_t index);
 typedef struct __hashtable_t{
 	BUCKET_VECTOR_TYPE **buckets;

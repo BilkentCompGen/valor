@@ -8,7 +8,7 @@ BUCKET_VECTOR_TYPE *bucket_init(size_t item_sizeof, size_t initial_limit){
 	new_vector->size = 0;
 	return new_vector;
 }
-
+/*
 void bucket_free( void *v){
     BUCKET_VECTOR_TYPE *vector = v;
 	if(vector==NULL){return;}
@@ -19,7 +19,7 @@ void bucket_free( void *v){
 	freeMem(vector->items,vector->limit * sizeof(void *));
 	freeMem(vector,sizeof(vector_t));
 }
-
+*/
 void *bucket_tail(BUCKET_VECTOR_TYPE *vector){
 	return vector->items[vector->size-1];
 }
@@ -65,6 +65,53 @@ int bucket_remove(BUCKET_VECTOR_TYPE *vector, size_t index){
     vector->items[index] = vector->items[vector->size];
 	return 0;
 }
+
+void bucket_free( void *v){
+    BUCKET_VECTOR_TYPE *vector = v;
+    if(vector==NULL){return;}
+    int i;
+    for(i = 0; i< vector->size;i++){
+        freeMem(vector->items[i],vector->item_sizeof);
+    }
+    freeMem(vector->items,vector->limit * sizeof(void *));
+    freeMem(vector,sizeof(bucket_t));
+}
+
+
+int bucket_lazy_remove(BUCKET_VECTOR_TYPE *vector, size_t index){
+
+	if(vector->items[index] == NULL || vector->size <= index){
+		return -1;
+	}
+    freeMem(vector->items[index],vector->item_sizeof);
+    vector->items[index] = NULL;
+    return 0;
+}
+void bucket_defragment(BUCKET_VECTOR_TYPE *vector){
+
+	int i = 0;
+	int j = 0;
+	while(i+1<vector->size){
+		++i;
+		if(vector->items[j]!=NULL){
+			++j;
+		}
+		if(i!=j){
+			vector->items[j]=vector->items[i];
+		}
+	}
+	vector->size = j;
+}
+int bucket_contains(bucket_t *vector, void *item){
+	int i;
+	for(i=0;i<vector->size;i++){
+		if(memcmp(vector->items[i], item,vector->item_sizeof)==0){
+			return i;
+		}
+	}
+	return -1;
+}
+
 size_t SuperFastStringHash(hashtable_t *table, const void *key){
 	return SuperFastHash(key,strlen(key)) % table->size;
 }
@@ -280,7 +327,7 @@ void *ht_soft_put(hashtable_t *table,  void *key){
 
 	void *new_key = key;
 	void *new_val = getMem(table->value_size);
-
+    memset(new_val,0,table->value_size);
 	pair_t new_pair;
 	new_pair.key = new_key;
 	new_pair.value = new_val;
@@ -307,6 +354,7 @@ void *ht_put(hashtable_t *table, const void *key){
 
 	void *new_key = getMem(table->key_size);
 	void *new_val = getMem(table->value_size);
+    memset(new_val,0,table->value_size);
 	memcpy(new_key,key,table->key_size);
 	pair_t new_pair;
 	new_pair.key = new_key;

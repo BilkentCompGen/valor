@@ -9,7 +9,7 @@
 #define G_REMOVE_HARD 1
 #define G_REMOVE_SOFT 0
 
-#define INIT_EDGE_COUNT 8
+#define INIT_EDGE_COUNT 1
 
 typedef hashtable_t graph_t;
 typedef vector_t adjlist_t;
@@ -21,7 +21,7 @@ graph_iter_t *graph_iter_copy(graph_iter_t *g);
 int graph_iter_has_next(graph_iter_t *iter);
 int graph_iter_next(graph_iter_t *iter);
 void *graph_iter_get_value(graph_iter_t *iter);
-vector_t *graph_iter_get_edges(graph_iter_t *iter);
+bucket_t *graph_iter_get_edges(graph_iter_t *iter);
 void graph_iter_free(graph_iter_t *iter);
 
 graph_t *graph_init(size_t init_size, size_t node_size);
@@ -35,7 +35,7 @@ int graph_remove_node(graph_t *g, void *item, int hard);
 void graph_print(graph_t *g,FILE *);
 int graph_have_node(graph_t *g, void *item);
 int graph_have_node_wcmp(graph_t *g, void *item, int (*cmp)(const void *, const void *));
-vector_t *graph_get_edges(graph_t *g, void *item);
+bucket_t *graph_get_edges(graph_t *g, void *item);
 void graph_set_rem_function(graph_t *g, void (*rmv)(void*));
 #define graph_to_al(G) ht_to_vector((G))
 
@@ -44,5 +44,5 @@ void graph_set_rem_function(graph_t *g, void (*rmv)(void*));
 void al_sortbydegree(adjlist_t *g);
 int adj_degree_comp(const void *,const void *);
 void *al_get_value(adjlist_t *g, size_t index);
-vector_t *al_get_edges(adjlist_t *g, size_t index);
+bucket_t *al_get_edges(adjlist_t *g, size_t index);
 #endif

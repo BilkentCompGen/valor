@@ -40,9 +40,9 @@ int icclique_plateau_move( icclique_t *c, graph_t *sv_graph, adjlist_t *al, int 
 		icclique_add_node(c,sv_graph, best_sv);
 
 		best_sv->inactive = 1;
-		vector_t *edges = al_get_edges(al,best_index);
+		bucket_t *edges = al_get_edges(al,best_index);
 		for(i=0;i<edges->size;i++){
-			etmp = vector_get(edges,i);
+			etmp = bucket_get(edges,i);
 			(*etmp)->dv++;
 		}
 		best_sv->tabu = TABU;
@@ -72,9 +72,9 @@ int icclique_plateau_move( icclique_t *c, graph_t *sv_graph, adjlist_t *al, int 
 		icclique_rem_node(c,sv_graph, best_sv);
 		best_sv->tabu = TABU;
 		best_sv->inactive = 0;
-		vector_t *rem_edges = graph_get_edges(sv_graph,best_sv);
+		bucket_t *rem_edges = graph_get_edges(sv_graph,best_sv);
 		for(i=0;i<rem_edges->size;i++){
-			ic_sv_t **_tmp = vector_get(rem_edges,i);
+			ic_sv_t **_tmp = bucket_get(rem_edges,i);
 			(*_tmp)->dv--;
 		}
 	}
@@ -103,7 +103,7 @@ icclique_t *icclique_find_icclique(graph_t *sv_graph, vector_t *component, int s
 	}
 
 
-	vector_t *edges = graph_get_edges(sv_graph,initial);
+	bucket_t *edges = graph_get_edges(sv_graph,initial);
 	if(edges ==NULL){
 //		fprintf(stderr,"Null edges");
 		return icclique;
@@ -115,7 +115,7 @@ icclique_t *icclique_find_icclique(graph_t *sv_graph, vector_t *component, int s
 
 	int i;
 	for(i=0;i<edges->size;i++){
-		ic_sv_t **temp = vector_get(edges,i);
+		ic_sv_t **temp = bucket_get(edges,i);
 		(*temp)->dv = 1;
 	}
 	initial->inactive = 1;
@@ -153,14 +153,14 @@ void icclique_free(icclique_t *c){
 int icclique_add_node(icclique_t *c, graph_t *g, ic_sv_t *node){
 
 	if(!graph_have_node(g,node)){return -1;}
-	vector_t *edges = graph_get_edges(g,node);
+	bucket_t *edges = graph_get_edges(g,node);
 	vector_put(c->items,&node);
 	set_put(c->check_set,&node);
 	c->v_prime++;
 	int i;
 	ic_sv_t **adj_item;
 	for(i=0;i<edges->size;i++){
-		adj_item = vector_get(edges,i);
+		adj_item = bucket_get(edges,i);
 //		if(vector_contains(c->items,adj_item)!=-1){
 		if(set_has(c->check_set,adj_item)){
 			c->e_prime++;
@@ -182,10 +182,10 @@ int icclique_rem_node(icclique_t *c, graph_t *g, ic_sv_t *node){
 		return -1;
 	}
 	c->v_prime--;
-	vector_t *edges = graph_get_edges(g,node);
+	bucket_t *edges = graph_get_edges(g,node);
 	ic_sv_t **adj_item;
 	for(i=0;i<edges->size;i++){
-		adj_item = vector_get(edges,i);
+		adj_item = bucket_get(edges,i);
 //		if(vector_contains(c->items,adj_item)!=-1){
 		if(set_has(c->check_set,adj_item)){
 			c->e_prime--;

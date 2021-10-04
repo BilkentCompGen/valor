@@ -1,7 +1,6 @@
 #include "interc_sv.h"
 #include "graph.h"
 #include "clique_inter.h"
-#define SCL_INIT_LIMIT 400
 #include "cnv.h"
 #include <limits.h>
 
@@ -462,6 +461,10 @@ ic_sv_t *inter_translocation_init(inter_split_molecule_t *a, inter_split_molecul
     return new_i;
 }
 
+
+
+
+
 interval_pair *find_matching_split_molecule(vector_t *splits,inter_split_molecule_t *a, inter_split_molecule_t *b, int *count){     
     int end = MAX(a->end1,b->end1);
     int start = MIN(a->start1,b->start1);
@@ -503,46 +506,6 @@ interval_pair *find_matching_split_molecule(vector_t *splits,inter_split_molecul
     return to_return;
 }
 
-vector_t **find_interc_translocations(vector_t *sp1, vector_t *sp2, vector_t *molecules,sv_type type){
-
-    parameters *params = get_params();
-    int ccount = params->chromosome_count;
-    vector_t **tlocs = getMem(sizeof(vector_t *) * ccount);
-//    vector_t *tlocs = vector_init(sizeof(ic_sv_t),512);
-    int i,j;
-    for(i=0;i<ccount;i++){
-        tlocs[i] = vector_init(sizeof(ic_sv_t),8);
-    }
-    for(i=0;i<sp1->size;i++){
-        inter_split_molecule_t *a = vector_get(sp1,i);
-        for(j=0;j<sp2->size;j++){   
-            inter_split_molecule_t *b = vector_get(sp2,j);
-            int orient = inter_split_indicates_translocation(*a,*b,type);
-            interval_pair *del_tra;
-
-            if(orient){
-                int count;
-                if(type == SV_TRANSLOCATION || type == SV_INVERTED_TRANSLOCATION){
-                    del_tra = find_matching_split_molecule(molecules,a,b,&count);
-                    if(del_tra != NULL){
-                        ic_sv_t *sv = inter_translocation_init(a,b,del_tra,type);
-                        sv->supports[2] = count;
-                        vector_soft_put(tlocs[sv->chr_target],sv);
-                    }
-                }
-                else{
-
-                    ic_sv_t *sv = inter_reciprocal_init(a,b,type);
-
-                    vector_soft_put(tlocs[sv->chr_target],sv);
-                }
-            }
-
-        }
-    }
-
-    return tlocs;
-}
 
 int is_inter_chr_split(barcoded_read_pair *pair, interval_10X *a, interval_10X *b){
     if( (pair->barcode !=a->barcode) || (pair->barcode!=b->barcode)){ return 0;}
@@ -677,10 +640,10 @@ vector_t *find_inter_split_molecules(vector_t *reads, int src_chr, vector_t *mol
 void ic_sv_g_dfs_step(graph_t *g, vector_t *comp, ic_sv_t *sv){
     sv->covered = 1;
     vector_put(comp,sv);
-    vector_t *edges = graph_get_edges(g,sv);
+    bucket_t *edges = graph_get_edges(g,sv);
     int i;
     for(i=0;i<edges->size;i++){
-        ic_sv_t **val = vector_get(edges,i);
+        ic_sv_t **val = bucket_get(edges,i);
         if(!(*val)->covered){
             ic_sv_g_dfs_step(g,comp,*val);
         }
@@ -794,54 +757,6 @@ inter_interval_pair ic_sv_reduce_breakpoints(ic_sv_t *sv){
     }
 }
 
-int ic_sv_call_is_proper(void *vcall){
-    inter_sv_call_t *call =vcall;
-    bam_info *in_bams = get_bam_info(NULL);
-    parameters *params = get_params();
-    sonic *snc = sonic_load(NULL);
-
-    int start = call->break_points.start1;
-    int target_start = call->break_points.start2;
-    int end = call->break_points.end1;
-    int target_end = call->break_points.end2;
-
-    int src_chr = call->break_points.chr1;
-    int tgt_chr = call->break_points.chr2;
-
-
-    int is_ref_dup_source = sonic_is_segmental_duplication(snc,snc->chromosome_names[src_chr],start-CLONE_MEAN/2,start+CLONE_MEAN/2) &&
-        sonic_is_segmental_duplication(snc,snc->chromosome_names[src_chr],end-CLONE_MEAN/2,end+CLONE_MEAN/2) ;
-
-    int is_ref_dup_target = sonic_is_segmental_duplication(snc,snc->chromosome_names[tgt_chr],target_start-CLONE_MEAN/2,target_end+CLONE_MEAN/2);
-
-    int is_ref_gap_source = params->filter_gap && sonic_is_gap(snc,snc->chromosome_names[src_chr],start,end);
-    int is_ref_gap_target = params->filter_gap && sonic_is_gap(snc,snc->chromosome_names[tgt_chr],target_start,target_end);
-    int is_ref_sat_source = params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[src_chr],start,end);
-    int is_ref_sat_target = params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[tgt_chr],target_start,target_end);
-    double depth = get_depth_region(in_bams->depths[src_chr],start,end);
-
-    int does_cnv_support_tra;  
-    if(is_ref_dup_source){
-        does_cnv_support_tra=  get_depth_region(in_bams->depths[src_chr],start,end) > in_bams->depth_mean[src_chr] - 1.5 * in_bams->depth_std[src_chr];
-
-    }else{
-
-        does_cnv_support_tra=  (is_ref_dup_source || depth < in_bams->depth_mean[src_chr] + 3 * in_bams->depth_std[src_chr] )&&
-            get_depth_region(in_bams->depths[src_chr],start,end) > in_bams->depth_mean[src_chr] - 3 * in_bams->depth_std[src_chr];
-
-    }
-    fprintf(logFile,"%s\t%d\t%d\t%s\t%d\t%d\t%s\tcall\t%lf\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n",
-            snc->chromosome_names[call->break_points.chr1],
-            call->break_points.start1,
-            call->break_points.end1,
-            snc->chromosome_names[call->break_points.chr2],
-            call->break_points.start2,
-            call->break_points.end2,
-            sv_type_name(call->type),
-            depth,does_cnv_support_tra,is_ref_dup_source, is_ref_dup_target, is_ref_gap_source, is_ref_gap_target, is_ref_sat_source, is_ref_sat_target);  
-    return !(is_ref_dup_source && is_ref_dup_target) && !(is_ref_gap_source || is_ref_gap_target) && !(is_ref_sat_source && is_ref_sat_target) && does_cnv_support_tra;
-}
-
 int ic_sv_is_proper(void *vcall){
     ic_sv_t *sv =vcall;
     bam_info *in_bams = get_bam_info(NULL);
@@ -915,6 +830,57 @@ int ic_sv_is_proper(void *vcall){
     */
     return !(is_ref_dup_source && is_ref_dup_target) && !(is_ref_gap_source || is_ref_gap_target) && !(is_ref_sat_source && is_ref_sat_target) && does_cnv_support_tra;
 }
+
+
+int ic_sv_call_is_proper(void *vcall){
+    inter_sv_call_t *call =vcall;
+    bam_info *in_bams = get_bam_info(NULL);
+    parameters *params = get_params();
+    sonic *snc = sonic_load(NULL);
+
+    int start = call->break_points.start1;
+    int target_start = call->break_points.start2;
+    int end = call->break_points.end1;
+    int target_end = call->break_points.end2;
+
+    int src_chr = call->break_points.chr1;
+    int tgt_chr = call->break_points.chr2;
+
+
+    int is_ref_dup_source = sonic_is_segmental_duplication(snc,snc->chromosome_names[src_chr],start-CLONE_MEAN/2,start+CLONE_MEAN/2) &&
+        sonic_is_segmental_duplication(snc,snc->chromosome_names[src_chr],end-CLONE_MEAN/2,end+CLONE_MEAN/2) ;
+
+    int is_ref_dup_target = sonic_is_segmental_duplication(snc,snc->chromosome_names[tgt_chr],target_start-CLONE_MEAN/2,target_end+CLONE_MEAN/2);
+
+    int is_ref_gap_source = params->filter_gap && sonic_is_gap(snc,snc->chromosome_names[src_chr],start,end);
+    int is_ref_gap_target = params->filter_gap && sonic_is_gap(snc,snc->chromosome_names[tgt_chr],target_start,target_end);
+    int is_ref_sat_source = params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[src_chr],start,end);
+    int is_ref_sat_target = params->filter_satellite && sonic_is_satellite(snc,snc->chromosome_names[tgt_chr],target_start,target_end);
+    double depth = get_depth_region(in_bams->depths[src_chr],start,end);
+
+    int does_cnv_support_tra;  
+    if(is_ref_dup_source){
+        does_cnv_support_tra=  get_depth_region(in_bams->depths[src_chr],start,end) > in_bams->depth_mean[src_chr] - 1.5 * in_bams->depth_std[src_chr];
+
+    }else{
+
+        does_cnv_support_tra=  (is_ref_dup_source || depth < in_bams->depth_mean[src_chr] + 3 * in_bams->depth_std[src_chr] )&&
+            get_depth_region(in_bams->depths[src_chr],start,end) > in_bams->depth_mean[src_chr] - 3 * in_bams->depth_std[src_chr];
+
+    }
+    fprintf(logFile,"%s\t%d\t%d\t%s\t%d\t%d\t%s\tcall\t%lf\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n",
+            snc->chromosome_names[call->break_points.chr1],
+            call->break_points.start1,
+            call->break_points.end1,
+            snc->chromosome_names[call->break_points.chr2],
+            call->break_points.start2,
+            call->break_points.end2,
+            sv_type_name(call->type),
+            depth,does_cnv_support_tra,is_ref_dup_source, is_ref_dup_target, is_ref_gap_source, is_ref_gap_target, is_ref_sat_source, is_ref_sat_target);  
+    return !(is_ref_dup_source && is_ref_dup_target) && !(is_ref_gap_source || is_ref_gap_target) && !(is_ref_sat_source && is_ref_sat_target) && does_cnv_support_tra;
+}
+
+
 
 inter_sv_call_t *ic_sv_component_resolve(vector_t *cluster){
     inter_interval_pair bp = {0};
@@ -1037,7 +1003,12 @@ vector_t *cluster_interchromosomal_events_lowmem(vector_t **predictions){
             }
         }
         graph_trim(sv_graph);
+        if( sv_graph->number_of_items < TRANSLOCATION_MIN_CLUSTER_SIZE){
+            graph_free(sv_graph);
+            continue;
+        }
         vector_t *components = ic_sv_g_dfs_components(sv_graph);
+
 
         for(k=0;k<components->size;k++){
             vector_t *comp = vector_get(components,k);
@@ -1086,6 +1057,62 @@ vector_t *resplit_molecules(vector_t *molecules, vector_t *discordants){
     return resplit;
 }
 
+
+
+
+vector_t **find_interc_translocations(vector_t *sp1, vector_t *sp2, vector_t *molecules,sv_type type){
+
+    parameters *params = get_params();
+    int ccount = params->chromosome_count;
+    vector_t **tlocs = getMem(sizeof(vector_t *) * ccount);
+//    vector_t *tlocs = vector_init(sizeof(ic_sv_t),512);
+    int i,j;
+    for(i=0;i<ccount;i++){
+        tlocs[i] = vector_init(sizeof(ic_sv_t),8);
+    }
+    for(i=0;i<sp1->size;i++){
+        inter_split_molecule_t *a = vector_get(sp1,i);
+        for(j=0;j<sp2->size;j++){   
+            inter_split_molecule_t *b = vector_get(sp2,j);
+            int orient = inter_split_indicates_translocation(*a,*b,type);
+            interval_pair *del_tra;
+
+            if(orient){
+                int count;
+                if(type == SV_TRANSLOCATION || type == SV_INVERTED_TRANSLOCATION){
+                    del_tra = find_matching_split_molecule(molecules,a,b,&count);
+                    if(del_tra != NULL){
+                        ic_sv_t *sv = inter_translocation_init(a,b,del_tra,type);
+                        sv->supports[2] = count;
+                        if( ic_sv_is_proper(sv)){
+                            vector_soft_put(tlocs[sv->chr_target],sv);
+                        }
+                        else{
+                            free(sv);
+                        }
+                        free(del_tra);
+                        del_tra = NULL;
+                    }
+                }
+                else{
+
+                    ic_sv_t *sv = inter_reciprocal_init(a,b,type);
+                    if( ic_sv_is_proper(sv)){
+                        vector_soft_put(tlocs[sv->chr_target],sv);
+                    }
+                    else{
+                        free(sv);
+                    }
+
+                    //vector_soft_put(tlocs[sv->chr_target],sv);
+                }
+            }
+
+        }
+    }
+
+    return tlocs;
+}
 
 vector_t *find_interchromosomal_events_lowmem(vector_t **molecules, bam_vector_pack **intra_reads, char *bamname){
     int j;
@@ -1140,11 +1167,18 @@ vector_t *find_interchromosomal_events_lowmem(vector_t **molecules, bam_vector_p
         printf("Number of pp splits %zu\n",pp_seps->size);
         printf("Number of mm splits %zu\n",mm_seps->size);
         vector_t **direct_tra =  find_interc_translocations(pm_seps,mp_seps,splits,SV_TRANSLOCATION);
-        vector_t **invert_tra =  find_interc_translocations(pp_seps,mm_seps,splits,SV_INVERTED_TRANSLOCATION);
         vector_t **direct_rec =  find_interc_translocations(pm_seps,mp_seps,splits,SV_RECIPROCAL);
+        
+        vector_free(pm_seps);
+        vector_free(mp_seps);
+        
+        vector_t **invert_tra =  find_interc_translocations(pp_seps,mm_seps,splits,SV_INVERTED_TRANSLOCATION);
         vector_t **invert_rec =  find_interc_translocations(pp_seps,mm_seps,splits,SV_INVERTED_RECIPROCAL);
-               
-       vector_free(splits);
+        
+        vector_free(pp_seps);
+        vector_free(mm_seps);
+        
+        vector_free(splits);
 
         int kc;
 
@@ -1166,7 +1200,7 @@ vector_t *find_interchromosomal_events_lowmem(vector_t **molecules, bam_vector_p
 
                 printf("pp-mm variant candidates %s->%s: %zu\n",snc->chromosome_names[i],snc->chromosome_names[kc],invert_tra[kc]->size);
             }
-
+/*
             vector_filter(direct_tra[kc],ic_sv_is_proper);
             vector_filter(invert_tra[kc],ic_sv_is_proper);
             vector_filter(direct_rec[kc],ic_sv_is_proper);
@@ -1187,21 +1221,37 @@ vector_t *find_interchromosomal_events_lowmem(vector_t **molecules, bam_vector_p
 
                 printf("pp-mm variant candidates %s->%s: %zu\n",snc->chromosome_names[i],snc->chromosome_names[kc],invert_tra[kc]->size);
             }
+  */
         }
 
         printf("From chromosome %s:\nDirect calls:\n",snc->chromosome_names[i]);
         vector_t *direct_calls = cluster_interchromosomal_events_lowmem(direct_tra);
         
+        for(kc=0;kc<params->chromosome_count;kc++){
+            vector_free(direct_tra[kc]);
+        }
+        free(direct_tra);
         printf("Inverted calls:\n");
         vector_t *invert_calls = cluster_interchromosomal_events_lowmem(invert_tra);
+        for(kc=0;kc<params->chromosome_count;kc++){
+            vector_free(invert_tra[kc]);
+        }
     
+        free(invert_tra);
         printf("Direct reciprocal calls:\n");
         vector_t *direct_reciprocal_calls = cluster_interchromosomal_events_lowmem(direct_rec);
+        for(kc=0;kc<params->chromosome_count;kc++){
+            vector_free(direct_rec[kc]);
+        }
+        free(direct_rec);
         
         printf("Inverted reciprocal calls:\n");
         vector_t *invert_reciprocal_calls = cluster_interchromosomal_events_lowmem(invert_rec);
-       
-      
+        for(kc=0;kc<params->chromosome_count;kc++){
+            vector_free(invert_rec[kc]);
+        }
+        free(invert_rec);
+  
         printf("Total Number of pm-mp variant clusters: %zu\n",direct_calls->size);
         printf("Total Number of pp-mm variant clusters: %zu\n",invert_calls->size);
 
@@ -1216,24 +1266,6 @@ vector_t *find_interchromosomal_events_lowmem(vector_t **molecules, bam_vector_p
 
         printf("Total Number of reciprocal pm-mp variant calls: %zu\n",direct_reciprocal_calls->size);
         printf("Total Number of reciprocal pp-mm variant calls: %zu\n",invert_reciprocal_calls->size);
-
-
-        for(kc=0;kc<params->chromosome_count;kc++){
-            vector_free(direct_tra[kc]);
-            vector_free(invert_tra[kc]);
-            vector_free(direct_rec[kc]);
-            vector_free(invert_rec[kc]);
-        }
-
-        free(direct_tra);
-        free(invert_tra);
-        free(direct_rec);
-        free(invert_rec);
-
-        vector_free(pm_seps);
-        vector_free(mp_seps);
-        vector_free(pp_seps);
-        vector_free(mm_seps);
 
         vector_soft_put(all_chr_vec,direct_calls);
         vector_soft_put(all_chr_vec,invert_calls);

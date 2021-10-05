@@ -42,7 +42,7 @@ int MIN_INTER_CLUSTER_SIZE;
 int TRA_MIN_INTRA_SPLIT;
 double QCLIQUE_LAMBDA;
 double QCLIQUE_GAMMA;
-
+int SV_GRAPH_ALGO_SWITCH_LIMIT;
 int MIN_COVERAGE;
 int MAX_COVERAGE;
 int EXTENSION;
@@ -182,8 +182,12 @@ void set_valor_option(parameters *param, const char *oc, const char *optarg){
     else if(!strcmp(oc, "quasi-clique-lambda")){
         QCLIQUE_LAMBDA = atof(optarg);
     }
+
     else if(!strcmp(oc, "quasi-clique-gamma")){
         QCLIQUE_GAMMA = atof(optarg);
+    }
+    else if(!strcmp(oc, "graph-min-sv-for-itree-builder")){
+        SV_GRAPH_ALGO_SWITCH_LIMIT = atoi(optarg);
     }
     else if(!strcmp(oc, "molecule-extension-distance")){
         EXTENSION = atoi(optarg);
@@ -495,7 +499,9 @@ parameters *parse_args(int argc, char **argv){
     add_long_argument( argm, "mobile-elements" , required_argument, 0, ai++, "colon seperated list of mobile elements to consider" , "Alu:L1:SVA:HERV");
     
     add_long_argument( argm, "quasi-clique-lambda" , required_argument, 0, ai++, "Lambda value of quasi clique approximation between 0 and 1" , "0.5");
+
     add_long_argument( argm, "quasi-clique-gamma"  , required_argument, 0, ai++, "Gamma  value of quasi clique approximation between 0 and 1" , "0.6");
+    add_long_argument( argm, "graph-min-sv-for-itree-builder"  , required_argument, 0, ai++, "Minimum number of svs to use interval tree graph builder" , "12500");
     
     add_long_argument( argm, "minimum-molecule-coverage"  , required_argument, 0, ai++, "Minimum coverage for a valid molecule", "0");
 

@@ -58,6 +58,7 @@ extern int DELETION_MIN_CLUSTER_SIZE;
 extern int MIN_INTER_CLUSTER_SIZE;
 extern int TRA_MIN_INTRA_SPLIT;
 /*************GRAPH PROPERTIES****************************/
+extern int SV_GRAPH_ALGO_SWITCH_LIMIT;
 extern double QCLIQUE_LAMBDA;
 extern double QCLIQUE_GAMMA;
 #define MAX_INVERSIONS_IN_GRAPH 120500

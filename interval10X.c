@@ -3,6 +3,76 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include "cgranges/cgranges.h"
+
+
+
+int64_t *union_overlaps( int64_t *a, int64_t lena, int64_t *b, int64_t lenb, int64_t *lenret){
+
+    int64_t ai = 0;
+    int64_t bi = 0;
+    int64_t index = 0;
+
+    int64_t *ret = malloc((lena + lenb) * sizeof(int64_t));
+    
+    while( ai < lena && bi < lenb){
+        if(a[ai] == b[bi]){
+            ret[index] = a[ai];
+            ++index;
+            ++ai;
+            ++bi;
+        }
+        else if( a[ai] > b[bi]){
+            ret[index] = b[bi];
+            ++index;
+            ++bi;
+        }
+        else{
+            ret[index] = a[ai];
+            ++index;
+            ++ai;
+        }
+
+    }
+    *lenret = index;
+    return ret;
+}
+int64_t *intersection_overlaps( int64_t *a, int64_t lena, int64_t *b, int64_t lenb, int64_t *lenret){
+
+    int64_t ai = 0;
+    int64_t bi = 0;
+    int64_t index = 0;
+
+    int64_t *ret = malloc(MAX(lena, lenb) * sizeof(int64_t));
+    
+    while( ai < lena && bi < lenb){
+        if(a[ai] == b[bi]){
+            ret[index] = a[ai];
+            ++index;
+            ++ai;
+            ++bi;
+        }
+        else if( a[ai] > b[bi]){
+            ++bi;
+        }
+        else{
+            ++ai;
+        }
+
+    }
+    *lenret = index;
+    return ret;
+}
+
+void replace_cg_labels( cgranges_t *cg, int64_t *arr, int64_t len){
+    int i;
+
+    for(i=0;i< len;++i){
+        arr[i] = cr_label(cg,arr[i]);
+    }
+
+}
+
 
 int interval_start_comp(const void *v1, const void *v2){
         interval_10X *i1 = *(interval_10X **)v1;

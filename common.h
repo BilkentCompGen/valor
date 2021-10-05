@@ -62,6 +62,8 @@ typedef enum SV_TYPE{
         SV_INVERTED_RECIPROCAL=256,
 }sv_type;
 
+
+int cmp_int(const void *v1, const void *v2);
 sv_type atosv(const char *str);
 
 const char *sv_type_name(sv_type);

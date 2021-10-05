@@ -1,11 +1,14 @@
+
+#include <assert.h>
 #include "valorconfig.h"
 #include "structural_variation.h"
 #include <stdio.h>
 #include "progress.h"
 #include "sonic/sonic.h"
 #include "cnv.h"
+#include <stdlib.h>
 
-
+#include "cgranges/cgranges.h"
 
 
 void sv_fprint(FILE *stream, int chr, sv_t *t){
@@ -451,7 +454,7 @@ void sv_graph_reset(graph_t *g){
 	}
 }
 
-graph_t *make_sv_graph(vector_t *svs){
+graph_t *make_sv_graph_regular(vector_t *svs){
 	graph_t *g = graph_init(svs->size * 2, sizeof(sv_t));
 	g->hf = &sv_hf;
 	g->key_cmp = &_svcmp;
@@ -473,16 +476,78 @@ graph_t *make_sv_graph(vector_t *svs){
 	return g;
 }
 
+graph_t *make_sv_graph_itree(vector_t *svs){
+	graph_t *g = graph_init(svs->size * 2, sizeof(sv_t));
+	g->hf = &sv_hf;
+	g->key_cmp = &_svcmp;
+	int i,j;
+    sonic *snc = sonic_load(NULL);
+    cgranges_t *cr = cr_init();
+    
+    for(i=0;i<svs->size;i++){
+        sv_t *sv = vector_get(svs,i);
+        cr_add(cr, snc->chromosome_names[sv->chr], MAX(0,MIN(sv->AB.start1,sv->CD.start1) - 3* MOLECULE_EXT), MAX(sv->AB.end2,sv->CD.end2) + 3 * MOLECULE_EXT, i);
+		graph_put_node(g,sv);
+	}
+    cr_index(cr);
+	for(i=0;i<svs->size;i++){
+		sv_t *a = vector_get(svs,i);
+		int64_t q;
+        int64_t nl,*bl = 0, max_bl = 0;
+        nl = cr_overlap(cr, snc->chromosome_names[a->chr], MAX(0,MIN(a->AB.start1,a->CD.start1) - MOLECULE_EXT), MAX(a->CD.end2,a->AB.end2) + MOLECULE_EXT, &bl, &max_bl);
+        replace_cg_labels(cr,bl,nl);
+
+        qsort(bl,nl,sizeof(int64_t),cmp_int); 
+        for(q = 0; q < nl; ++q){
+            j = bl[q];
+            if(j<=i){
+                continue;
+            }
+        //for(j=i+1;j<svs->size;j++){
+			sv_t *b = vector_get(svs,j);
+
+			if(sv_overlaps(a,b)){
+				graph_put_edge(g,a,b);
+				graph_put_edge(g,b,a);
+			}
+		}
+        free(bl);
+	}
+    cr_destroy(cr);
+	return g;
+}
+
+graph_t *make_sv_graph(vector_t *svs){
+	if(svs->size > SV_GRAPH_ALGO_SWITCH_LIMIT){
+		return make_sv_graph_itree(svs);
+	}
+	return make_sv_graph_regular(svs);
+}
 
 #define SV_INIT_LIMIT 10000
-
 vector_t *find_svs(vector_t *split_molecules, sv_type type, int chr){
 	int i,j,k;
 	vector_t *svs;
 
+	sonic *snc = sonic_load(NULL);
 
 	int num_threads = 1;
 
+
+    cgranges_t *cgright = cr_init();
+    cgranges_t *cgleft = cr_init();
+    for(i=0;i<split_molecules->size;i++){
+        splitmolecule_t *AB = vector_get(split_molecules, i);
+        assert(AB->start1 < AB->start2);
+
+        cr_add(cgleft, snc->chromosome_names[chr], MAX(0,AB->start1 - MOLECULE_EXT), AB->end1 + MOLECULE_EXT, i); 
+        cr_add(cgright, snc->chromosome_names[chr], MAX(0,AB->start2 - MOLECULE_EXT), AB->end2 + MOLECULE_EXT, i); 
+//        cr_add(cgright, snc->chromosome_names[chr], MAX(0,AB->start1 - MOLECULE_EXT), AB->end1 + MOLECULE_EXT, i); 
+//        cr_add(cgleft, snc->chromosome_names[chr], MAX(0,AB->start2 - MOLECULE_EXT), AB->end2 + MOLECULE_EXT, i); 
+    }
+
+    cr_index(cgright);
+    cr_index(cgleft);
 #ifdef _OPENMP
 	num_threads =  omp_get_num_threads();
 #endif
@@ -507,21 +572,71 @@ vector_t *find_svs(vector_t *split_molecules, sv_type type, int chr){
 
 				vector_soft_put(svs,tmp);
 			}
+
 			if(!(type & ( SV_INVERSION | SV_DIRECT_DUPLICATION | SV_INVERTED_DUPLICATION | SV_TRANSLOCATION | SV_INVERTED_TRANSLOCATION))){ continue;}
-			for(j=0;j<split_molecules->size;j++){
-				if(i==j){continue;}
-				CD = vector_get(split_molecules,j);
-				for(k=SV_INVERSION;k<SV_MAX_ID;k=k<<1){
-					if((k&type)==0){ continue;}
-					char orient = splitmolecule_indicates_sv(AB,CD,k);
-					if(orient){
-						sv_t *tmp = sv_init(AB,CD,k);
-						tmp->orientation = orient;
-			            tmp->chr = chr;
+			
+            int64_t q;
+            int64_t nr,*br = 0, max_br = 0;
+            int64_t nl,*bl = 0, max_bl = 0;
+
+
+            nl = cr_overlap(cgleft, snc->chromosome_names[chr], AB->start1 - 2 * MOLECULE_EXT, AB->end1 + 2 * MOLECULE_EXT, &bl, &max_bl);
+            nr = cr_overlap(cgright, snc->chromosome_names[chr], AB->start2 - 2 * MOLECULE_EXT, AB->end2 + 2 * MOLECULE_EXT, &br, &max_br);
+
+
+            replace_cg_labels(cgright,br,nr);
+            replace_cg_labels(cgleft,bl,nl);
+
+            qsort(bl,nl,sizeof(int64_t),cmp_int); 
+            qsort(br,nr,sizeof(int64_t),cmp_int); 
+            //INVERSION INTERSECTION
+            
+            if( type & SV_INVERSION){
+                int64_t isize;
+                int64_t *intersection = intersection_overlaps( br, nr, bl, nl, &isize);
+                for(q=0;q<isize;++q){
+                    j = intersection[q];
+                    if( j==i){
+                        continue;
+                    }
+
+				    CD = vector_get(split_molecules,j);
+                    char orient = splitmolecule_indicates_sv(AB,CD,SV_INVERSION);
+                    if(orient){
+                        sv_t *tmp = sv_init(AB,CD,SV_INVERSION);
+                        tmp->orientation = orient;
+                        tmp->chr = chr;
                         vector_soft_put(svs,tmp);
-					}
-				}
-			}
+                    }
+                }
+                free(intersection);
+            }
+            //DUPLICATION UNION
+            if( (type & SV_DIRECT_DUPLICATION) || (type & SV_INVERTED_DUPLICATION)){
+                int64_t usize;
+                int64_t *unio = union_overlaps( br, nr, bl, nl, &usize);
+                for(q=0; q< usize; ++q){
+                    j = unio[q];
+				    if(j==i){
+                        continue;
+                    }
+                    CD = vector_get(split_molecules,j);
+
+				    for(k=SV_DIRECT_DUPLICATION;k<SV_MAX_ID;k=k<<1){
+                        char orient = splitmolecule_indicates_sv(AB,CD,k);
+                        if(orient){
+                            sv_t *tmp = sv_init(AB,CD,k);
+                            tmp->orientation = orient;
+                            tmp->chr = chr;
+                            vector_soft_put(svs,tmp);
+                        }
+                    }
+                }
+                free(unio);
+            }
+            free(bl);
+            free(br);
+
 		}
 	}
 	else{
@@ -580,6 +695,8 @@ vector_t *find_svs(vector_t *split_molecules, sv_type type, int chr){
 		free(osvs);
 	}
 
+    cr_destroy(cgright);
+    cr_destroy(cgleft);
 	return svs;
 }
 

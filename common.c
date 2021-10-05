@@ -13,6 +13,13 @@
 long long memUsage = 0;
 
 
+int cmp_int(const void *v1, const void *v2){
+
+    const int64_t *i1 = v1;
+    const int64_t *i2 = v2;
+    return *i1 - *i2;
+}
+
 const char *sv_type_name(sv_type type){
     switch(type){
         case SV_INVERSION:

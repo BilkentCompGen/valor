@@ -1,6 +1,7 @@
 #ifndef __INTERVAL_10X__
 #define __INTERVAL_10X__
 #include "vector.h"
+#include "cgranges/cgranges.h"
 #define I10X_VECTOR_GET(V,I) ((interval_10X *)vector_get((V),(I)))
 #define IDIS_VECTOR_GET(V,I) ((interval_discordant *)vector_get((V),(I)))
 typedef struct _interval10X{
@@ -20,6 +21,16 @@ typedef struct _interval_pair{
 typedef interval_pair interval_discordant;
 
 typedef interval_pair splitmolecule_t;
+
+
+
+
+int64_t *union_overlaps( int64_t *a, int64_t lena, int64_t *b, int64_t lenb, int64_t *lenret);
+
+int64_t *intersection_overlaps( int64_t *a, int64_t lena, int64_t *b, int64_t lenb, int64_t *lenret);
+
+void replace_cg_labels( cgranges_t *cg, int64_t *arr, int64_t len);
+
 int interval_can_pair(interval_10X *i1, interval_10X *i2);
 
 int interval_pair_overlaps(interval_pair *p1,interval_pair *i2, int relaxation);
